@@ -22,6 +22,12 @@
     <ClInclude Include="StubPredictor.h">
       <Filter>Stub</Filter>
     </ClInclude>
+    <ClInclude Include="RNE.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ClockCycleCount.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -46,6 +52,9 @@
     </Filter>
     <Filter Include="Stub">
       <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tools">
+      <UniqueIdentifier>{661a05a7-6430-42d5-8cd3-57a32216e5a8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

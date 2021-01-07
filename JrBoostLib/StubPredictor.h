@@ -9,7 +9,13 @@ public:
     virtual ArrayXf predict(const Eigen::ArrayXXf& inData) const;
 
 private:
-    StubPredictor(int variableCount) : variableCount_(variableCount) {}
+    StubPredictor(int variableCount, int j, float x, float leftY, float rightY);
+ 
     friend class StubTrainer;
+
     int variableCount_;
+    int j_;
+    float x_;
+    float leftY_;
+    float rightY_;
 };
