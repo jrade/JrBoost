@@ -28,6 +28,12 @@
     <ClInclude Include="ClockCycleCount.h">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="Algorithms.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Random.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

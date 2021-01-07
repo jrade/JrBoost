@@ -14,6 +14,7 @@ inDataFrame = dataFrame.drop(['Species'], axis = 1)
 print(inDataFrame.head(5))
 print()
 print(outDataFrame.head(5))
+print()
 
 sampleCount = len(dataFrame.index)
 
@@ -36,6 +37,7 @@ trainer.setWeights(weights)
 predictor = trainer.train()
 predOutData = predictor.predict(inData)
 
+print()
 print(list(zip(outData, predOutData)))
 
 
