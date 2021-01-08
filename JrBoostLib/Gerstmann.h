@@ -1,5 +1,4 @@
-// Copied from https://arvid.io/2018/07/02/better-cxx-prng/
-// Added constructor to 
+//copied from https://arvid.io/2018/07/02/better-cxx-prng/
 
 /* Copyright (c) 2018 Arvid Gerstmann. */
 /* This code is licensed under MIT license. */
@@ -20,16 +19,8 @@ public:
     {
         seed(rd);
     }
-    explicit splitmix(std::random_device&& rd)
-    {
-        seed(std::move(rd));
-    }
 
     void seed(std::random_device& rd)
-    {
-        m_seed = uint64_t(rd()) << 31 | uint64_t(rd());
-    }
-    void seed(std::random_device&& rd)
     {
         m_seed = uint64_t(rd()) << 31 | uint64_t(rd());
     }
@@ -75,16 +66,8 @@ public:
     {
         seed(rd);
     }
-    explicit xorshift(std::random_device&& rd)
-    {
-        seed(std::move(rd));
-    }
 
     void seed(std::random_device& rd)
-    {
-        m_seed = uint64_t(rd()) << 31 | uint64_t(rd());
-    }
-    void seed(std::random_device&& rd)
     {
         m_seed = uint64_t(rd()) << 31 | uint64_t(rd());
     }
@@ -134,23 +117,8 @@ public:
     {
         seed(rd);
     }
-    explicit pcg(std::random_device&& rd)
-    {
-        seed(std::move(rd));
-    }
 
     void seed(std::random_device& rd)
-    {
-        uint64_t s0 = uint64_t(rd()) << 31 | uint64_t(rd());
-        uint64_t s1 = uint64_t(rd()) << 31 | uint64_t(rd());
-
-        m_state = 0;
-        m_inc = (s1 << 1) | 1;
-        (void)operator()();
-        m_state += s0;
-        (void)operator()();
-    }
-    void seed(std::random_device&& rd)
     {
         uint64_t s0 = uint64_t(rd()) << 31 | uint64_t(rd());
         uint64_t s1 = uint64_t(rd()) << 31 | uint64_t(rd());

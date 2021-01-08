@@ -31,7 +31,7 @@
     <ClInclude Include="Algorithms.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="Random.h">
+    <ClInclude Include="Gerstmann.h">
       <Filter>Tools</Filter>
     </ClInclude>
   </ItemGroup>

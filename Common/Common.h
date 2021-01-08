@@ -6,6 +6,7 @@
 #include <memory>
 #include <numeric>
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -13,6 +14,7 @@ using std::cout;
 using std::endl;
 using std::pair;
 using std::shared_ptr;
+using std::string;
 using std::unique_ptr;
 using std::vector;
 
@@ -21,3 +23,5 @@ using std::vector;
 using Eigen::ArrayXf;
 using Eigen::ArrayXd;
 using Eigen::ArrayXXf;
+
+#include "Assert.h"

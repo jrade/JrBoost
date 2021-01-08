@@ -174,7 +174,7 @@
     <ClInclude Include="ClockCycleCount.h" />
     <ClInclude Include="Algorithms.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Random.h" />
+    <ClInclude Include="Gerstmann.h" />
     <ClInclude Include="RNE.h" />
     <ClInclude Include="StubPredictor.h" />
     <ClInclude Include="StubOptions.h" />

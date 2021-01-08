@@ -18,6 +18,8 @@ public:
     virtual StubPredictor* train() const;
 
 private:
+    template<typename F> StubPredictor*  trainImpl_() const;
+
     ArrayXf outData_;
     ArrayXf weights_;
     unique_ptr<StubOptions> options_;

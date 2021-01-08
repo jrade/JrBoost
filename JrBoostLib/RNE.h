@@ -1,5 +1,9 @@
 #pragma once
 
-#include "Random.h"
+#include "Gerstmann.h"
 
-inline static xorshift theRNE((std::random_device()));
+using RNE = splitmix;
+
+inline static std::random_device theRandomDevice;
+
+inline static RNE theRNE(theRandomDevice);

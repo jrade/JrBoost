@@ -3,11 +3,14 @@
 #include "../JrBoostLib/StubTrainer.h"
 #include "../JrBoostLib/StubOptions.h"
 
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(jrboost, mod)
 {
     mod.doc() = "The jrboost module implements the logit boost machine learning algorithm";
+
+    py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
     // Abstract classes
 
@@ -35,5 +38,6 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<StubOptions, AbstractOptions>(mod, "StubOptions")
         .def(py::init<>())
         .def_readwrite("usedSampleRatio", &StubOptions::usedSampleRatio)
-        .def_readwrite("usedVariableRatio", &StubOptions::usedVariableRatio);
+        .def_readwrite("usedVariableRatio", &StubOptions::usedVariableRatio)
+        .def_readwrite("precision", &StubOptions::precision);
 }

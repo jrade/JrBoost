@@ -9,10 +9,13 @@
 template<typename T, typename R>
 inline void orderedRandomSubset(T p0, T p1, T q0, T q1, R& r)
 {
-	static_assert(sizeof(void*) == 8);
-	static_assert(R::min() >= 0 && R::max() <= 0xffffffff);
-	if (p1 >= p0 + 0x100000000)
-		throw std::runtime_error("Too many elements");
+	// check that the arguments are valid
+	JRASSERT(p1 >= p0 && q1 >= q0 && q1 - q0 <= p1 - p0);
+	JRASSERT(q0 <= p0 || q0 >= p1);
+
+	// check that the products will not overflow
+	static_assert(sizeof(R::result_type) == 4);
+	JRASSERT(p1 - p0 < 0x100000000);
 
 	// we look at each element in the input (p0) and decide whether it should be included in the output (q0)
 	// it is inluded with probability
@@ -33,14 +36,17 @@ inline void orderedRandomSubset(T p0, T p1, T q0, T q1, R& r)
 template<typename T, typename R>
 inline void randomMask(T p0, T p1, int64_t n, R& r)
 {
-	static_assert(sizeof(void*) == 8);
-	static_assert(R::min() >= 0 && R::max() <= 0xffffffff);
-	if (p1 >= p0 + 0x100000000)
-		throw std::runtime_error("Too many elements");
+	// check that the arguments are valid
+	JRASSERT(p0 <= p1);
+	JRASSERT(n >= 0 && n <= p1 - p0);
+
+	// make sure that the products will not overflow
+	static_assert(sizeof(R::result_type) == 4);
+	JRASSERT(p1 - p0 < 0x100000000);
 
 	// we look at each element in the input (p0) and decide whether it should be included in the output (q0)
 	// it is inluded with probability
-	// n / (p1 - p0) = (number of slots left to fill) / (number of elements left to pick from)
+	// *p0 is set to 1 with probability n / (p1 - p0)
 
 	while (p0 < p1) {
 		int64_t a = r() - R::min();
@@ -52,3 +58,14 @@ inline void randomMask(T p0, T p1, int64_t n, R& r)
 	}
 }
 
+template<typename T, typename U, typename P>
+inline T copyIf(T p0, U q0, U q1, P pred)
+{
+	while (q0 != q1) {
+		auto val = *p0;
+		*q0 = val;
+		++p0;
+		q0 += pred(val);
+	}
+	return p0;
+}

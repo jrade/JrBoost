@@ -13,6 +13,7 @@ public:
 
     float usedSampleRatio = 1.0f;
     float usedVariableRatio = 1.0f;
+    string precision = "single";
 
 private:
     StubOptions(const StubOptions&) = default;
