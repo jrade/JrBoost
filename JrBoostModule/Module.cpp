@@ -37,7 +37,8 @@ PYBIND11_MODULE(jrboost, mod)
     
     py::class_<StubOptions, AbstractOptions>(mod, "StubOptions")
         .def(py::init<>())
-        .def_readwrite("usedSampleRatio", &StubOptions::usedSampleRatio)
-        .def_readwrite("usedVariableRatio", &StubOptions::usedVariableRatio)
-        .def_readwrite("precision", &StubOptions::precision);
+        .def_property("usedSampleRatio", &StubOptions::usedSampleRatio, &StubOptions::setUsedSampleRatio)
+        .def_property("usedVariableRatio", &StubOptions::usedVariableRatio, &StubOptions::setUsedVariableRatio)
+        .def_property("highPrecision", &StubOptions::highPrecision, &StubOptions::setHighPrecision)
+        .def_property("profile", &StubOptions::profile, &StubOptions::setProfile);
 }

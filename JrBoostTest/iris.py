@@ -29,6 +29,8 @@ weights = np.full((sampleCount,), 1.0)
 opt = jrboost.StubOptions()
 opt.usedSampleRatio = 1.0
 opt.usedVariableRatio = 1.0
+opt.highPrecision = False
+opt.profile = True
 
 trainer = opt.createTrainer()
 trainer.setInData(inData)
@@ -40,5 +42,7 @@ predOutData = predictor.predict(inData)
 
 print()
 print(list(zip(outData, predOutData)))
+print()
+print('Done')
 
 

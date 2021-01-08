@@ -1,17 +1,18 @@
 #include "pch.h"
 #include "StubTrainer.h"
 #include "StubOptions.h"
-#include "RNE.h"
-#include "ClockCycleCount.h"
 #include "Algorithms.h"
+#include "ClockCycleCount.h"
+#include "RNE.h"
 
-void StubTrainer::setOptions(const AbstractOptions& opt)
-{
-    options_.reset(dynamic_cast<const StubOptions&>(opt).clone());
-}
+StubTrainer::StubTrainer() :
+    options_(std::make_unique<StubOptions>())
+{}
 
 void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
 { 
+    ASSERT(inData.isFinite().all());
+
     // There should be a better way...
     inData_.~Map();
     new (&inData_) Eigen::Map<ArrayXXf>(&inData(0, 0), inData.rows(), inData.cols());
@@ -31,50 +32,81 @@ void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
     }
 }
 
+void StubTrainer::setOutData(const ArrayXf& outData)
+{
+    ASSERT(outData.isFinite().all());
+    outData_ = outData;
+}
+
+void StubTrainer::setWeights(const ArrayXf& weights)
+{
+    ASSERT(weights.isFinite().all());
+    ASSERT((weights > 0).all());
+    weights_ = weights;
+}
+
+void StubTrainer::setOptions(const AbstractOptions& opt)
+{
+    const StubOptions& opt1 = dynamic_cast<const StubOptions&>(opt);
+    options_.reset(opt1.clone());
+}
+
 StubPredictor* StubTrainer::train() const
 {
-    if (options_->precision == "single")
-        return trainImpl_<float>();
-    else if (options_->precision == "double")
+    ASSERT(sampleCount_ > 0);
+    ASSERT(variableCount_ > 0);
+    ASSERT(outData_.size() == sampleCount_);
+    ASSERT(weights_.size() == sampleCount_);
+
+    if (options_->highPrecision())
         return trainImpl_<double>();
     else
-        throw std::runtime_error("precision options must have the value \"single\" or \"double\"");
+        return trainImpl_<float>();
 }
 
 template<typename F>
 StubPredictor* StubTrainer::trainImpl_() const
 {
+    cout << sizeof(F) << endl;
+    int n = 0;
     int64_t t0 = 0;
     int64_t t1 = 0;
     int64_t t2 = 0;
-    int64_t t3 = 0;
 
     int64_t t = clockCycleCount();
     t0 -= t;
 
-    // TO DO: check that sie of outData_ and weights_ is correct
+    int usedSampleCount = std::max(1, static_cast<int>(options_->usedSampleRatio() * sampleCount_ + 0.5));
+    int usedVariableCount = std::max(1, static_cast<int>(options_->usedVariableRatio() * variableCount_ + 0.5));
 
-    int usedSampleCount = std::max(1, static_cast<int>(options_->usedSampleRatio * sampleCount_ + 0.5));
-    int usedVariableCount = std::max(1, static_cast<int>(options_->usedVariableRatio * variableCount_ + 0.5));
-
-    // used samples
+    // used samples mask
 
     usedSampleMask_.resize(sampleCount_);
-    t = clockCycleCount();
-    t0 += t;
-    t1 -= t;
     randomMask(
         begin(usedSampleMask_), 
         end(usedSampleMask_), 
         usedSampleCount, 
         theRNE
     );
-    t = clockCycleCount();
-    t1 += t;
-    t0 -= t;
+ 
+    // used variables
 
-    F sumW = 0.0;
-    F sumWY = 0.0;
+    usedVariables_.resize(variableCount_);
+    std::iota(begin(usedVariables_), end(usedVariables_), 0);
+    orderedRandomSubset(
+        begin(usedVariables_), 
+        end(usedVariables_), 
+        begin(usedVariables_), 
+        begin(usedVariables_) + usedVariableCount, 
+        theRNE
+    );
+ 
+    usedVariables_.resize(usedVariableCount);
+
+    // sums
+
+    F sumW = F(0);
+    F sumWY = F(0);
     for (int i = 0; i < sampleCount_; ++i) {
         F m = usedSampleMask_[i];
         F w = weights_[i];
@@ -83,43 +115,22 @@ StubPredictor* StubTrainer::trainImpl_() const
         sumWY += m * w * y;
     }
 
-    sortedUsedSamples_.resize(usedSampleCount);
-
-    // used variables
-
-    usedVariables_.resize(variableCount_);
-    std::iota(begin(usedVariables_), end(usedVariables_), 0);
-    t = clockCycleCount();
-    t0 += t;
-    t1 -= t;
-    orderedRandomSubset(
-        begin(usedVariables_), 
-        end(usedVariables_), 
-        begin(usedVariables_), 
-        begin(usedVariables_) + usedVariableCount, 
-        theRNE
-    );
-    t = clockCycleCount();
-    t1 += t;
-    t0 -= t;
-
-    usedVariables_.resize(usedVariableCount);
-
     // find best split
 
-    F bestScore = -1.0f;
-    int bestJ = -1;
-    float bestX = std::numeric_limits<float>::quiet_NaN();
-    float bestLeftY = std::numeric_limits<float>::quiet_NaN();
-    float bestRightY = std::numeric_limits<float>::quiet_NaN();
+    F bestScore = sumWY * sumWY / sumW;
+    int bestJ = 0;
+    float bestX = -std::numeric_limits<float>::infinity();
+    F bestLeftY = std::numeric_limits<F>::quiet_NaN();
+    F bestRightY = sumWY / sumW;
+
+    sortedUsedSamples_.resize(usedSampleCount);
 
     for (int j : usedVariables_) {
 
         // prepare list of samples
-
         t = clockCycleCount();
         t0 += t;
-        t2 -= t;
+        t1 -= t;
 
         copyIf(
             begin(sortedSamples_[j]),
@@ -128,14 +139,13 @@ StubPredictor* StubTrainer::trainImpl_() const
             [&](int i) { return usedSampleMask_[i]; }
         );
 
-        t = clockCycleCount();
-        t2 += t;
-        t3 -= t;
-
         // find best split
-
-        F leftSumW = 0.0f;
-        F leftSumWY = 0.0f;
+        t = clockCycleCount();
+        t1 += t;
+        t2 -= t;
+        
+        F leftSumW = F(0);
+        F leftSumWY = F(0);
         F rightSumW = sumW;
         F rightSumWY = sumWY;
 
@@ -153,7 +163,9 @@ StubPredictor* StubTrainer::trainImpl_() const
             leftSumWY += w * y;
             rightSumWY -= w * y;
             F score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
+
             if (score <= bestScore) continue;
+            ++n;
 
             float leftX = inData_(i, j);
             float rightX = inData_(nextI, j);
@@ -162,12 +174,12 @@ StubPredictor* StubTrainer::trainImpl_() const
             bestScore = score;
             bestJ = j;
             bestX = (leftX + rightX) / 2;
-            bestLeftY = static_cast<float>(leftSumWY / leftSumW);
-            bestRightY = static_cast<float>(rightSumWY / rightSumW);
+            bestLeftY = leftSumWY / leftSumW;
+            bestRightY = rightSumWY / rightSumW;
         }
 
         t = clockCycleCount();
-        t3 += t;
+        t2 += t;
         t0 -= t;
 
         int i = nextI;
@@ -177,20 +189,19 @@ StubPredictor* StubTrainer::trainImpl_() const
         rightSumW -= w;
         leftSumWY += w * y;
         rightSumWY -= w * y;
-        JRASSERT(rightSumW == 0 && rightSumWY == 0);  // this test only works with integer out data and weights
+        ASSERT(rightSumW == 0 && rightSumWY == 0);  // this test only works with integer out data and weights
     }
 
     t = clockCycleCount();
     t0 += t;
 
-    if (bestJ == -1)
-        throw std::runtime_error("Failed to find a split.");
+    if (options_->profile()) {
+        cout << static_cast<float>(t0) << endl;
+        cout << static_cast<float>(t1) << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
+        cout << static_cast<float>(t2) << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
+        cout << 100.0f * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
+        cout << endl;
+    }
 
-    //cout << static_cast<float>(t0) << endl;
-    //cout << static_cast<float>(t1) << endl;
-    //cout << static_cast<float>(t2) << " (" << static_cast<float>(t2) / (sampleCount_ * usedVariableCount) << ")" << endl;
-    //cout << static_cast<float>(t3) << " (" << static_cast<float>(t3) / (usedSampleCount * usedVariableCount) << ")" <<endl;
-    //cout << endl;
-
-    return new StubPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY);
+    return new StubPredictor(variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY));
 };

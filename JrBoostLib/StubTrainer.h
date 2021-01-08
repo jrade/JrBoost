@@ -7,11 +7,12 @@ class StubOptions;
 
 class StubTrainer : public AbstractTrainer {
 public:
+    StubTrainer();
     virtual ~StubTrainer() = default;
 
     virtual void setInData(Eigen::Ref<ArrayXXf> inData);
-    virtual void setOutData(const ArrayXf& outData) { outData_ = outData; }
-    virtual void setWeights(const ArrayXf& weights) { weights_ = weights; }
+    virtual void setOutData(const ArrayXf& outData);
+    virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
 
     virtual StubPredictor* train() const;
@@ -30,6 +31,6 @@ private:
 
     // buffers used by train()
     mutable vector<char> usedSampleMask_;
-    mutable vector<int> usedVariables_;
     mutable vector<int> sortedUsedSamples_;
+    mutable vector<int> usedVariables_;
 };

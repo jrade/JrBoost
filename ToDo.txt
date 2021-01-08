@@ -1,0 +1,50 @@
+start with ADA boost
+get everything absolutely right 
+then do logit boost
+
+use C++11 initialization syntax?
+
+try mixed debugging again
+
+..............................................
+
+tree
+
+SIMD optimization
+
+multi-group trees
+
+parallellized hyperparameter evaluation
+
+low prio:
+	copying of other arguments?
+	more sanity checks of data?
+
+PyBind11 issues:
+	report abstract factory crash (JrBooster Crash)
+		is the problem return values that are derived objects passed with unique_ptr to base class
+		test with the Miniconda that somes bundles with Visual Studio
+	how translate custom C++ exceptions to standard Python exceptions
+	how to pass numpy array and store it as Map<ArrayXXf>? (works but is messy)
+		how to do the same with const array? (does not work
+		ask at StackOverflow??
+	
+Gerstmann issues:
+	add move constructors to enable code such as
+		xorshift rne(std::random_device());
+
+--------------------------------------------------------------------------------
+
+läs: https://romanpoya.medium.com/a-look-at-the-performance-of-expression-templates-in-c-eigen-vs-blaze-vs-fastor-vs-armadillo-vs-2474ed38d982
+
+Notes:
+	MSVS 2019:
+		Tools > Options > Python > Conda: ..../conda.exe
+		compiler flag:  /permissive-
+		Run-time Library = Multi-threaded DLL (/MD) (for all configurations!)
+		mixed debugging
+
+	numpy: rowmajor
+	eigen: colmajor
+
+	https://docs.microsoft.com/en-us/visualstudio/python/working-with-c-cpp-python-in-visual-studio?view=vs-2019

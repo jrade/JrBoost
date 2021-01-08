@@ -18,10 +18,10 @@ private:
 
 #ifdef NDEBUG
 
-#define JRASSERT(A) if (!(A)) throw AssertionError(#A, __FILE__, __LINE__)
+#define ASSERT(A) if (!(A)) throw AssertionError(#A, __FILE__, __LINE__)
 
 #else
 
-#define JRASSERT(A) assert(A)
+#define ASSERT(A) assert(A)
 
 #endif

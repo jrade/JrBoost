@@ -10,12 +10,12 @@ template<typename T, typename R>
 inline void orderedRandomSubset(T p0, T p1, T q0, T q1, R& r)
 {
 	// check that the arguments are valid
-	JRASSERT(p1 >= p0 && q1 >= q0 && q1 - q0 <= p1 - p0);
-	JRASSERT(q0 <= p0 || q0 >= p1);
+	ASSERT(p1 >= p0 && q1 >= q0 && q1 - q0 <= p1 - p0);
+	ASSERT(q0 <= p0 || q0 >= p1);
 
 	// check that the products will not overflow
 	static_assert(sizeof(R::result_type) == 4);
-	JRASSERT(p1 - p0 < 0x100000000);
+	ASSERT(p1 - p0 < 0x100000000);
 
 	// we look at each element in the input (p0) and decide whether it should be included in the output (q0)
 	// it is inluded with probability
@@ -37,12 +37,12 @@ template<typename T, typename R>
 inline void randomMask(T p0, T p1, int64_t n, R& r)
 {
 	// check that the arguments are valid
-	JRASSERT(p0 <= p1);
-	JRASSERT(n >= 0 && n <= p1 - p0);
+	ASSERT(p0 <= p1);
+	ASSERT(n >= 0 && n <= p1 - p0);
 
 	// make sure that the products will not overflow
 	static_assert(sizeof(R::result_type) == 4);
-	JRASSERT(p1 - p0 < 0x100000000);
+	ASSERT(p1 - p0 < 0x100000000);
 
 	// we look at each element in the input (p0) and decide whether it should be included in the output (q0)
 	// it is inluded with probability

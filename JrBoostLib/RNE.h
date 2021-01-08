@@ -1,9 +1,5 @@
 #pragma once
 
-#include "Gerstmann.h"
+#include "AGRandom.h"
 
-using RNE = splitmix;
-
-inline static std::random_device theRandomDevice;
-
-inline static RNE theRNE(theRandomDevice);
+inline splitmix theRNE((std::random_device()));
