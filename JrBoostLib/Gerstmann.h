@@ -1,4 +1,5 @@
-//copied from https://arvid.io/2018/07/02/better-cxx-prng/
+// Random number engines by Arvid Gertsmann
+// For more details, see https://arvid.io/2018/07/02/better-cxx-prng/
 
 /* Copyright (c) 2018 Arvid Gerstmann. */
 /* This code is licensed under MIT license. */

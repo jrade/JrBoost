@@ -10,11 +10,12 @@ void StubTrainer::setOptions(const AbstractOptions& opt)
     options_.reset(dynamic_cast<const StubOptions&>(opt).clone());
 }
 
-void StubTrainer::setInData(const ArrayXXf& inData)
+void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
 { 
-    // TO DO: check size > 0 and fits in int
-        
-    inData_ = inData;    // keep reference instead
+    // There should be a better way...
+    inData_.~Map();
+    new (&inData_) Eigen::Map<ArrayXXf>(&inData(0, 0), inData.rows(), inData.cols());
+   
     sampleCount_ = static_cast<int>(inData.rows());
     variableCount_ = static_cast<int>(inData.cols());
 
@@ -22,7 +23,7 @@ void StubTrainer::setInData(const ArrayXXf& inData)
     vector<pair<float, int>> tmp(sampleCount_);
     for (int j = 0; j < variableCount_; ++j) {
         for (int i = 0; i < sampleCount_; ++i)
-            tmp[i] = { inData_(i,j), i };
+            tmp[i] = { inData(i,j), i };
         std::sort(begin(tmp), end(tmp));
         sortedSamples_[j].resize(sampleCount_);
         for (int i = 0; i < sampleCount_; ++i)
@@ -162,7 +163,7 @@ StubPredictor* StubTrainer::trainImpl_() const
             bestJ = j;
             bestX = (leftX + rightX) / 2;
             bestLeftY = static_cast<float>(leftSumWY / leftSumW);
-            bestRightY =static_cast<float>(rightSumWY / rightSumW);
+            bestRightY = static_cast<float>(rightSumWY / rightSumW);
         }
 
         t = clockCycleCount();
@@ -185,11 +186,11 @@ StubPredictor* StubTrainer::trainImpl_() const
     if (bestJ == -1)
         throw std::runtime_error("Failed to find a split.");
 
-    cout << static_cast<float>(t0) << endl;
-    cout << static_cast<float>(t1) << endl;
-    cout << static_cast<float>(t2) << " (" << static_cast<float>(t2) / (sampleCount_ * usedVariableCount) << ")" << endl;
-    cout << static_cast<float>(t3) << " (" << static_cast<float>(t3) / (usedSampleCount * usedVariableCount) << ")" <<endl;
-    cout << endl;
+    //cout << static_cast<float>(t0) << endl;
+    //cout << static_cast<float>(t1) << endl;
+    //cout << static_cast<float>(t2) << " (" << static_cast<float>(t2) / (sampleCount_ * usedVariableCount) << ")" << endl;
+    //cout << static_cast<float>(t3) << " (" << static_cast<float>(t3) / (usedSampleCount * usedVariableCount) << ")" <<endl;
+    //cout << endl;
 
     return new StubPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY);
 };

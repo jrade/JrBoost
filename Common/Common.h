@@ -21,7 +21,6 @@ using std::vector;
 #include <Eigen/Core>
 
 using Eigen::ArrayXf;
-using Eigen::ArrayXd;
 using Eigen::ArrayXXf;
 
 #include "Assert.h"

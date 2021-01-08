@@ -22,6 +22,7 @@ sampleCount = len(dataFrame.index)
 label = 'Iris-versicolor'
 
 inData = inDataFrame.to_numpy()
+inData = np.asfortranarray(inData, dtype = np.float32)
 outData = outDataFrame[label].to_numpy();
 weights = np.full((sampleCount,), 1.0)
 

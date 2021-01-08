@@ -19,7 +19,7 @@ PYBIND11_MODULE(jrboost, mod)
         .def("predict", &AbstractPredictor::predict);
     
     py::class_<AbstractTrainer>(mod, "AbstractTrainer")
-        .def("setInData", &AbstractTrainer::setInData)
+        .def("setInData", &AbstractTrainer::setInData, py::arg().noconvert())
         .def("setOutData", &AbstractTrainer::setOutData)
         .def("setWeights", &AbstractTrainer::setWeights)
         .def("setOptions", &AbstractTrainer::setOptions)

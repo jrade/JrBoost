@@ -7,10 +7,9 @@ class StubOptions;
 
 class StubTrainer : public AbstractTrainer {
 public:
-    StubTrainer() = default;
     virtual ~StubTrainer() = default;
 
-    virtual void setInData(const ArrayXXf& inData);
+    virtual void setInData(Eigen::Ref<ArrayXXf> inData);
     virtual void setOutData(const ArrayXf& outData) { outData_ = outData; }
     virtual void setWeights(const ArrayXf& weights) { weights_ = weights; }
     virtual void setOptions(const AbstractOptions& opt);
@@ -24,7 +23,7 @@ private:
     ArrayXf weights_;
     unique_ptr<StubOptions> options_;
 
-    ArrayXXf inData_;
+    Eigen::Map<ArrayXXf> inData_ = { nullptr, 0, 0 };
     int sampleCount_;
     int variableCount_;
     vector<vector<int>> sortedSamples_;
