@@ -24,8 +24,8 @@ public:
 private:
     StubOptions(const StubOptions&) = default;
 
-    float usedSampleRatio_ = 1.0f;
-    float usedVariableRatio_ = 1.0f;
-    bool highPrecision_ = false;
-    bool profile_ = false;
+    float usedSampleRatio_{ 1.0f };
+    float usedVariableRatio_{ 1.0f };
+    bool highPrecision_{ false };
+    bool profile_{ false };
 };

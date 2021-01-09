@@ -5,16 +5,16 @@
 class StubPredictor : public AbstractPredictor {
 public:
     virtual ~StubPredictor() = default;
-    virtual int variableCount() const { return variableCount_; }
+    virtual size_t variableCount() const { return variableCount_; }
     virtual ArrayXf predict(const Eigen::ArrayXXf& inData) const;
 
 private:
-    StubPredictor(int variableCount, int j, float x, float leftY, float rightY);
+    StubPredictor(size_t variableCount, size_t j, float x, float leftY, float rightY);
  
     friend class StubTrainer;
 
-    int variableCount_;
-    int j_;
+    size_t variableCount_;
+    size_t j_;
     float x_;
     float leftY_;
     float rightY_;

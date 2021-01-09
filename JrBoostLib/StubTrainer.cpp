@@ -6,7 +6,7 @@
 #include "RNE.h"
 
 StubTrainer::StubTrainer() :
-    options_(std::make_unique<StubOptions>())
+    options_{ std::make_unique<StubOptions>() }
 {}
 
 void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
@@ -17,29 +17,31 @@ void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
     inData_.~Map();
     new (&inData_) Eigen::Map<ArrayXXf>(&inData(0, 0), inData.rows(), inData.cols());
    
-    sampleCount_ = static_cast<int>(inData.rows());
-    variableCount_ = static_cast<int>(inData.cols());
+    sampleCount_ = inData.rows();
+    variableCount_ = inData.cols();
 
     sortedSamples_.resize(variableCount_);
-    vector<pair<float, int>> tmp(sampleCount_);
-    for (int j = 0; j < variableCount_; ++j) {
-        for (int i = 0; i < sampleCount_; ++i)
+    vector<pair<float, size_t>> tmp{ sampleCount_ };
+    for (size_t j = 0; j < variableCount_; ++j) {
+        for (size_t i = 0; i < sampleCount_; ++i)
             tmp[i] = { inData(i,j), i };
         std::sort(begin(tmp), end(tmp));
         sortedSamples_[j].resize(sampleCount_);
-        for (int i = 0; i < sampleCount_; ++i)
+        for (size_t i = 0; i < sampleCount_; ++i)
             sortedSamples_[j][i] = tmp[i].second;
     }
 }
 
 void StubTrainer::setOutData(const ArrayXf& outData)
 {
+    ASSERT(outData.size() < 0x80000000);
     ASSERT(outData.isFinite().all());
     outData_ = outData;
 }
 
 void StubTrainer::setWeights(const ArrayXf& weights)
 {
+    ASSERT(weights.size() < 0x80000000);
     ASSERT(weights.isFinite().all());
     ASSERT((weights > 0).all());
     weights_ = weights;
@@ -55,8 +57,8 @@ StubPredictor* StubTrainer::train() const
 {
     ASSERT(sampleCount_ > 0);
     ASSERT(variableCount_ > 0);
-    ASSERT(outData_.size() == sampleCount_);
-    ASSERT(weights_.size() == sampleCount_);
+    ASSERT(static_cast<size_t>(outData_.size()) == sampleCount_);
+    ASSERT(static_cast<size_t>(weights_.size()) == sampleCount_);
 
     if (options_->highPrecision())
         return trainImpl_<double>();
@@ -67,17 +69,22 @@ StubPredictor* StubTrainer::train() const
 template<typename F>
 StubPredictor* StubTrainer::trainImpl_() const
 {
-    cout << sizeof(F) << endl;
-    int n = 0;
-    int64_t t0 = 0;
-    int64_t t1 = 0;
-    int64_t t2 = 0;
+    size_t n = 0;
+    size_t t0 = 0;
+    size_t t1 = 0;
+    size_t t2 = 0;
 
-    int64_t t = clockCycleCount();
+    size_t t = clockCycleCount();
     t0 -= t;
 
-    int usedSampleCount = std::max(1, static_cast<int>(options_->usedSampleRatio() * sampleCount_ + 0.5));
-    int usedVariableCount = std::max(1, static_cast<int>(options_->usedVariableRatio() * variableCount_ + 0.5));
+    size_t usedSampleCount = std::max(
+        static_cast<size_t>(1),
+        static_cast<size_t>(static_cast<double>(options_->usedSampleRatio()) * sampleCount_ + 0.5)
+    );
+    size_t usedVariableCount = std::max(
+        static_cast<size_t>(1), 
+        static_cast<size_t>(static_cast<double>(options_->usedVariableRatio()) * variableCount_ + 0.5)
+    );
 
     // used samples mask
 
@@ -105,9 +112,9 @@ StubPredictor* StubTrainer::trainImpl_() const
 
     // sums
 
-    F sumW = F(0);
-    F sumWY = F(0);
-    for (int i = 0; i < sampleCount_; ++i) {
+    F sumW = F{ 0 };
+    F sumWY = F{ 0 };
+    for (size_t i = 0; i < sampleCount_; ++i) {
         F m = usedSampleMask_[i];
         F w = weights_[i];
         F y = outData_[i];
@@ -118,14 +125,14 @@ StubPredictor* StubTrainer::trainImpl_() const
     // find best split
 
     F bestScore = sumWY * sumWY / sumW;
-    int bestJ = 0;
+    size_t bestJ = 0;
     float bestX = -std::numeric_limits<float>::infinity();
     F bestLeftY = std::numeric_limits<F>::quiet_NaN();
     F bestRightY = sumWY / sumW;
 
     sortedUsedSamples_.resize(usedSampleCount);
 
-    for (int j : usedVariables_) {
+    for (size_t j : usedVariables_) {
 
         // prepare list of samples
         t = clockCycleCount();
@@ -136,7 +143,7 @@ StubPredictor* StubTrainer::trainImpl_() const
             begin(sortedSamples_[j]),
             begin(sortedUsedSamples_),
             end(sortedUsedSamples_),
-            [&](int i) { return usedSampleMask_[i]; }
+            [&](size_t i) { return usedSampleMask_[i]; }
         );
 
         // find best split
@@ -144,18 +151,19 @@ StubPredictor* StubTrainer::trainImpl_() const
         t1 += t;
         t2 -= t;
         
-        F leftSumW = F(0);
-        F leftSumWY = F(0);
+        F leftSumW = F{ 0 };
+        F leftSumWY = F{ 0 };
         F rightSumW = sumW;
         F rightSumWY = sumWY;
 
         auto p = begin(sortedUsedSamples_);
         auto pEnd = end(sortedUsedSamples_);
-        int nextI = *p;
+        size_t nextI = *p;
         ++p;
-        for (; p != pEnd; ++p) {
-            int i = nextI;
+        while (p != pEnd) {
+            size_t i = nextI;
             nextI = *p;
+            ++p;
             F w = weights_[i];
             F y = outData_[i];
             leftSumW += w;
@@ -182,7 +190,7 @@ StubPredictor* StubTrainer::trainImpl_() const
         t2 += t;
         t0 -= t;
 
-        int i = nextI;
+        size_t i = nextI;
         F w = weights_[i];
         F y = outData_[i];
         leftSumW += w;
@@ -196,12 +204,12 @@ StubPredictor* StubTrainer::trainImpl_() const
     t0 += t;
 
     if (options_->profile()) {
-        cout << static_cast<float>(t0) << endl;
-        cout << static_cast<float>(t1) << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
-        cout << static_cast<float>(t2) << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
+        cout << t0 << endl;
+        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
+        cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
         cout << 100.0f * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
         cout << endl;
     }
 
-    return new StubPredictor(variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY));
+    return new StubPredictor{ variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
 };

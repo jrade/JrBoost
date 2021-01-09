@@ -6,7 +6,7 @@ protected:
 
 public:
     virtual ~AbstractPredictor() = default;
-    virtual int variableCount() const = 0;
+    virtual size_t variableCount() const = 0;
     virtual ArrayXf predict(const Eigen::ArrayXXf& inData) const = 0;
     
 // deleted:

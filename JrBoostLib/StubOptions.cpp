@@ -15,7 +15,7 @@ void StubOptions::setUsedVariableRatio(float r)
 
 StubOptions* StubOptions::clone() const
 {
-    return new StubOptions(*this);
+    return new StubOptions{ *this };
 }
 
 StubTrainer* StubOptions::createTrainer() const

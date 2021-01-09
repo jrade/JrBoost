@@ -1,3 +1,8 @@
+
+add check if algorithms are safe and add double path when they are not
+
+-------------------------------------------
+
 start with ADA boost
 get everything absolutely right 
 then do logit boost
@@ -31,7 +36,7 @@ PyBind11 issues:
 	
 Gerstmann issues:
 	add move constructors to enable code such as
-		xorshift rne(std::random_device());
+		xorshift rne((std::random_device()));
 
 --------------------------------------------------------------------------------
 

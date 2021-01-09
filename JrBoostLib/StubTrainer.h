@@ -24,13 +24,13 @@ private:
     ArrayXf weights_;
     unique_ptr<StubOptions> options_;
 
-    Eigen::Map<ArrayXXf> inData_ = { nullptr, 0, 0 };
-    int sampleCount_;
-    int variableCount_;
-    vector<vector<int>> sortedSamples_;
+    Eigen::Map<ArrayXXf> inData_ { nullptr, 0, 0 };
+    size_t sampleCount_;
+    size_t variableCount_;
+    vector<vector<size_t>> sortedSamples_;
 
     // buffers used by train()
     mutable vector<char> usedSampleMask_;
-    mutable vector<int> sortedUsedSamples_;
-    mutable vector<int> usedVariables_;
+    mutable vector<size_t> sortedUsedSamples_;
+    mutable vector<size_t> usedVariables_;
 };

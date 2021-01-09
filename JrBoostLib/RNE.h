@@ -2,4 +2,4 @@
 
 #include "AGRandom.h"
 
-inline splitmix theRNE((std::random_device()));
+inline splitmix theRNE{ std::random_device{} };
