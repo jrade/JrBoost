@@ -11,15 +11,15 @@ public:
     virtual StubOptions* clone() const;
     virtual StubTrainer* createTrainer() const;
 
-    float usedSampleRatio() const { return usedSampleRatio_; }
-    float usedVariableRatio() const { return usedVariableRatio_; }
-    bool highPrecision() const { return highPrecision_; }
-    bool profile() const { return profile_; }
+    float usedSampleRatio() const;
+    float usedVariableRatio() const;
+    bool highPrecision() const;
+    bool profile() const;
 
     void setUsedSampleRatio(float r);
     void setUsedVariableRatio(float r);
-    void setHighPrecision(bool p) { highPrecision_ = p; }
-    void setProfile(bool p) { profile_ = p; }
+    void setHighPrecision(bool p);
+    void setProfile(bool p);
 
 private:
     StubOptions(const StubOptions&) = default;

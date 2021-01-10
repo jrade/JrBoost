@@ -1,22 +1,16 @@
 #include "pch.h"
 #include "StubTrainer.h"
 #include "StubOptions.h"
-#include "Algorithms.h"
-#include "ClockCycleCount.h"
-#include "RNE.h"
 
 StubTrainer::StubTrainer() :
     options_{ std::make_unique<StubOptions>() }
-{}
+{
+}
 
-void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
+void StubTrainer::setInData(RefXXf inData)
 { 
     ASSERT(inData.isFinite().all());
-
-    // There should be a better way...
-    inData_.~Map();
-    new (&inData_) Eigen::Map<ArrayXXf>(&inData(0, 0), inData.rows(), inData.cols());
-   
+    assign(inData_, inData);
     sampleCount_ = inData.rows();
     variableCount_ = inData.cols();
 
@@ -34,14 +28,12 @@ void StubTrainer::setInData(Eigen::Ref<ArrayXXf> inData)
 
 void StubTrainer::setOutData(const ArrayXf& outData)
 {
-    ASSERT(outData.size() < 0x80000000);
     ASSERT(outData.isFinite().all());
     outData_ = outData;
 }
 
 void StubTrainer::setWeights(const ArrayXf& weights)
 {
-    ASSERT(weights.size() < 0x80000000);
     ASSERT(weights.isFinite().all());
     ASSERT((weights > 0).all());
     weights_ = weights;
@@ -81,6 +73,7 @@ StubPredictor* StubTrainer::trainImpl_() const
         static_cast<size_t>(1),
         static_cast<size_t>(static_cast<double>(options_->usedSampleRatio()) * sampleCount_ + 0.5)
     );
+
     size_t usedVariableCount = std::max(
         static_cast<size_t>(1), 
         static_cast<size_t>(static_cast<double>(options_->usedVariableRatio()) * variableCount_ + 0.5)
@@ -89,18 +82,18 @@ StubPredictor* StubTrainer::trainImpl_() const
     // used samples mask
 
     usedSampleMask_.resize(sampleCount_);
-    randomMask(
+    fastRandomMask(
         begin(usedSampleMask_), 
         end(usedSampleMask_), 
         usedSampleCount, 
         theRNE
     );
- 
+
     // used variables
 
     usedVariables_.resize(variableCount_);
     std::iota(begin(usedVariables_), end(usedVariables_), 0);
-    orderedRandomSubset(
+    fastOrderedRandomSubset(
         begin(usedVariables_), 
         end(usedVariables_), 
         begin(usedVariables_), 
@@ -139,12 +132,14 @@ StubPredictor* StubTrainer::trainImpl_() const
         t0 += t;
         t1 -= t;
 
-        copyIf(
+        fastCopyIf(
             begin(sortedSamples_[j]),
             begin(sortedUsedSamples_),
             end(sortedUsedSamples_),
             [&](size_t i) { return usedSampleMask_[i]; }
         );
+
+        float lastWeight = weights_[sortedUsedSamples_[usedSampleCount - 1]];
 
         // find best split
         t = clockCycleCount();
@@ -179,6 +174,9 @@ StubPredictor* StubTrainer::trainImpl_() const
             float rightX = inData_(nextI, j);
             if (leftX == rightX) continue;      // stricter check?
 
+            if (rightSumW < lastWeight / 2) continue;  
+            // reject splits when rounding off errors accumulate towards the end of the loop
+
             bestScore = score;
             bestJ = j;
             bestX = (leftX + rightX) / 2;
@@ -189,15 +187,6 @@ StubPredictor* StubTrainer::trainImpl_() const
         t = clockCycleCount();
         t2 += t;
         t0 -= t;
-
-        size_t i = nextI;
-        F w = weights_[i];
-        F y = outData_[i];
-        leftSumW += w;
-        rightSumW -= w;
-        leftSumWY += w * y;
-        rightSumWY -= w * y;
-        ASSERT(rightSumW == 0 && rightSumWY == 0);  // this test only works with integer out data and weights
     }
 
     t = clockCycleCount();

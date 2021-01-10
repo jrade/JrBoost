@@ -9,7 +9,7 @@ protected:
 
 public:
     virtual ~AbstractTrainer() = default;
-    virtual void setInData(Eigen::Ref<ArrayXXf> inData) = 0;
+    virtual void setInData(RefXXf inData) = 0;
     virtual void setOutData(const ArrayXf& outData) = 0;
     virtual void setWeights(const ArrayXf& weights) = 0;
     virtual void setOptions(const AbstractOptions& opt) = 0;

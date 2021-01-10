@@ -1,19 +1,34 @@
+Stub -> Stump
 
-add check if algorithms are safe and add double path when they are not
+Python wrapper class
+	constructor that takes indata, outdata and cParam
+	classify function
+	that's it??
+
+run with real data
+
+weight overflow
+	log min and max of outData * F
+	regularize - modify the target function?
+
+------------------------------------------------
+
+logit boost
+
+optimizations:
+	have the boost trainer not create a new base trainer each time
+
+low prio:
+	test again to pass inData as const (as const Ref<const ArrayXXf>&)
+	inData, outData, weights, options as Python properties_
+	look in the old stub (or rather tree) builder code and see how I avoid rounding off errors towards the end
+	make Gerstmann.h standard compliant
 
 -------------------------------------------
 
-start with ADA boost
-get everything absolutely right 
-then do logit boost
-
-use C++11 initialization syntax?
-
 try mixed debugging again
 
-..............................................
-
-tree
+trees
 
 SIMD optimization
 
@@ -22,21 +37,20 @@ multi-group trees
 parallellized hyperparameter evaluation
 
 low prio:
-	copying of other arguments?
-	more sanity checks of data?
+	avoid copying of ArrayXf
 
 PyBind11 issues:
 	report abstract factory crash (JrBooster Crash)
 		is the problem return values that are derived objects passed with unique_ptr to base class
 		test with the Miniconda that somes bundles with Visual Studio
 	how translate custom C++ exceptions to standard Python exceptions
-	how to pass numpy array and store it as Map<ArrayXXf>? (works but is messy)
-		how to do the same with const array? (does not work
-		ask at StackOverflow??
 	
 Gerstmann issues:
 	add move constructors to enable code such as
 		xorshift rne((std::random_device()));
+	seed function would be useful
+	free functions (operator== and operator!=) should be inline
+		or linker will complain if you include the header in multiple translation units
 
 --------------------------------------------------------------------------------
 

@@ -1,6 +1,25 @@
 #include "pch.h"
 #include "StubOptions.h"
 
+float StubOptions::usedSampleRatio() const
+{ 
+    return usedSampleRatio_;
+}
+
+float StubOptions::usedVariableRatio() const 
+{
+    return usedVariableRatio_;
+}
+
+bool StubOptions::highPrecision() const
+{
+    return highPrecision_;
+}
+
+bool StubOptions::profile() const {
+    return profile_; 
+}
+
 void StubOptions::setUsedSampleRatio(float r)
 {
     ASSERT(r > 0.0f && r <= 1.0f);
@@ -11,6 +30,16 @@ void StubOptions::setUsedVariableRatio(float r)
 {
     ASSERT(r > 0.0f && r <= 1.0f);
     usedVariableRatio_ = r;
+}
+
+void StubOptions::setHighPrecision(bool p)
+{
+    highPrecision_ = p;
+}
+
+void StubOptions::setProfile(bool p)
+{ 
+    profile_ = p;
 }
 
 StubOptions* StubOptions::clone() const

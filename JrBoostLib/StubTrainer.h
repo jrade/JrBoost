@@ -10,7 +10,7 @@ public:
     StubTrainer();
     virtual ~StubTrainer() = default;
 
-    virtual void setInData(Eigen::Ref<ArrayXXf> inData);
+    virtual void setInData(RefXXf inData);
     virtual void setOutData(const ArrayXf& outData);
     virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
@@ -20,14 +20,14 @@ public:
 private:
     template<typename F> StubPredictor*  trainImpl_() const;
 
+    RefXXf inData_{ dummyArrayXXf };
+    size_t sampleCount_{ 0 };
+    size_t variableCount_{ 0 };
+    vector<vector<size_t>> sortedSamples_;
+
     ArrayXf outData_;
     ArrayXf weights_;
     unique_ptr<StubOptions> options_;
-
-    Eigen::Map<ArrayXXf> inData_ { nullptr, 0, 0 };
-    size_t sampleCount_;
-    size_t variableCount_;
-    vector<vector<size_t>> sortedSamples_;
 
     // buffers used by train()
     mutable vector<char> usedSampleMask_;

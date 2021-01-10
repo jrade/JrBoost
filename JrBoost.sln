@@ -9,10 +9,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JrBoostLib", "JrBoostLib\Jr
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "JrBoostTest", "JrBoostTest\JrBoostTest.pyproj", "{A9878DF3-E994-4B8F-87DE-D958D608316E}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{61701D2D-9A20-4351-9308-DB9AC5254337}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3566755E-CADA-4F8B-BFD5-2F163E88A934}"
 	ProjectSection(SolutionItems) = preProject
+		Common\AGRandom.h = Common\AGRandom.h
 		Common\Assert.h = Common\Assert.h
+		Common\ClockCycleCount.h = Common\ClockCycleCount.h
 		Common\Common.h = Common\Common.h
+		Common\FastAlgorithms.h = Common\FastAlgorithms.h
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E7537CA6-817B-42AE-95BE-7345836D8986}"
+	ProjectSection(SolutionItems) = preProject
+		ToDo.txt = ToDo.txt
 	EndProjectSection
 EndProject
 Global

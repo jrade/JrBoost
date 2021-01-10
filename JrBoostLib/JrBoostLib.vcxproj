@@ -171,16 +171,18 @@
     <ClInclude Include="AbstractPredictor.h" />
     <ClInclude Include="AbstractOptions.h" />
     <ClInclude Include="AbstractTrainer.h" />
-    <ClInclude Include="ClockCycleCount.h" />
-    <ClInclude Include="Algorithms.h" />
+    <ClInclude Include="AdaBoostOptions.h" />
+    <ClInclude Include="AdaBoostTrainer.h" />
+    <ClInclude Include="BoostPredictor.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="AGRandom.h" />
-    <ClInclude Include="RNE.h" />
     <ClInclude Include="StubPredictor.h" />
     <ClInclude Include="StubOptions.h" />
     <ClInclude Include="StubTrainer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AdaBoostOptions.cpp" />
+    <ClCompile Include="AdaBoostTrainer.cpp" />
+    <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

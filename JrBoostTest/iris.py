@@ -8,41 +8,60 @@ import jrboost
 
 dataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Iris/Iris.csv'
 dataFrame = pd.read_csv(dataPath, sep = ',', index_col = 0)
-outDataFrame = util.oneHotEncode(dataFrame['Species'])
+outDataSeries = dataFrame['Species']
+outDataFrame = util.oneHotEncode(outDataSeries)
 inDataFrame = dataFrame.drop(['Species'], axis = 1)
+
+samples = dataFrame.index
+sampleCount = len(samples)
+labels = outDataFrame.columns
 
 print(inDataFrame.head(5))
 print()
 print(outDataFrame.head(5))
 print()
 
-sampleCount = len(dataFrame.index)
-
-#label = 'Iris-setosa'
-label = 'Iris-versicolor'
-
 inData = inDataFrame.to_numpy()
 inData = np.asfortranarray(inData, dtype = np.float32)
-outData = outDataFrame[label].to_numpy();
 weights = np.full((sampleCount,), 1.0)
 
-opt = jrboost.StubOptions()
-opt.usedSampleRatio = 1.0
-opt.usedVariableRatio = 1.0
-opt.highPrecision = False
-opt.profile = True
+#---------------------------------------------------------------
+
+baseOpt = jrboost.StubOptions()
+baseOpt.usedSampleRatio = 1
+baseOpt.usedVariableRatio = 0.2
+baseOpt.highPrecision = True
+baseOpt.profile = False
+
+opt = jrboost.AdaBoostOptions()
+opt.iterationCount = 100
+opt.eta = 0.3
+opt.highPrecision = True
+opt.baseOptions = baseOpt
 
 trainer = opt.createTrainer()
 trainer.setInData(inData)
-trainer.setOutData(outData)
 trainer.setWeights(weights)
 
-predictor = trainer.train()
-predOutData = predictor.predict(inData)
+predFrame = pd.DataFrame(index = samples, columns = labels)
+
+for label in labels:
+
+    outData = outDataFrame[label].to_numpy();
+    trainer.setOutData(outData)
+    predictor = trainer.train()
+    predFrame[label] = predictor.predict(inData)
+
+
+predSeries = predFrame.idxmax(axis = 1)
+
+confusionFrame = pd.DataFrame(index = labels, columns = labels, data = 0)
+for sample in samples:
+    confusionFrame.loc[outDataSeries[sample], predSeries[sample]] += 1
 
 print()
-print(list(zip(outData, predOutData)))
+print(confusionFrame)
 print()
-print('Done')
+print("Done!")
 
 
