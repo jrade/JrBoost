@@ -6,11 +6,14 @@ import pandas as pd
 import util
 import jrboost
 
-dataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Iris/Iris.csv'
+dataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/train.csv'
 dataFrame = pd.read_csv(dataPath, sep = ',', index_col = 0)
-outDataSeries = dataFrame['Species']
+
+#dataFrame = dataFrame.sample(frac = 0.2)
+
+outDataSeries = dataFrame['target']
 outDataFrame = util.oneHotEncode(outDataSeries)
-inDataFrame = dataFrame.drop(['Species'], axis = 1)
+inDataFrame = dataFrame.drop(['target'], axis = 1)
 
 samples = dataFrame.index
 sampleCount = len(samples)
@@ -25,8 +28,6 @@ inData = inDataFrame.to_numpy()
 inData = np.asfortranarray(inData, dtype = np.float32)
 weights = np.full((sampleCount,), 1.0)
 
-#---------------------------------------------------------------
-
 baseOpt = jrboost.StumpOptions()
 baseOpt.usedSampleRatio = 1
 baseOpt.usedVariableRatio = 0.2
@@ -34,8 +35,8 @@ baseOpt.highPrecision = True
 baseOpt.profile = False
 
 opt = jrboost.AdaBoostOptions()
-opt.iterationCount = 100
-opt.eta = 0.3
+opt.iterationCount = 1000
+opt.eta = 1.0
 opt.highPrecision = True
 opt.baseOptions = baseOpt
 
@@ -47,21 +48,21 @@ predFrame = pd.DataFrame(index = samples, columns = labels)
 
 for label in labels:
 
+    print(label)
+
     outData = outDataFrame[label].to_numpy();
     trainer.setOutData(outData)
     predictor = trainer.train()
     predFrame[label] = predictor.predict(inData)
 
-
-predSeries = predFrame.idxmax(axis = 1)
-
-confusionFrame = pd.DataFrame(index = labels, columns = labels, data = 0)
-for sample in samples:
-    confusionFrame.loc[outDataSeries[sample], predSeries[sample]] += 1
+predFrame = 1.0 / (1.0 + np.exp(-predFrame))
+#predFrame += 0.001
+predFrame = predFrame.divide(predFrame.sum(axis = 1), axis = 0)
+predFrame = predFrame.clip(1.0e-15, 1.0)
+score = -(np.log(predFrame) * outDataFrame).sum().sum() / sampleCount
 
 print()
-print(confusionFrame)
+print(score)   # 0.5121  (1523 / 3507)
+
 print()
 print("Done!")
-
-

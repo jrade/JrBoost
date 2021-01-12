@@ -12,7 +12,7 @@ trainOutData = np.random.rand(sampleCount)
 trainWeights = np.random.rand(sampleCount)
 testInData = np.random.rand(sampleCount, variableCount);
 
-opt = jrboost.StubOptions()
+opt = jrboost.StumpOptions()
 
 trainer = opt.createTrainer()
 trainer.setInData(trainInData)

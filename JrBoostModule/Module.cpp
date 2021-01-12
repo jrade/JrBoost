@@ -1,8 +1,8 @@
 #include "pch.h"
 
-#include "../JrBoostLib/StubPredictor.h"
-#include "../JrBoostLib/StubTrainer.h"
-#include "../JrBoostLib/StubOptions.h"
+#include "../JrBoostLib/StumpPredictor.h"
+#include "../JrBoostLib/StumpTrainer.h"
+#include "../JrBoostLib/StumpOptions.h"
 
 #include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/AdaBoostTrainer.h"
@@ -34,19 +34,19 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<AbstractOptions>{ mod, "AbstractOptions" }
         .def("createTrainer", &AbstractOptions::createTrainer);
  
-    // Stub classes
+    // Stump classes
     
-    py::class_<StubPredictor, AbstractPredictor>{ mod, "StubPredictor" };
+    py::class_<StumpPredictor, AbstractPredictor>{ mod, "StumpPredictor" };
 
-    py::class_<StubTrainer, AbstractTrainer>{ mod, "StubTrainer" }
+    py::class_<StumpTrainer, AbstractTrainer>{ mod, "StumpTrainer" }
         .def(py::init<>());
     
-    py::class_<StubOptions, AbstractOptions>{ mod, "StubOptions" }
+    py::class_<StumpOptions, AbstractOptions>{ mod, "StumpOptions" }
         .def(py::init<>())
-        .def_property("usedSampleRatio", &StubOptions::usedSampleRatio, &StubOptions::setUsedSampleRatio)
-        .def_property("usedVariableRatio", &StubOptions::usedVariableRatio, &StubOptions::setUsedVariableRatio)
-        .def_property("highPrecision", &StubOptions::highPrecision, &StubOptions::setHighPrecision)
-        .def_property("profile", &StubOptions::profile, &StubOptions::setProfile);
+        .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
+        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
+        .def_property("highPrecision", &StumpOptions::highPrecision, &StumpOptions::setHighPrecision)
+        .def_property("profile", &StumpOptions::profile, &StumpOptions::setProfile);
 
     // Boost classes
 

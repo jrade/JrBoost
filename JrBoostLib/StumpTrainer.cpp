@@ -1,13 +1,13 @@
 #include "pch.h"
-#include "StubTrainer.h"
-#include "StubOptions.h"
+#include "StumpTrainer.h"
+#include "StumpOptions.h"
 
-StubTrainer::StubTrainer() :
-    options_{ std::make_unique<StubOptions>() }
+StumpTrainer::StumpTrainer() :
+    options_{ std::make_unique<StumpOptions>() }
 {
 }
 
-void StubTrainer::setInData(RefXXf inData)
+void StumpTrainer::setInData(RefXXf inData)
 { 
     ASSERT(inData.isFinite().all());
     assign(inData_, inData);
@@ -26,26 +26,26 @@ void StubTrainer::setInData(RefXXf inData)
     }
 }
 
-void StubTrainer::setOutData(const ArrayXf& outData)
+void StumpTrainer::setOutData(const ArrayXf& outData)
 {
     ASSERT(outData.isFinite().all());
     outData_ = outData;
 }
 
-void StubTrainer::setWeights(const ArrayXf& weights)
+void StumpTrainer::setWeights(const ArrayXf& weights)
 {
     ASSERT(weights.isFinite().all());
     ASSERT((weights > 0).all());
     weights_ = weights;
 }
 
-void StubTrainer::setOptions(const AbstractOptions& opt)
+void StumpTrainer::setOptions(const AbstractOptions& opt)
 {
-    const StubOptions& opt1 = dynamic_cast<const StubOptions&>(opt);
+    const StumpOptions& opt1 = dynamic_cast<const StumpOptions&>(opt);
     options_.reset(opt1.clone());
 }
 
-StubPredictor* StubTrainer::train() const
+StumpPredictor* StumpTrainer::train() const
 {
     ASSERT(sampleCount_ > 0);
     ASSERT(variableCount_ > 0);
@@ -59,7 +59,7 @@ StubPredictor* StubTrainer::train() const
 }
 
 template<typename F>
-StubPredictor* StubTrainer::trainImpl_() const
+StumpPredictor* StumpTrainer::trainImpl_() const
 {
     size_t n = 0;
     size_t t0 = 0;
@@ -200,5 +200,5 @@ StubPredictor* StubTrainer::trainImpl_() const
         cout << endl;
     }
 
-    return new StubPredictor{ variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
+    return new StumpPredictor{ variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
 };

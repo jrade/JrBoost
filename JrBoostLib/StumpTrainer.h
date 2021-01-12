@@ -1,24 +1,24 @@
 #pragma once
 
 #include "AbstractTrainer.h"
-#include "StubPredictor.h"
+#include "StumpPredictor.h"
 
-class StubOptions;
+class StumpOptions;
 
-class StubTrainer : public AbstractTrainer {
+class StumpTrainer : public AbstractTrainer {
 public:
-    StubTrainer();
-    virtual ~StubTrainer() = default;
+    StumpTrainer();
+    virtual ~StumpTrainer() = default;
 
     virtual void setInData(RefXXf inData);
     virtual void setOutData(const ArrayXf& outData);
     virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
 
-    virtual StubPredictor* train() const;
+    virtual StumpPredictor* train() const;
 
 private:
-    template<typename F> StubPredictor*  trainImpl_() const;
+    template<typename F> StumpPredictor*  trainImpl_() const;
 
     RefXXf inData_{ dummyArrayXXf };
     size_t sampleCount_{ 0 };
@@ -27,7 +27,7 @@ private:
 
     ArrayXf outData_;
     ArrayXf weights_;
-    unique_ptr<StubOptions> options_;
+    unique_ptr<StumpOptions> options_;
 
     // buffers used by train()
     mutable vector<char> usedSampleMask_;

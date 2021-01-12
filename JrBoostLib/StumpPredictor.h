@@ -2,16 +2,16 @@
 
 #include "AbstractPredictor.h"
 
-class StubPredictor : public AbstractPredictor {
+class StumpPredictor : public AbstractPredictor {
 public:
-    virtual ~StubPredictor() = default;
+    virtual ~StumpPredictor() = default;
     virtual size_t variableCount() const { return variableCount_; }
     virtual ArrayXf predict(RefXXf inData) const;
 
 private:
-    StubPredictor(size_t variableCount, size_t j, float x, float leftY, float rightY);
+    StumpPredictor(size_t variableCount, size_t j, float x, float leftY, float rightY);
  
-    friend class StubTrainer;
+    friend class StumpTrainer;
 
     size_t variableCount_;
     size_t j_;

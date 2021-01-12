@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "StubPredictor.h"
+#include "StumpPredictor.h"
 
-StubPredictor::StubPredictor(size_t variableCount, size_t j, float x, float leftY, float rightY) :
+StumpPredictor::StumpPredictor(size_t variableCount, size_t j, float x, float leftY, float rightY) :
     variableCount_{ variableCount },
     j_{ j },
     x_{ x },
@@ -9,7 +9,7 @@ StubPredictor::StubPredictor(size_t variableCount, size_t j, float x, float left
     rightY_{ rightY }
 {}
 
-ArrayXf StubPredictor::predict(RefXXf inData) const
+ArrayXf StumpPredictor::predict(RefXXf inData) const
 {
     size_t sampleCount = inData.rows();
     size_t variableCount = inData.cols();

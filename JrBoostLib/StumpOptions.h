@@ -1,15 +1,15 @@
 #pragma once
 
 #include "AbstractOptions.h"
-#include "StubTrainer.h"
+#include "StumpTrainer.h"
 
-class StubOptions : public AbstractOptions {
+class StumpOptions : public AbstractOptions {
 public:   
-    StubOptions() = default;
-    virtual ~StubOptions() = default;
+    StumpOptions() = default;
+    virtual ~StumpOptions() = default;
 
-    virtual StubOptions* clone() const;
-    virtual StubTrainer* createTrainer() const;
+    virtual StumpOptions* clone() const;
+    virtual StumpTrainer* createTrainer() const;
 
     float usedSampleRatio() const;
     float usedVariableRatio() const;
@@ -22,7 +22,7 @@ public:
     void setProfile(bool p);
 
 private:
-    StubOptions(const StubOptions&) = default;
+    StumpOptions(const StumpOptions&) = default;
 
     float usedSampleRatio_{ 1.0f };
     float usedVariableRatio_{ 1.0f };

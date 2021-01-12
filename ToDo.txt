@@ -1,5 +1,3 @@
-Stub -> Stump
-
 Python wrapper class
 	constructor that takes indata, outdata and cParam
 	classify function
@@ -9,7 +7,7 @@ run with real data
 
 weight overflow
 	log min and max of outData * F
-	regularize - modify the target function?
+	regularize - modify the target function? add lambda * outData * F or lambda * F^2
 
 ------------------------------------------------
 

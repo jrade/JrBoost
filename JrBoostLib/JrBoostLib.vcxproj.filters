@@ -4,12 +4,6 @@
     <ClInclude Include="pch.h">
       <Filter>Precompiled Header</Filter>
     </ClInclude>
-    <ClInclude Include="StubOptions.h">
-      <Filter>Stub</Filter>
-    </ClInclude>
-    <ClInclude Include="StubTrainer.h">
-      <Filter>Stub</Filter>
-    </ClInclude>
     <ClInclude Include="AbstractTrainer.h">
       <Filter>Abstract</Filter>
     </ClInclude>
@@ -18,9 +12,6 @@
     </ClInclude>
     <ClInclude Include="AbstractPredictor.h">
       <Filter>Abstract</Filter>
-    </ClInclude>
-    <ClInclude Include="StubPredictor.h">
-      <Filter>Stub</Filter>
     </ClInclude>
     <ClInclude Include="BoostPredictor.h">
       <Filter>Boost</Filter>
@@ -31,19 +22,19 @@
     <ClInclude Include="AdaBoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
+    <ClInclude Include="StumpOptions.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpPredictor.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpTrainer.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <Filter>Precompiled Header</Filter>
-    </ClCompile>
-    <ClCompile Include="StubTrainer.cpp">
-      <Filter>Stub</Filter>
-    </ClCompile>
-    <ClCompile Include="StubOptions.cpp">
-      <Filter>Stub</Filter>
-    </ClCompile>
-    <ClCompile Include="StubPredictor.cpp">
-      <Filter>Stub</Filter>
     </ClCompile>
     <ClCompile Include="BoostPredictor.cpp">
       <Filter>Boost</Filter>
@@ -54,6 +45,15 @@
     <ClCompile Include="AdaBoostTrainer.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
+    <ClCompile Include="StumpOptions.cpp">
+      <Filter>Stump</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpPredictor.cpp">
+      <Filter>Stump</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpTrainer.cpp">
+      <Filter>Stump</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Precompiled Header">
@@ -62,11 +62,11 @@
     <Filter Include="Abstract">
       <UniqueIdentifier>{0c6a9586-c3ad-4b15-9697-32ef37c9e0d7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Stub">
-      <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Boost">
       <UniqueIdentifier>{218ce471-c2e9-439b-8a5e-6fad60ea77d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Stump">
+      <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
