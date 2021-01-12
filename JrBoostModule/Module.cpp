@@ -44,8 +44,10 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<StumpOptions, AbstractOptions>{ mod, "StumpOptions" }
         .def(py::init<>())
         .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
-        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
-        .def_property("highPrecision", &StumpOptions::highPrecision, &StumpOptions::setHighPrecision)
+            .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
+            .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
+            .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
+            .def_property("highPrecision", &StumpOptions::highPrecision, &StumpOptions::setHighPrecision)
         .def_property("profile", &StumpOptions::profile, &StumpOptions::setProfile);
 
     // Boost classes
@@ -57,9 +59,8 @@ PYBIND11_MODULE(jrboost, mod)
 
         py::class_<AdaBoostOptions, AbstractOptions>{ mod, "AdaBoostOptions" }
         .def(py::init<>())
-            .def_property("iterationCount", &AdaBoostOptions::iterationCount, &AdaBoostOptions::setIterationCount)
-            .def_property("eta", &AdaBoostOptions::eta, &AdaBoostOptions::setEta)
-            .def_property("highPrecision", &AdaBoostOptions::highPrecision, &AdaBoostOptions::setHighPrecision)
-            //.def_property("clamp", &AdaBoostOptions::clamp, &AdaBoostOptions::setClamp)
-            .def_property("baseOptions", &AdaBoostOptions::baseOptions, &AdaBoostOptions::setBaseOptions);
+        .def_property("iterationCount", &AdaBoostOptions::iterationCount, &AdaBoostOptions::setIterationCount)
+        .def_property("eta", &AdaBoostOptions::eta, &AdaBoostOptions::setEta)
+        .def_property("highPrecision", &AdaBoostOptions::highPrecision, &AdaBoostOptions::setHighPrecision)
+        .def_property("baseOptions", &AdaBoostOptions::baseOptions, &AdaBoostOptions::setBaseOptions);
 }

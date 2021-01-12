@@ -56,7 +56,6 @@ for label in labels:
     predFrame[label] = predictor.predict(inData)
 
 predFrame = 1.0 / (1.0 + np.exp(-predFrame))
-#predFrame += 0.001
 predFrame = predFrame.divide(predFrame.sum(axis = 1), axis = 0)
 predFrame = predFrame.clip(1.0e-15, 1.0)
 score = -(np.log(predFrame) * outDataFrame).sum().sum() / sampleCount

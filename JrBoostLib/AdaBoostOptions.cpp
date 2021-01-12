@@ -16,11 +16,6 @@ bool AdaBoostOptions::highPrecision() const
     return highPrecision_;
 }
 
-//float AdaBoostOptions::clamp() const
-//{
-//    return clamp_;
-//}
-
 AbstractOptions* AdaBoostOptions::baseOptions() const
 {
     return baseOptions_->clone();
@@ -41,12 +36,6 @@ void AdaBoostOptions::setHighPrecision(bool b)
 {
     highPrecision_ = b;
 }
-
-//void AdaBoostOptions::setClamp(float c)
-//{
-//    ASSERT(c > 0.0f);
-//    clamp_ = c;
-//}
 
 void AdaBoostOptions::setBaseOptions(const AbstractOptions& opt)
 {
@@ -70,6 +59,5 @@ AdaBoostOptions::AdaBoostOptions(const AdaBoostOptions& a) :
     iterationCount_{ a.iterationCount_ },
     eta_{ a.eta_ },
     highPrecision_{ a.highPrecision_ },
-    //clamp_{ a.clamp_ },
     baseOptions_{ a.baseOptions_->clone() }
 {}

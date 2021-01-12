@@ -9,7 +9,7 @@ StumpPredictor::StumpPredictor(size_t variableCount, size_t j, float x, float le
     rightY_{ rightY }
 {}
 
-ArrayXf StumpPredictor::predict(RefXXf inData) const
+ArrayXf StumpPredictor::predict(CRefXXf inData) const
 {
     size_t sampleCount = inData.rows();
     size_t variableCount = inData.cols();

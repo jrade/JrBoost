@@ -1,47 +1,47 @@
+log rightSumW and rightSumWY after end of find split loop
+
+logit boost
+	is regularization needed?
+
+-------------------------------------------------------------------------
+
 Python wrapper class
 	constructor that takes indata, outdata and cParam
 	classify function
 	that's it??
 
 run with real data
-
-weight overflow
-	log min and max of outData * F
-	regularize - modify the target function? add lambda * outData * F or lambda * F^2
-
-------------------------------------------------
-
-logit boost
-
-optimizations:
-	have the boost trainer not create a new base trainer each time
-
-low prio:
-	test again to pass inData as const (as const Ref<const ArrayXXf>&)
-	inData, outData, weights, options as Python properties_
-	look in the old stub (or rather tree) builder code and see how I avoid rounding off errors towards the end
-	make Gerstmann.h standard compliant
-
--------------------------------------------
-
-try mixed debugging again
-
+ 
 trees
 
-SIMD optimization
+optimized(?) find split loop
+	first calculate the sums for each index and store in a vectors
+	then do a vectorized score calculation
 
-multi-group trees
+multi-group
+	start with multigroup stubs
+	figure out multigroup boosting
 
 parallellized hyperparameter evaluation
 
+should we worry about copying the indata matrix?
+
+------------------------------------------------
+
+try mixed debugging again
+
 low prio:
-	avoid copying of ArrayXf
+	pass outData and weights as Ref<...>
+	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
+
+-------------------------------------------------------------------
 
 PyBind11 issues:
 	report abstract factory crash (JrBooster Crash)
 		is the problem return values that are derived objects passed with unique_ptr to base class
 		test with the Miniconda that somes bundles with Visual Studio
 	how translate custom C++ exceptions to standard Python exceptions
+	no way of specifying noocnvert for property setters
 	
 Gerstmann issues:
 	add move constructors to enable code such as
@@ -49,6 +49,11 @@ Gerstmann issues:
 	seed function would be useful
 	free functions (operator== and operator!=) should be inline
 		or linker will complain if you include the header in multiple translation units
+	should be standard compliant
+
+Eigen issues:
+	can not reset Ref objects
+	no select with two constants
 
 --------------------------------------------------------------------------------
 

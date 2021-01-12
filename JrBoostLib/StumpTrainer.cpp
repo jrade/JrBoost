@@ -7,7 +7,7 @@ StumpTrainer::StumpTrainer() :
 {
 }
 
-void StumpTrainer::setInData(RefXXf inData)
+void StumpTrainer::setInData(CRefXXf inData)
 { 
     ASSERT(inData.isFinite().all());
     assign(inData_, inData);
@@ -34,8 +34,8 @@ void StumpTrainer::setOutData(const ArrayXf& outData)
 
 void StumpTrainer::setWeights(const ArrayXf& weights)
 {
-    ASSERT(weights.isFinite().all());
-    ASSERT((weights > 0).all());
+    ASSERT((weights < std::numeric_limits<float>::infinity()).all());
+    ASSERT((weights >= 0).all());
     weights_ = weights;
 }
 
@@ -124,6 +124,7 @@ StumpPredictor* StumpTrainer::trainImpl_() const
     F bestRightY = sumWY / sumW;
 
     sortedUsedSamples_.resize(usedSampleCount);
+    float minNodeWeight = std::max(options_->minNodeWeight(), std::numeric_limits<float>::min());
 
     for (size_t j : usedVariables_) {
 
@@ -139,8 +140,6 @@ StumpPredictor* StumpTrainer::trainImpl_() const
             [&](size_t i) { return usedSampleMask_[i]; }
         );
 
-        float lastWeight = weights_[sortedUsedSamples_[usedSampleCount - 1]];
-
         // find best split
         t = clockCycleCount();
         t1 += t;
@@ -151,14 +150,14 @@ StumpPredictor* StumpTrainer::trainImpl_() const
         F rightSumW = sumW;
         F rightSumWY = sumWY;
 
-        auto p = begin(sortedUsedSamples_);
+        auto pBegin = begin(sortedUsedSamples_);
         auto pEnd = end(sortedUsedSamples_);
+        auto p = pBegin;
         size_t nextI = *p;
-        ++p;
-        while (p != pEnd) {
+        while (p != pEnd - 1) {
             size_t i = nextI;
-            nextI = *p;
             ++p;
+            nextI = *p;
             F w = weights_[i];
             F y = outData_[i];
             leftSumW += w;
@@ -167,15 +166,18 @@ StumpPredictor* StumpTrainer::trainImpl_() const
             rightSumWY -= w * y;
             F score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
 
-            if (score <= bestScore) continue;
+            if (score <= bestScore) continue;  // usually true
             ++n;
+
+            if (leftSumW < minNodeWeight 
+                || rightSumW < minNodeWeight
+                || static_cast<size_t>(p - pBegin) < options_->minNodeSize() 
+                || static_cast<size_t>(pEnd - p) < options_->minNodeSize()
+            ) continue;
 
             float leftX = inData_(i, j);
             float rightX = inData_(nextI, j);
             if (leftX == rightX) continue;      // stricter check?
-
-            if (rightSumW < lastWeight / 2) continue;  
-            // reject splits when rounding off errors accumulate towards the end of the loop
 
             bestScore = score;
             bestJ = j;

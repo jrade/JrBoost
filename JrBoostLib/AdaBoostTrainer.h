@@ -10,7 +10,7 @@ public:
     AdaBoostTrainer();
     virtual ~AdaBoostTrainer() = default;
 
-    virtual void setInData(RefXXf inData);
+    virtual void setInData(CRefXXf inData);
     virtual void setOutData(const ArrayXf& outData);
     virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
@@ -25,7 +25,7 @@ private:
     ArrayXf weights_;
     unique_ptr<AdaBoostOptions> options_;
 
-    RefXXf inData_{ dummyArrayXXf };
+    CRefXXf inData_{ dummyArrayXXf };
     size_t sampleCount_ = 0;
     size_t variableCount_ = 0;
 };

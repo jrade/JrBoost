@@ -6,7 +6,7 @@ AdaBoostTrainer::AdaBoostTrainer() :
     options_{ std::make_unique<AdaBoostOptions>() }
 {}
 
-void AdaBoostTrainer::setInData(RefXXf inData)
+void AdaBoostTrainer::setInData(CRefXXf inData)
 {
     assign(inData_, inData);
     sampleCount_ = inData.rows();
@@ -16,13 +16,13 @@ void AdaBoostTrainer::setInData(RefXXf inData)
 void AdaBoostTrainer::setOutData(const ArrayXf& outData)
 {
     ASSERT((outData == outData.cast<bool>().cast<float>()).all());	// all elements must be 0 or 1
-    outData_ = outData;
+    outData_ = 2 * outData - 1;
 }
 
 void AdaBoostTrainer::setWeights(const ArrayXf& weights)
 {
-    ASSERT(weights.isFinite().all());
     ASSERT((weights > 0).all());
+    ASSERT((weights < std::numeric_limits<float>::infinity()).all());
     weights_ = weights;
 }
 
@@ -43,43 +43,34 @@ BoostPredictor* AdaBoostTrainer::train() const
 template<typename T>
 BoostPredictor* AdaBoostTrainer::trainImpl_() const
 {
-    size_t t0 = 0;
-
-    size_t t = clockCycleCount();
-    t0 -= t;
-
-    ArrayXf adjOutData{ 2 * outData_ - 1 };
-    ArrayXf adjWeights{ sampleCount_ };
-
-    unique_ptr<AbstractOptions> baseOptions{ options_->baseOptions() };
-    unique_ptr<AbstractTrainer> baseTrainer{ baseOptions->createTrainer() };
-    baseTrainer->setInData(inData_);
-    baseTrainer->setOutData(adjOutData);
 
     std::array<T, 2> p{ 0, 0 };
     for (size_t i = 0; i < sampleCount_; ++i)
-        p[adjOutData[i] == 1] += weights_[i];
-    T f0 = (log(p[1]) - log(p[0])) / 2;
+        p[outData_[i] == 1.0f] += weights_[i];
+    T f0 = (std::log(p[1]) - std::log(p[0])) / 2;
     Eigen::Array<T, Eigen::Dynamic, 1> F = Eigen::Array<T, Eigen::Dynamic, 1>::Constant(sampleCount_, f0);
 
+    unique_ptr<AbstractTrainer> baseTrainer{ options_->baseOptions()->createTrainer() };
+    baseTrainer->setInData(inData_);
+    baseTrainer->setOutData(outData_);
+
+    ArrayXf adjWeights{ sampleCount_ };
     size_t n = options_->iterationCount();
     float eta = options_->eta();
-    //float clamp = options_->clamp();
-
     vector<unique_ptr<AbstractPredictor>> basePredictors;
+
+    START_TIMER(t0__);
+        
     for (size_t i = 0; i < n; ++i) {
-        //adjWeights = weights_ * (-F.cast<float>() * adjOutData).cwiseMin(clamp).cwiseMax(-clamp).exp();
-        adjWeights = weights_ * (-F.cast<float>() * adjOutData).exp();
+        adjWeights = weights_ * (-F.cast<float>() * outData_).exp();
         baseTrainer->setWeights(adjWeights);
         unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
         F += eta * basePredictor->predict(inData_).cast<T>();
         basePredictors.push_back(std::move(basePredictor));
     }
 
-    t = clockCycleCount();
-    t0 += t;
-
-    cout << 1.0e-6 * t0 << endl;
+    STOP_TIMER(t0__);
+    cout << 1.0e-6 * t0__ << endl;
 
     return new BoostPredictor(variableCount_, 2 * static_cast<float>(f0), 2 * eta, std::move(basePredictors));
 }

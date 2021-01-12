@@ -10,7 +10,7 @@ public:
     StumpTrainer();
     virtual ~StumpTrainer() = default;
 
-    virtual void setInData(RefXXf inData);
+    virtual void setInData(CRefXXf inData);
     virtual void setOutData(const ArrayXf& outData);
     virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
@@ -20,7 +20,7 @@ public:
 private:
     template<typename F> StumpPredictor*  trainImpl_() const;
 
-    RefXXf inData_{ dummyArrayXXf };
+    CRefXXf inData_{ dummyArrayXXf };
     size_t sampleCount_{ 0 };
     size_t variableCount_{ 0 };
     vector<vector<size_t>> sortedSamples_;

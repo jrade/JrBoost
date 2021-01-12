@@ -6,7 +6,7 @@ class StumpPredictor : public AbstractPredictor {
 public:
     virtual ~StumpPredictor() = default;
     virtual size_t variableCount() const { return variableCount_; }
-    virtual ArrayXf predict(RefXXf inData) const;
+    virtual ArrayXf predict(CRefXXf inData) const;
 
 private:
     StumpPredictor(size_t variableCount, size_t j, float x, float leftY, float rightY);
