@@ -35,6 +35,7 @@ baseOpt.highPrecision = True
 baseOpt.profile = False
 
 opt = jrboost.AdaBoostOptions()
+#opt = jrboost.LogitBoostOptions()
 opt.iterationCount = 1000
 opt.eta = 1.0
 opt.highPrecision = True

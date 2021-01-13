@@ -1,7 +1,13 @@
+
+check that the logit boost code is correct
+
 log rightSumW and rightSumWY after end of find split loop
 
-logit boost
-	is regularization needed?
+optimized(?) find split loop
+	first calculate the sums for each index and store in a vectors
+	then do a vectorized score calculation
+
+add property sheet to solution
 
 -------------------------------------------------------------------------
 
@@ -13,10 +19,6 @@ Python wrapper class
 run with real data
  
 trees
-
-optimized(?) find split loop
-	first calculate the sums for each index and store in a vectors
-	then do a vectorized score calculation
 
 multi-group
 	start with multigroup stubs
@@ -31,7 +33,7 @@ should we worry about copying the indata matrix?
 try mixed debugging again
 
 low prio:
-	pass outData and weights as Ref<...>
+	pass outData and weights as Ref<ArrayXf>
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 
 -------------------------------------------------------------------

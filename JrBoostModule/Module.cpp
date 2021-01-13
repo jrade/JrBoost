@@ -7,6 +7,8 @@
 #include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/AdaBoostTrainer.h"
 #include "../JrBoostLib/AdaBoostOptions.h"
+#include "../JrBoostLib/LogitBoostTrainer.h"
+#include "../JrBoostLib/LogitBoostOptions.h"
 
 #pragma warning( disable : 26444 )
 
@@ -52,15 +54,25 @@ PYBIND11_MODULE(jrboost, mod)
 
     // Boost classes
 
-        py::class_<BoostPredictor, AbstractPredictor>{ mod, "BoostPredictor" };
+    py::class_<BoostPredictor, AbstractPredictor>{ mod, "BoostPredictor" };
 
-        py::class_<AdaBoostTrainer, AbstractTrainer>{ mod, "AdaBoostTrainer" }
-        .def(py::init<>());
+    py::class_<AdaBoostTrainer, AbstractTrainer>{ mod, "AdaBoostTrainer" }
+    .def(py::init<>());
 
-        py::class_<AdaBoostOptions, AbstractOptions>{ mod, "AdaBoostOptions" }
-        .def(py::init<>())
+    py::class_<AdaBoostOptions, AbstractOptions>{ mod, "AdaBoostOptions" }
+    .def(py::init<>())
         .def_property("iterationCount", &AdaBoostOptions::iterationCount, &AdaBoostOptions::setIterationCount)
         .def_property("eta", &AdaBoostOptions::eta, &AdaBoostOptions::setEta)
         .def_property("highPrecision", &AdaBoostOptions::highPrecision, &AdaBoostOptions::setHighPrecision)
         .def_property("baseOptions", &AdaBoostOptions::baseOptions, &AdaBoostOptions::setBaseOptions);
+
+    py::class_<LogitBoostTrainer, AbstractTrainer>{ mod, "LogitBoostTrainer" }
+    .def(py::init<>());
+
+    py::class_<LogitBoostOptions, AbstractOptions>{ mod, "LogitBoostOptions" }
+    .def(py::init<>())
+        .def_property("iterationCount", &LogitBoostOptions::iterationCount, &LogitBoostOptions::setIterationCount)
+        .def_property("eta", &LogitBoostOptions::eta, &LogitBoostOptions::setEta)
+        .def_property("highPrecision", &LogitBoostOptions::highPrecision, &LogitBoostOptions::setHighPrecision)
+        .def_property("baseOptions", &LogitBoostOptions::baseOptions, &LogitBoostOptions::setBaseOptions);
 }

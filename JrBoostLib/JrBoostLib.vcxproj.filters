@@ -31,6 +31,12 @@
     <ClInclude Include="StumpTrainer.h">
       <Filter>Stump</Filter>
     </ClInclude>
+    <ClInclude Include="LogitBoostOptions.h">
+      <Filter>Boost</Filter>
+    </ClInclude>
+    <ClInclude Include="LogitBoostTrainer.h">
+      <Filter>Boost</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -53,6 +59,12 @@
     </ClCompile>
     <ClCompile Include="StumpTrainer.cpp">
       <Filter>Stump</Filter>
+    </ClCompile>
+    <ClCompile Include="LogitBoostOptions.cpp">
+      <Filter>Boost</Filter>
+    </ClCompile>
+    <ClCompile Include="LogitBoostTrainer.cpp">
+      <Filter>Boost</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
