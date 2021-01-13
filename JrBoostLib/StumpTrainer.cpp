@@ -186,6 +186,16 @@ StumpPredictor* StumpTrainer::trainImpl_() const
             bestRightY = rightSumWY / rightSumW;
         }
 
+        //{
+        //    F w = weights_[nextI];
+        //    F y = outData_[nextI];
+        //    leftSumW += w;
+        //    rightSumW -= w;
+        //    leftSumWY += w * y;
+        //    rightSumWY -= w * y;
+        //    cout << weights_.minCoeff() << " - " << weights_.maxCoeff() << ": " << rightSumW << endl;
+        //}
+
         t = clockCycleCount();
         t2 += t;
         t0 -= t;
