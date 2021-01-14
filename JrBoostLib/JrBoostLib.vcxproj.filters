@@ -37,6 +37,9 @@
     <ClInclude Include="LogitBoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
+    <ClInclude Include="TrivialPredictor.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

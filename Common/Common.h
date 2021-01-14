@@ -8,6 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
@@ -15,7 +16,9 @@
 
 using std::cout;
 using std::endl;
-using std::pair;
+using std::numeric_limits;
+using std::optional;
+using std::runtime_error;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -41,20 +44,8 @@ inline Eigen::ArrayXXf dummyArrayXXf;
 
 inline splitmix theRNE{ std::random_device{} };
 
-// Profiling
-
-#include "ClockCycleCount.h"
-
-inline uint64_t t__;
-inline uint64_t t0__ = 0;
-inline uint64_t t1__ = 0; 
-inline uint64_t t2__ = 0;
-inline uint64_t t3__ = 0;
-#define START_TIMER(T) T -= clockCycleCount()
-#define STOP_TIMER(T) T += clockCycleCount()
-#define SWITCH_TIMER(T1, T2) t__ = clockCycleCount(); T1 += t__; T2 -= t__
-
 // Other
 
 #include "Assert.h"
 #include "FastAlgorithms.h"
+#include "Profiling.h"

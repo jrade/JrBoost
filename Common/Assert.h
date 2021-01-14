@@ -1,6 +1,6 @@
 #pragma once
 
-class AssertionError : public std::runtime_error
+class AssertionError : public runtime_error
 {
 public:
     AssertionError(string condition, string file, int line) : std::runtime_error(format(condition, file, line))

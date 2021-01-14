@@ -19,10 +19,12 @@ public:
     friend bool operator!=(splitmix const&, splitmix const&);
 
     splitmix() : m_seed(1) {}
+
     explicit splitmix(std::random_device& rd)
     {
         seed(rd);
     }
+
     explicit splitmix(std::random_device&& rd)
     {
         seed(rd);
@@ -55,6 +57,7 @@ inline bool operator==(splitmix const& lhs, splitmix const& rhs)
 {
     return lhs.m_seed == rhs.m_seed;
 }
+
 inline bool operator!=(splitmix const& lhs, splitmix const& rhs)
 {
     return lhs.m_seed != rhs.m_seed;
@@ -70,10 +73,12 @@ public:
     friend bool operator!=(xorshift const&, xorshift const&);
 
     xorshift() : m_seed(0xc1f651c67c62c6e0ull) {}
+
     explicit xorshift(std::random_device& rd)
     {
         seed(rd);
     }
+
     explicit xorshift(std::random_device&& rd)
     {
         seed(rd);
@@ -125,10 +130,12 @@ public:
         : m_state(0x853c49e6748fea9bULL)
         , m_inc(0xda3e39cb94b95bdbULL)
     {}
+
     explicit pcg(std::random_device& rd)
     {
         seed(rd);
     }
+
     explicit pcg(std::random_device&& rd)
     {
         seed(rd);
@@ -171,6 +178,7 @@ inline bool operator==(pcg const& lhs, pcg const& rhs)
     return lhs.m_state == rhs.m_state
         && lhs.m_inc == rhs.m_inc;
 }
+
 inline bool operator!=(pcg const& lhs, pcg const& rhs)
 {
     return lhs.m_state != rhs.m_state

@@ -16,7 +16,7 @@ ArrayXf BoostPredictor::predict(CRefXXf inData) const
     size_t variableCount = inData.cols();
 
     if (variableCount != variableCount_)
-        throw std::runtime_error("The data does not have the same number of variables as the training data.");
+        throw runtime_error("The data does not have the same number of variables as the training data.");
 
     Eigen::ArrayXd outData{ Eigen::ArrayXd::Constant(sampleCount, f0_) };
     for (auto& pred : basePredictors_)

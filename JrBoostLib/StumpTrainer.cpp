@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StumpTrainer.h"
 #include "StumpOptions.h"
+#include "TrivialPredictor.h"
 
 StumpTrainer::StumpTrainer() :
     options_{ std::make_unique<StumpOptions>() }
@@ -15,7 +16,7 @@ void StumpTrainer::setInData(CRefXXf inData)
     variableCount_ = inData.cols();
 
     sortedSamples_.resize(variableCount_);
-    vector<pair<float, size_t>> tmp{ sampleCount_ };
+    vector<std::pair<float, size_t>> tmp{ sampleCount_ };
     for (size_t j = 0; j < variableCount_; ++j) {
         for (size_t i = 0; i < sampleCount_; ++i)
             tmp[i] = { inData(i,j), i };
@@ -34,7 +35,7 @@ void StumpTrainer::setOutData(const ArrayXf& outData)
 
 void StumpTrainer::setWeights(const ArrayXf& weights)
 {
-    ASSERT((weights < std::numeric_limits<float>::infinity()).all());
+    ASSERT((weights < numeric_limits<float>::infinity()).all());
     ASSERT((weights >= 0).all());
     weights_ = weights;
 }
@@ -45,7 +46,7 @@ void StumpTrainer::setOptions(const AbstractOptions& opt)
     options_.reset(opt1.clone());
 }
 
-StumpPredictor* StumpTrainer::train() const
+AbstractPredictor* StumpTrainer::train() const
 {
     ASSERT(sampleCount_ > 0);
     ASSERT(variableCount_ > 0);
@@ -59,15 +60,10 @@ StumpPredictor* StumpTrainer::train() const
 }
 
 template<typename F>
-StumpPredictor* StumpTrainer::trainImpl_() const
+AbstractPredictor* StumpTrainer::trainImpl_() const
 {
+    START_TIMER(t0__);
     size_t n = 0;
-    size_t t0 = 0;
-    size_t t1 = 0;
-    size_t t2 = 0;
-
-    size_t t = clockCycleCount();
-    t0 -= t;
 
     size_t usedSampleCount = std::max(
         static_cast<size_t>(1),
@@ -118,23 +114,22 @@ StumpPredictor* StumpTrainer::trainImpl_() const
     // find best split
 
     F bestScore = sumWY * sumWY / sumW;
-    size_t bestJ = 0;
-    float bestX = -std::numeric_limits<float>::infinity();
-    F bestLeftY = std::numeric_limits<F>::quiet_NaN();
-    F bestRightY = sumWY / sumW;
+    size_t bestJ = static_cast<size_t>(-1);
+    float bestX = numeric_limits<float>::quiet_NaN();
+    F bestLeftY = numeric_limits<F>::quiet_NaN();
+    F bestRightY = numeric_limits<F>::quiet_NaN();
 
     sortedUsedSamples_.resize(usedSampleCount);
 
-    F tol = sumW * sqrt(static_cast<F>(usedSampleCount)) * std::numeric_limits<F>::epsilon() / 2;
-    // tol = estimate of high rounding off errors we can expect in rightSumW towards the end of the loop
+    F tol = sumW * sqrt(static_cast<F>(usedSampleCount)) * numeric_limits<F>::epsilon() / 2;
+    // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
     F minNodeWeight = std::max<F>(options_->minNodeWeight(), tol);
         
     for (size_t j : usedVariables_) {
 
         // prepare list of samples
-        t = clockCycleCount();
-        t0 += t;
-        t1 -= t;
+
+        SWITCH_TIMER(t0__, t1__);
 
         fastCopyIf(
             begin(sortedSamples_[j]),
@@ -144,10 +139,8 @@ StumpPredictor* StumpTrainer::trainImpl_() const
         );
 
         // find best split
-        t = clockCycleCount();
-        t1 += t;
-        t2 -= t;
-        
+        SWITCH_TIMER(t1__, t2__);
+
         F leftSumW = F{ 0 };
         F leftSumWY = F{ 0 };
         F rightSumW = sumW;
@@ -198,21 +191,20 @@ StumpPredictor* StumpTrainer::trainImpl_() const
         //    rightSumWY -= w * y;
         //}
 
-        t = clockCycleCount();
-        t2 += t;
-        t0 -= t;
+        SWITCH_TIMER(t2__, t0__);
     }
 
-    t = clockCycleCount();
-    t0 += t;
+    STOP_TIMER(t0__);
 
     if (options_->profile()) {
-        cout << t0 << endl;
-        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
-        cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
+        cout << t0__ << endl;
+        cout << t1__ << " (" << static_cast<float>(t1__) / (sampleCount_ * usedVariableCount) << ")" << endl;
+        cout << t2__ << " (" << static_cast<float>(t2__) / (usedSampleCount * usedVariableCount) << ")" << endl;
         cout << 100.0f * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
         cout << endl;
     }
 
+    if (bestJ == static_cast<size_t>(-1))
+        return new TrivialPredictor{ static_cast<float>(sumWY / sumW), variableCount_ };
     return new StumpPredictor{ variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
 };

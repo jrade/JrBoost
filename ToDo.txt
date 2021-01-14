@@ -1,6 +1,10 @@
 
 check that the logit boost implementation is correct
 
+investiagte abstract factory crash (JrBooster Crash)
+	is the problem return values that are derived objects passed with unique_ptr to base class?
+	test with the Miniconda that somes bundles with Visual Studio
+
 -------------------------------------------------------------------------
 
 Python wrapper class
@@ -20,7 +24,9 @@ parallellized hyperparameter evaluation
 
 should we worry about copying the indata matrix?
 
-------------------------------------------------
+we could try some loop unrolling in the inmost loop in StumpBuilder
+
+-------------------------------------------------------------------------
 
 try mixed debugging again
 
@@ -31,9 +37,6 @@ low prio:
 -------------------------------------------------------------------
 
 PyBind11 issues:
-	report abstract factory crash (JrBooster Crash)
-		is the problem return values that are derived objects passed with unique_ptr to base class
-		test with the Miniconda that somes bundles with Visual Studio
 	how translate custom C++ exceptions to standard Python exceptions
 	no way of specifying noocnvert for property setters
 	

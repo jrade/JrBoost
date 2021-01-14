@@ -13,6 +13,8 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <OpenMPSupport>true</OpenMPSupport>
       <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />

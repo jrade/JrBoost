@@ -7,14 +7,15 @@ StumpPredictor::StumpPredictor(size_t variableCount, size_t j, float x, float le
     x_{ x },
     leftY_{ leftY },
     rightY_{ rightY }
-{}
+{
+}
 
 ArrayXf StumpPredictor::predict(CRefXXf inData) const
 {
     size_t sampleCount = inData.rows();
     size_t variableCount = inData.cols();
     if (variableCount != variableCount_)
-        throw std::runtime_error("The data does not have the same number of variables as the training data.");
+        throw runtime_error("The data does not have the same number of variables as the training data.");
 
     ArrayXf outData{ sampleCount };
     for (size_t i = 0; i < sampleCount; ++i)

@@ -2,7 +2,7 @@
 #include "StumpOptions.h"
 
 float StumpOptions::usedSampleRatio() const
-{ 
+{
     return usedSampleRatio_;
 }
 

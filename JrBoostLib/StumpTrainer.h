@@ -15,10 +15,10 @@ public:
     virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
 
-    virtual StumpPredictor* train() const;
+    virtual AbstractPredictor* train() const;
 
 private:
-    template<typename F> StumpPredictor*  trainImpl_() const;
+    template<typename F> AbstractPredictor*  trainImpl_() const;
 
     CRefXXf inData_{ dummyArrayXXf };
     size_t sampleCount_{ 0 };

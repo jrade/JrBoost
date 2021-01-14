@@ -22,7 +22,7 @@ void AdaBoostTrainer::setOutData(const ArrayXf& outData)
 void AdaBoostTrainer::setWeights(const ArrayXf& weights)
 {
     ASSERT((weights > 0).all());
-    ASSERT((weights < std::numeric_limits<float>::infinity()).all());
+    ASSERT((weights < numeric_limits<float>::infinity()).all());
     weights_ = weights;
 }
 
