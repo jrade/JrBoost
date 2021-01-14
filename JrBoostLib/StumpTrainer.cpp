@@ -124,8 +124,11 @@ StumpPredictor* StumpTrainer::trainImpl_() const
     F bestRightY = sumWY / sumW;
 
     sortedUsedSamples_.resize(usedSampleCount);
-    float minNodeWeight = std::max(options_->minNodeWeight(), std::numeric_limits<float>::min());
 
+    F tol = sumW * sqrt(static_cast<F>(usedSampleCount)) * std::numeric_limits<F>::epsilon() / 2;
+    // tol = estimate of high rounding off errors we can expect in rightSumW towards the end of the loop
+    F minNodeWeight = std::max<F>(options_->minNodeWeight(), tol);
+        
     for (size_t j : usedVariables_) {
 
         // prepare list of samples
@@ -193,7 +196,6 @@ StumpPredictor* StumpTrainer::trainImpl_() const
         //    rightSumW -= w;
         //    leftSumWY += w * y;
         //    rightSumWY -= w * y;
-        //    cout << weights_.minCoeff() << " - " << weights_.maxCoeff() << ": " << rightSumW << endl;
         //}
 
         t = clockCycleCount();

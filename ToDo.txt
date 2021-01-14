@@ -1,7 +1,5 @@
 
-check that the logit boost code is correct
-
-log rightSumW and rightSumWY after end of find split loop
+check that the logit boost implementation is correct
 
 -------------------------------------------------------------------------
 
