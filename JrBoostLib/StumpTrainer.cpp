@@ -62,8 +62,13 @@ AbstractPredictor* StumpTrainer::train() const
 template<typename F>
 AbstractPredictor* StumpTrainer::trainImpl_() const
 {
-    START_TIMER(t0__);
     size_t n = 0;
+
+    size_t t0 = 0;
+    size_t t1 = 0;
+    size_t t2 = 0;
+
+    START_TIMER(t0);
 
     size_t usedSampleCount = std::max(
         static_cast<size_t>(1),
@@ -111,6 +116,8 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
         sumWY += m * w * y;
     }
 
+    ASSERT(sumW != 0);
+
     // find best split
 
     F bestScore = sumWY * sumWY / sumW;
@@ -121,15 +128,16 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
 
     sortedUsedSamples_.resize(usedSampleCount);
 
-    F tol = sumW * sqrt(static_cast<F>(usedSampleCount)) * numeric_limits<F>::epsilon() / 2;
+    size_t minNodeSize = options_->minNodeSize();
+
+    const F tol = sumW * sqrt(static_cast<F>(usedSampleCount)) * numeric_limits<F>::epsilon() / 2;
     // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
-    F minNodeWeight = std::max<F>(options_->minNodeWeight(), tol);
+    const F minNodeWeight = std::max<F>(options_->minNodeWeight(), tol);
         
     for (size_t j : usedVariables_) {
 
         // prepare list of samples
-
-        SWITCH_TIMER(t0__, t1__);
+        SWITCH_TIMER(t0, t1);
 
         fastCopyIf(
             begin(sortedSamples_[j]),
@@ -139,72 +147,80 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
         );
 
         // find best split
-        SWITCH_TIMER(t1__, t2__);
+        SWITCH_TIMER(t1, t2);
 
-        F leftSumW = F{ 0 };
-        F leftSumWY = F{ 0 };
+        F leftSumW = 0;
+        F leftSumWY = 0;
         F rightSumW = sumW;
         F rightSumWY = sumWY;
 
-        auto pBegin = begin(sortedUsedSamples_);
-        auto pEnd = end(sortedUsedSamples_);
+        const auto pBegin = begin(sortedUsedSamples_);
+        const auto pEnd = end(sortedUsedSamples_);
         auto p = pBegin;
         size_t nextI = *p;
+
+        // this is where most execution time is spent ......
+
         while (p != pEnd - 1) {
-            size_t i = nextI;
-            ++p;
-            nextI = *p;
-            F w = weights_[i];
-            F y = outData_[i];
+            const size_t i = nextI;
+            nextI = *++p;
+            const F w = weights_[i];
+            const F y = outData_[i];
             leftSumW += w;
             rightSumW -= w;
             leftSumWY += w * y;
             rightSumWY -= w * y;
-            F score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
-
+            const F score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
             if (score <= bestScore) continue;  // usually true
+
+        //..................................................
+
             ++n;
 
-            if (leftSumW < minNodeWeight 
+            if (p < pBegin + minNodeSize
+                || p > pEnd - minNodeSize
+                || leftSumW < minNodeWeight
                 || rightSumW < minNodeWeight
-                || static_cast<size_t>(p - pBegin) < options_->minNodeSize() 
-                || static_cast<size_t>(pEnd - p) < options_->minNodeSize()
             ) continue;
 
-            float leftX = inData_(i, j);
-            float rightX = inData_(nextI, j);
-            if (leftX == rightX) continue;      // stricter check?
+            const float leftX = inData_(i, j);
+            const float rightX = inData_(nextI, j);
+            const float midX = (leftX + rightX) / 2;
+    
+            if (leftX == midX) continue;
 
             bestScore = score;
             bestJ = j;
-            bestX = (leftX + rightX) / 2;
+            bestX = midX;
             bestLeftY = leftSumWY / leftSumW;
             bestRightY = rightSumWY / rightSumW;
         }
 
         //{
-        //    F w = weights_[nextI];
-        //    F y = outData_[nextI];
+        //    const F w = weights_[nextI];
+        //    const F y = outData_[nextI];
         //    leftSumW += w;
         //    rightSumW -= w;
         //    leftSumWY += w * y;
         //    rightSumWY -= w * y;
         //}
 
-        SWITCH_TIMER(t2__, t0__);
+        SWITCH_TIMER(t2, t0);
     }
 
-    STOP_TIMER(t0__);
+    STOP_TIMER(t0);
 
     if (options_->profile()) {
-        cout << t0__ << endl;
-        cout << t1__ << " (" << static_cast<float>(t1__) / (sampleCount_ * usedVariableCount) << ")" << endl;
-        cout << t2__ << " (" << static_cast<float>(t2__) / (usedSampleCount * usedVariableCount) << ")" << endl;
+        cout << t0 << endl;
+        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
+        cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
         cout << 100.0f * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
         cout << endl;
     }
 
     if (bestJ == static_cast<size_t>(-1))
         return new TrivialPredictor{ static_cast<float>(sumWY / sumW), variableCount_ };
-    return new StumpPredictor{ variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
+    else
+        return new StumpPredictor{ 
+            variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
 };

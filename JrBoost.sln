@@ -15,6 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{356675
 		Common\Assert.h = Common\Assert.h
 		Common\Common.h = Common\Common.h
 		Common\FastAlgorithms.h = Common\FastAlgorithms.h
+		Common\FastBernoulliDistribution.h = Common\FastBernoulliDistribution.h
 		Common\Profiling.h = Common\Profiling.h
 	EndProjectSection
 EndProject
