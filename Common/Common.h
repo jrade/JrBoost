@@ -41,9 +41,9 @@ inline Eigen::ArrayXXf dummyArrayXXf;
 
 // Random number engines (by Arvid Gerstmann)
 
-#include "AGRandom.h"
+#include "FastRandomNumbers.h"
 
-inline splitmix theRNE{ std::random_device{} };
+inline splitmix fastRNE{ std::random_device{} };
 
 // Other
 

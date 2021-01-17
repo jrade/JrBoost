@@ -1,13 +1,7 @@
-
-review Logit Boost algorithm and code
-
-dynamic eta?
-	scalar, list or generator
-	pass a python generator 
-
-allow more than two strata in StumpPredictor?
-
-===========================================================================================
+strata attribute
+	add some asserts
+	move to abstract base class?
+		remove StumpTRainer includes
 
 Qlucore wrapper
 
@@ -32,6 +26,7 @@ low prio:
 	pass outData and weights as Ref<ArrayXf>
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 	faster uint64_t based Bernoulli distribution ??
+	allow more than two strata in StumpPredictor?
 
 -------------------------------------------------------------------
 

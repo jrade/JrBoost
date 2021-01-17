@@ -11,11 +11,11 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "JrBoostTest", "JrBoostTest\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{3566755E-CADA-4F8B-BFD5-2F163E88A934}"
 	ProjectSection(SolutionItems) = preProject
-		Common\AGRandom.h = Common\AGRandom.h
 		Common\Assert.h = Common\Assert.h
 		Common\Common.h = Common\Common.h
 		Common\FastAlgorithms.h = Common\FastAlgorithms.h
 		Common\FastBernoulliDistribution.h = Common\FastBernoulliDistribution.h
+		Common\FastRandomNumbers.h = Common\FastRandomNumbers.h
 		Common\Profiling.h = Common\Profiling.h
 	EndProjectSection
 EndProject

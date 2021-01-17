@@ -35,7 +35,7 @@ void AdaBoostTrainer::setOptions(const AbstractOptions& opt)
 
 BoostPredictor* AdaBoostTrainer::train() const
 {
-    const size_t logInterval = 10000;
+    const size_t logStep = 1;
 
     size_t t0 = 0;
     size_t t1 = 0;
@@ -63,21 +63,25 @@ BoostPredictor* AdaBoostTrainer::train() const
         adjWeights = weights_ * (-F * outData_ + FYMin).exp();
         baseTrainer->setWeights(adjWeights);
 
-        //if (i % logInterval == 0)
-        //{
-        //    cout << i << endl;
-        //    cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
-        //    cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
-        //    cout << " -> " << 100.0 * (adjWeights != 0).cast<double>().sum() / sampleCount_ << "%" << endl;
-        //    cout << endl;
-
-        //}
+        if (i != 0 && i % logStep == 0)
+        {
+            cout << i << endl;
+            cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
+            cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
+            cout << " -> " << 100.0 * (adjWeights != 0).cast<double>().sum() / sampleCount_ << "%" << endl;
+        }
 
         SWITCH_TIMER(t0, t1);
         unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
         SWITCH_TIMER(t1, t0);
 
-        F += eta * basePredictor->predict(inData_);
+        ArrayXd f = basePredictor->predict(inData_);
+
+        if (logStep > 0 && i % logStep == 0)
+            cout << "fy: " << (f * outData_).minCoeff() << " - " << (f * outData_).maxCoeff() << endl << endl;
+
+        F += eta * f;
+
         basePredictors.push_back(std::move(basePredictor));
     }
 

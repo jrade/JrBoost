@@ -96,7 +96,7 @@ AbstractPredictor* StumpTrainer::train() const
             begin(usedSampleMask_),
             begin(sampleCountByStratum),
             begin(usedSampleCountByStratum),
-            theRNE
+            fastRNE
         );
     }
     
@@ -112,7 +112,7 @@ AbstractPredictor* StumpTrainer::train() const
             begin(usedSampleMask_), 
             end(usedSampleMask_), 
             usedSampleCount, 
-            theRNE
+            fastRNE
         );
     }
 
@@ -131,7 +131,7 @@ AbstractPredictor* StumpTrainer::train() const
         end(usedVariables_), 
         begin(usedVariables_), 
         begin(usedVariables_) + usedVariableCount, 
-        theRNE
+        fastRNE
     );
  
     usedVariables_.resize(usedVariableCount);

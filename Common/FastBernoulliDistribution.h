@@ -24,8 +24,8 @@ private:
 
 // The following three statements are true
 //     (1) returns true with probability approximately k / n
-//     (2) always returns true for k = n
-//     (3) always returns false for k = 0
+//     (2) always returns false for k = 0
+//     (3) always returns true for k = n
 
 // That (1) and (2) hold should be obvious.
 //

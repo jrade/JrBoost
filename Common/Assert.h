@@ -3,7 +3,8 @@
 class AssertionError : public runtime_error
 {
 public:
-    AssertionError(string condition, string file, int line) : std::runtime_error(format(condition, file, line))
+    AssertionError(string condition, string file, int line) : 
+        std::runtime_error(format(condition, file, line))
     {
     }
 

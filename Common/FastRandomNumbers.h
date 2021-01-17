@@ -1,4 +1,4 @@
-// Random number engines by Arvid Gerstmann
+// Fast random number engines by Arvid Gerstmann
 // For more details, see https://arvid.io/2018/07/02/better-cxx-prng/
 // Changes: 
 //     Added constructors that take std::random_device&&
