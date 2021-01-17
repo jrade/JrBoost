@@ -30,6 +30,8 @@ using std::vector;
 using Eigen::ArrayXf;
 using CRefXXf = Eigen::Ref<const Eigen::ArrayXXf>;
 
+using ArrayXs = Eigen::Array<size_t, Eigen::Dynamic, 1>;
+
 inline void assign(CRefXXf& a, const CRefXXf& b)
 {
     a.~CRefXXf();

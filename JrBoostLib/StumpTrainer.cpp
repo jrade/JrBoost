@@ -46,6 +46,13 @@ void StumpTrainer::setOptions(const AbstractOptions& opt)
     options_.reset(opt1.clone());
 }
 
+void StumpTrainer::setStrata(const ArrayXs& strata)
+{
+    strata_ = strata;
+    stratum0Count_ = (strata_ == 0).cast<size_t>().sum();
+    stratum1Count_ = (strata_ == 1).cast<size_t>().sum();
+}
+
 AbstractPredictor* StumpTrainer::train() const
 {
     ASSERT(sampleCount_ > 0);
@@ -70,27 +77,61 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
 
     START_TIMER(t0);
 
-    size_t usedSampleCount = std::max(
-        static_cast<size_t>(1),
-        static_cast<size_t>(static_cast<double>(options_->usedSampleRatio()) * sampleCount_ + 0.5)
-    );
+    // used sample mask
 
-    size_t usedVariableCount = std::max(
-        static_cast<size_t>(1), 
-        static_cast<size_t>(static_cast<double>(options_->usedVariableRatio()) * variableCount_ + 0.5)
-    );
+    size_t usedSampleCount;
 
-    // used samples mask
+    if (options_->isStratified()) {
 
-    usedSampleMask_.resize(sampleCount_);
-    fastRandomMask(
-        begin(usedSampleMask_), 
-        end(usedSampleMask_), 
-        usedSampleCount, 
-        theRNE
-    );
+        std::array<size_t, 2> sampleCountByStratum{ stratum0Count_, stratum1Count_ };
+
+        std::array<size_t, 2> usedSampleCountByStratum{
+            std::max(
+                static_cast<size_t>(1),
+                static_cast<size_t>(static_cast<double>(options_->usedSampleRatio()) * stratum0Count_ + 0.5)
+            ),
+            std::max(
+                static_cast<size_t>(1),
+                static_cast<size_t>(static_cast<double>(options_->usedSampleRatio()) * stratum1Count_ + 0.5)
+            )
+        };
+
+        usedSampleCount = usedSampleCountByStratum[0] + usedSampleCountByStratum[1];
+        usedSampleMask_.resize(sampleCount_);
+
+        fastStratifiedRandomMask(
+            &strata_(0),
+            &strata_(0) + sampleCount_,
+            begin(usedSampleMask_),
+            begin(sampleCountByStratum),
+            begin(usedSampleCountByStratum),
+            theRNE
+        );
+    }
+    
+    else {
+        usedSampleCount = std::max(
+            static_cast<size_t>(1),
+            static_cast<size_t>(static_cast<double>(options_->usedSampleRatio()) * sampleCount_ + 0.5)
+        );
+
+        usedSampleMask_.resize(sampleCount_);
+
+        fastRandomMask(
+            begin(usedSampleMask_), 
+            end(usedSampleMask_), 
+            usedSampleCount, 
+            theRNE
+        );
+    }
+
 
     // used variables
+
+    size_t usedVariableCount = std::max(
+        static_cast<size_t>(1),
+        static_cast<size_t>(static_cast<double>(options_->usedVariableRatio()) * variableCount_ + 0.5)
+    );
 
     usedVariables_.resize(variableCount_);
     std::iota(begin(usedVariables_), end(usedVariables_), 0);

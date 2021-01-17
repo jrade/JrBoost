@@ -15,6 +15,8 @@ public:
     virtual void setWeights(const ArrayXf& weights);
     virtual void setOptions(const AbstractOptions& opt);
 
+    void setStrata(const ArrayXs& strata);
+
     virtual AbstractPredictor* train() const;
 
 private:
@@ -28,6 +30,10 @@ private:
     ArrayXf outData_;
     ArrayXf weights_;
     unique_ptr<StumpOptions> options_;
+
+    ArrayXs strata_;
+    size_t stratum0Count_;
+    size_t stratum1Count_;
 
     // buffers used by train()
     mutable vector<char> usedSampleMask_;

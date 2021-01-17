@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "LogitBoostTrainer.h"
 #include "LogitBoostOptions.h"
+#include "StumpTrainer.h"
 
 LogitBoostTrainer::LogitBoostTrainer() :
     options_{ std::make_unique<LogitBoostOptions>() }
@@ -64,7 +65,7 @@ BoostPredictor* LogitBoostTrainer::trainImpl_() const
         
     for (size_t i = 0; i < n; ++i) {
 
-        const size_t logStep = 100;
+        const size_t logStep = 1;
         if (i % logStep == 0) {
             cout << endl << i << endl;
             cout << "Fy: " << (outData_ * F.cast<float>()).minCoeff() << " - " << (outData_ * F.cast<float>()).maxCoeff() << endl;
@@ -83,12 +84,21 @@ BoostPredictor* LogitBoostTrainer::trainImpl_() const
 
         baseTrainer->setOutData(adjOutData);
         baseTrainer->setWeights(adjWeights);
+        if (StumpTrainer* st = dynamic_cast<StumpTrainer*>(baseTrainer.get()))
+            st->setStrata((outData_ == 1.0f).cast<size_t>());
 
         SWITCH_TIMER(t0, t1);
         unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
         SWITCH_TIMER(t1, t0);
 
+        if (i % logStep == 0)
+            cout << "y*: " << adjOutData.minCoeff() << " - " << adjOutData.maxCoeff() << endl;
+
         ArrayXf f = basePredictor->predict(inData_);
+
+        if (i % logStep == 0)
+            cout << "f: " << f.minCoeff() << " - " << f.maxCoeff() << endl;
+
         ASSERT(f.isFinite().all());
         F += eta * f.cast<T>();
         basePredictors.push_back(std::move(basePredictor));

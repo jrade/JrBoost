@@ -49,6 +49,7 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
         .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
         .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
+        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
         .def_property("highPrecision", &StumpOptions::highPrecision, &StumpOptions::setHighPrecision)
         .def_property("profile", &StumpOptions::profile, &StumpOptions::setProfile);
 

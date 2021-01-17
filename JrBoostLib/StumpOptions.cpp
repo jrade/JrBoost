@@ -21,6 +21,11 @@ float StumpOptions::minNodeWeight() const
     return minNodeWeight_;
 }
 
+bool StumpOptions::isStratified() const
+{
+    return isStratified_;
+}
+
 bool StumpOptions::highPrecision() const
 {
     return highPrecision_;
@@ -40,6 +45,11 @@ void StumpOptions::setUsedVariableRatio(float r)
 {
     ASSERT(r > 0.0f && r <= 1.0f);
     usedVariableRatio_ = r;
+}
+
+void StumpOptions::setIsStratified(bool b)
+{
+    isStratified_ = b;
 }
 
 void StumpOptions::setMinNodeSize(size_t n)

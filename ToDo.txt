@@ -1,23 +1,68 @@
-Stratified sample subsets
-	Simplify fast algorithms
-	Fast random distributions
 
-benchmark the two bernoulli implementations
-	maybe simplify the code
+use double everywhere except in indata matrix
+
+---------------------------------------------------------------------
 
 Check that implementations of ADA Boost and Logit Boost are correct
 
-LogitBoost:
-	log adjY and f, does f blow up when have unbalanced sample subsets?
 
-investigate abstract factory crash (JrBooster Crash)
-	is the problem return values that are derived objects passed with unique_ptr to base class?
-	test with the Miniconda that somes bundles with Visual Studio
+Output from LogitBoost, DUX5, usedSampleRatio = 0.5
 
-seems we can use float throughout for in data
-and double throughout for out data and weights
+0
+Fy: -3.15167 - 3.15167
+w: 0.00729405 - 0.00729405 -> 100%
+y*: -0.500915 - 273.695    // ??????????????
+f: -0.500915 - 273.695
 
--------------------------------------------------------------------------
+1
+Fy: -3.20176 - 24.2179
+w: 3.68713e-21 - 0.00660102 -> 100%
+y*: -0.500828 - 302.483
+f: -0.500828 - 302.483
+
+2
+Fy: -3.25184 - 54.4661
+w: 0 - 0.00597374 -> 97.4359%
+y*: -0.500749 - 334.298
+f: -0.500749 - -0.500749
+
+3
+Fy: -3.30192 - 54.4161
+w: 0 - 0.00540599 -> 97.4359%
+y*: -0.500678 - 369.459
+f: -0.500678 - -0.500678
+
+4
+Fy: -3.35198 - 54.366
+w: 0 - 0.00489215 -> 97.4359%
+y*: -0.500613 - 408.318
+f: -0.500613 - -0.500613
+
+5
+Fy: -3.40205 - 54.3159
+w: 0 - 0.00442709 -> 97.4359%
+y*: -0.500555 - 451.264
+f: -0.500555 - -0.500555
+
+6
+Fy: -3.4521 - 54.2659
+w: 0 - 0.0040062 -> 97.4359%
+y*: -0.500502 - 498.726
+f: -0.500502 - 498.726
+
+7
+Fy: -46.4205 - 104.139
+w: 0 - 0.00362528 -> 96.9231%
+Traceback (most recent call last):
+  File "C:\Users\Rade\Documents\Data Analysis\Code\JrBoost\JrBoostTest\LeukemiaBoost.py", line 48, in <module>
+    predictor = trainer.train()
+jrboost.AssertionError:
+Condition: outData.isFinite().all()
+File: C:\Users\Rade\Documents\Data Analysis\Code\JrBoost\JrBoostLib\StumpTrainer.cpp
+Line: 32
+Press any key to continue . . .
+
+===========================================================================================
 
 review derivations of both ada boost and logit boost
 	do both give lor/2?
@@ -44,10 +89,14 @@ try mixed debugging again
 low prio:
 	pass outData and weights as Ref<ArrayXf>
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
+	faster uint64_t based Bernoulli distribution ??
 
 -------------------------------------------------------------------
 
 PyBind11 issues:
+	investigate abstract factory crash (JrBooster Crash)
+		is the problem return values that are derived objects passed with unique_ptr to base class?
+		test with the Miniconda that somes bundles with Visual Studio
 	how translate custom C++ exceptions to standard Python exceptions
 	no way of specifying noocnvert for property setters
 	

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "AdaBoostTrainer.h"
 #include "AdaBoostOptions.h"
+#include "StumpTrainer.h"
 
 AdaBoostTrainer::AdaBoostTrainer() :
     options_{ std::make_unique<AdaBoostOptions>() }
@@ -43,6 +44,9 @@ BoostPredictor* AdaBoostTrainer::train() const
 template<typename T>
 BoostPredictor* AdaBoostTrainer::trainImpl_() const
 {
+    const size_t logInterval = 100;
+
+
     size_t t0 = 0;
     size_t t1 = 0;
     START_TIMER(t0);
@@ -54,6 +58,8 @@ BoostPredictor* AdaBoostTrainer::trainImpl_() const
     Eigen::Array<T, Eigen::Dynamic, 1> F = Eigen::Array<T, Eigen::Dynamic, 1>::Constant(sampleCount_, f0);
 
     unique_ptr<AbstractTrainer> baseTrainer{ options_->baseOptions()->createTrainer() };
+    if (StumpTrainer* st = dynamic_cast<StumpTrainer*>(baseTrainer.get()))
+        st->setStrata((outData_ == 1.0f).cast<size_t>());
     baseTrainer->setInData(inData_);
     baseTrainer->setOutData(outData_);
 
@@ -69,11 +75,11 @@ BoostPredictor* AdaBoostTrainer::trainImpl_() const
 
         baseTrainer->setWeights(adjWeights);
 
-        if (i % 100 == -1)
-        {
-            cout << i << ": " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
-            cout << " -> " << 100.0f * (adjWeights != 0).cast<float>().sum() / sampleCount_ << "%" << endl;
-        }
+        //if (i % logInterval == 0)
+        //{
+        //    cout << i << ": " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
+        //    cout << " -> " << 100.0f * (adjWeights != 0).cast<float>().sum() / sampleCount_ << "%" << endl;
+        //}
 
         SWITCH_TIMER(t0, t1);
         unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
