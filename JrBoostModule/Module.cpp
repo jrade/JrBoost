@@ -41,7 +41,9 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<StumpPredictor, AbstractPredictor>{ mod, "StumpPredictor" };
 
     py::class_<StumpTrainer, AbstractTrainer>{ mod, "StumpTrainer" }
-        .def(py::init<>());
+        .def(py::init<>())
+        .def("setStrata", &StumpTrainer::setStrata);
+
     
     py::class_<StumpOptions, AbstractOptions>{ mod, "StumpOptions" }
         .def(py::init<>())
@@ -50,7 +52,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
         .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
         .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
-        .def_property("highPrecision", &StumpOptions::highPrecision, &StumpOptions::setHighPrecision)
         .def_property("profile", &StumpOptions::profile, &StumpOptions::setProfile);
 
     // Boost classes
@@ -64,7 +65,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def(py::init<>())
         .def_property("iterationCount", &AdaBoostOptions::iterationCount, &AdaBoostOptions::setIterationCount)
         .def_property("eta", &AdaBoostOptions::eta, &AdaBoostOptions::setEta)
-        .def_property("highPrecision", &AdaBoostOptions::highPrecision, &AdaBoostOptions::setHighPrecision)
         .def_property("baseOptions", &AdaBoostOptions::baseOptions, &AdaBoostOptions::setBaseOptions);
 
     py::class_<LogitBoostTrainer, AbstractTrainer>{ mod, "LogitBoostTrainer" }

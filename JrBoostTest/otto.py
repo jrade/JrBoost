@@ -31,14 +31,12 @@ weights = np.full((sampleCount,), 1.0)
 baseOpt = jrboost.StumpOptions()
 baseOpt.usedSampleRatio = 1
 baseOpt.usedVariableRatio = 0.2
-baseOpt.highPrecision = True
 baseOpt.profile = False
 
 opt = jrboost.AdaBoostOptions()
 #opt = jrboost.LogitBoostOptions()
 opt.iterationCount = 1000
 opt.eta = 1.0
-opt.highPrecision = True
 opt.baseOptions = baseOpt
 
 trainer = opt.createTrainer()

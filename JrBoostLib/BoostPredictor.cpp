@@ -2,15 +2,15 @@
 #include "BoostPredictor.h"
 
 BoostPredictor::BoostPredictor(
-    size_t variableCount, float f0, float eta, vector<unique_ptr<AbstractPredictor>>&& basePredictors
+    size_t variableCount, double c0, vector<double>&& c1, vector<unique_ptr<AbstractPredictor>>&& basePredictors
 ) :
     variableCount_(variableCount),
-    f0_(f0),
-    eta_(eta),
+    c0_(c0),
+    c1_(std::move(c1)),
     basePredictors_(std::move(basePredictors))
 {}
 
-ArrayXf BoostPredictor::predict(CRefXXf inData) const
+ArrayXd BoostPredictor::predict(CRefXXf inData) const
 {
     size_t sampleCount = inData.rows();
     size_t variableCount = inData.cols();
@@ -18,8 +18,9 @@ ArrayXf BoostPredictor::predict(CRefXXf inData) const
     if (variableCount != variableCount_)
         throw runtime_error("The data does not have the same number of variables as the training data.");
 
-    Eigen::ArrayXd outData{ Eigen::ArrayXd::Constant(sampleCount, f0_) };
-    for (auto& pred : basePredictors_)
-        outData += eta_ * pred->predict(inData).cast<double>();
-    return outData.cast<float>();
+    ArrayXd outData{ Eigen::ArrayXd::Constant(sampleCount, c0_) };
+    size_t n = basePredictors_.size();
+    for (size_t k = 0; k < n; ++k)
+        outData += c1_[k] * basePredictors_[k]->predict(inData).cast<double>();
+    return outData;
 }

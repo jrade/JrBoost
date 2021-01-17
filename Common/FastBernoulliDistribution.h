@@ -26,12 +26,13 @@ private:
 //     (1) returns true with probability approximately k / n
 //     (2) always returns true for k = n
 //     (3) always returns false for k = 0
+
 // That (1) and (2) hold should be obvious.
 //
 // That (3) holds follows from the inequality
 //    a * b  < a * (b * (1 + 2 *e))
 // for any normal (i.e. not denormal) positive a and b with 2 * a * b < infinity.
-// Here e = std::numeric_limits<double>::epsilon().
+// Here e = numeric_limits<double>::epsilon().
 //
 // This inequality can be seen as follows.
 // Since (2^k * a) * b = 2^k * (a * b) we may assume that 1 <= a < 2 and 1 <= b < 2.

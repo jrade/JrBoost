@@ -6,7 +6,7 @@ size_t LogitBoostOptions::iterationCount() const
     return iterationCount_;
 }
 
-float LogitBoostOptions::eta() const
+double LogitBoostOptions::eta() const
 {
     return eta_;
 }
@@ -26,9 +26,9 @@ void LogitBoostOptions::setIterationCount(size_t n)
     iterationCount_ = n;
 }
 
-void LogitBoostOptions::setEta(float eta)
+void LogitBoostOptions::setEta(double eta)
 {
-    ASSERT(eta > 0.0f);
+    ASSERT(eta > 0.0);
     eta_ = eta;
 }
 

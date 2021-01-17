@@ -6,16 +6,16 @@ class BoostPredictor : public AbstractPredictor {
 public:
     virtual ~BoostPredictor() = default;
     virtual size_t variableCount() const { return variableCount_; }
-    virtual ArrayXf predict(CRefXXf inData) const;
+    virtual ArrayXd predict(CRefXXf inData) const;
 
 private:
-    BoostPredictor(size_t variableCount, float f0, float eta, vector<unique_ptr<AbstractPredictor>>&& basePredictors);
+    BoostPredictor(size_t variableCount, double c0, vector<double>&& c1, vector<unique_ptr<AbstractPredictor>>&& basePredictors);
 
     friend class AdaBoostTrainer;
     friend class LogitBoostTrainer;
 
     size_t variableCount_;
-    float f0_;
-    float eta_;
+    double c0_;
+    vector<double> c1_;
     vector<unique_ptr<AbstractPredictor>> basePredictors_;
   };

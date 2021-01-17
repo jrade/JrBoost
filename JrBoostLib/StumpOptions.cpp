@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "StumpOptions.h"
 
-float StumpOptions::usedSampleRatio() const
+double StumpOptions::usedSampleRatio() const
 {
     return usedSampleRatio_;
 }
 
-float StumpOptions::usedVariableRatio() const
+double StumpOptions::usedVariableRatio() const
 {
     return usedVariableRatio_;
 }
@@ -16,7 +16,7 @@ size_t StumpOptions::minNodeSize() const
     return minNodeSize_;
 }
 
-float StumpOptions::minNodeWeight() const
+double StumpOptions::minNodeWeight() const
 {
     return minNodeWeight_;
 }
@@ -26,24 +26,19 @@ bool StumpOptions::isStratified() const
     return isStratified_;
 }
 
-bool StumpOptions::highPrecision() const
-{
-    return highPrecision_;
-}
-
 bool StumpOptions::profile() const {
     return profile_; 
 }
 
-void StumpOptions::setUsedSampleRatio(float r)
+void StumpOptions::setUsedSampleRatio(double r)
 {
-    ASSERT(r > 0.0f && r <= 1.0f);
+    ASSERT(r > 0.0 && r <= 1.0);
     usedSampleRatio_ = r;
 }
 
-void StumpOptions::setUsedVariableRatio(float r)
+void StumpOptions::setUsedVariableRatio(double r)
 {
-    ASSERT(r > 0.0f && r <= 1.0f);
+    ASSERT(r > 0.0 && r <= 1.0);
     usedVariableRatio_ = r;
 }
 
@@ -58,14 +53,9 @@ void StumpOptions::setMinNodeSize(size_t n)
     minNodeSize_ = n;
 }
 
-void StumpOptions::setMinNodeWeight(float w)
+void StumpOptions::setMinNodeWeight(double w)
 {
     minNodeWeight_ = w;
-}
-
-void StumpOptions::setHighPrecision(bool p)
-{
-    highPrecision_ = p;
 }
 
 void StumpOptions::setProfile(bool p)

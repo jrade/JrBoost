@@ -11,8 +11,8 @@ public:
     virtual ~StumpTrainer() = default;
 
     virtual void setInData(CRefXXf inData);
-    virtual void setOutData(const ArrayXf& outData);
-    virtual void setWeights(const ArrayXf& weights);
+    virtual void setOutData(const ArrayXd& outData);
+    virtual void setWeights(const ArrayXd& weights);
     virtual void setOptions(const AbstractOptions& opt);
 
     void setStrata(const ArrayXs& strata);
@@ -27,8 +27,8 @@ private:
     size_t variableCount_{ 0 };
     vector<vector<size_t>> sortedSamples_;
 
-    ArrayXf outData_;
-    ArrayXf weights_;
+    ArrayXd outData_;
+    ArrayXd weights_;
     unique_ptr<StumpOptions> options_;
 
     ArrayXs strata_;

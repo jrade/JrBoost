@@ -7,7 +7,7 @@ protected:
 public:
     virtual ~AbstractPredictor() = default;
     virtual size_t variableCount() const = 0;
-    virtual ArrayXf predict(CRefXXf inData) const = 0;
+    virtual ArrayXd predict(CRefXXf inData) const = 0;
 
 // deleted:
     AbstractPredictor(const AbstractPredictor&) = delete;

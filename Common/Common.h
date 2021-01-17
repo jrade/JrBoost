@@ -27,9 +27,8 @@ using std::vector;
 
 #include <Eigen/Core>
 
-using Eigen::ArrayXf;
+using Eigen::ArrayXd;
 using CRefXXf = Eigen::Ref<const Eigen::ArrayXXf>;
-
 using ArrayXs = Eigen::Array<size_t, Eigen::Dynamic, 1>;
 
 inline void assign(CRefXXf& a, const CRefXXf& b)

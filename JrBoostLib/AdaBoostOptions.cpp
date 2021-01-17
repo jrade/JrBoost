@@ -6,7 +6,7 @@ size_t AdaBoostOptions::iterationCount() const
     return iterationCount_;
 }
 
-float AdaBoostOptions::eta() const
+double AdaBoostOptions::eta() const
 {
     return eta_;
 }
@@ -26,9 +26,9 @@ void AdaBoostOptions::setIterationCount(size_t n)
     iterationCount_ = n;
 }
 
-void AdaBoostOptions::setEta(float eta)
+void AdaBoostOptions::setEta(double eta)
 {
-    ASSERT(eta > 0.0f);
+    ASSERT(eta > 0.0);
     eta_ = eta;
 }
 

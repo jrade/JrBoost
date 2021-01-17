@@ -27,16 +27,16 @@ void StumpTrainer::setInData(CRefXXf inData)
     }
 }
 
-void StumpTrainer::setOutData(const ArrayXf& outData)
+void StumpTrainer::setOutData(const ArrayXd& outData)
 {
     ASSERT(outData.isFinite().all());
     outData_ = outData;
 }
 
-void StumpTrainer::setWeights(const ArrayXf& weights)
+void StumpTrainer::setWeights(const ArrayXd& weights)
 {
-    ASSERT((weights < numeric_limits<float>::infinity()).all());
-    ASSERT((weights >= 0).all());
+    ASSERT((weights < numeric_limits<double>::infinity()).all());
+    ASSERT((weights >= 0.0).all());
     weights_ = weights;
 }
 
@@ -60,15 +60,6 @@ AbstractPredictor* StumpTrainer::train() const
     ASSERT(static_cast<size_t>(outData_.size()) == sampleCount_);
     ASSERT(static_cast<size_t>(weights_.size()) == sampleCount_);
 
-    if (options_->highPrecision())
-        return trainImpl_<double>();
-    else
-        return trainImpl_<float>();
-}
-
-template<typename F>
-AbstractPredictor* StumpTrainer::trainImpl_() const
-{
     size_t n = 0;
 
     size_t t0 = 0;
@@ -147,12 +138,12 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
 
     // sums
 
-    F sumW = F{ 0 };
-    F sumWY = F{ 0 };
+    double sumW = 0.0;
+    double sumWY = 0.0;
     for (size_t i = 0; i < sampleCount_; ++i) {
-        F m = usedSampleMask_[i];
-        F w = weights_[i];
-        F y = outData_[i];
+        double m = usedSampleMask_[i];
+        double w = weights_[i];
+        double y = outData_[i];
         sumW += m * w;
         sumWY += m * w * y;
     }
@@ -161,19 +152,19 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
 
     // find best split
 
-    F bestScore = sumWY * sumWY / sumW;
+    double bestScore = sumWY * sumWY / sumW;
     size_t bestJ = static_cast<size_t>(-1);
     float bestX = numeric_limits<float>::quiet_NaN();
-    F bestLeftY = numeric_limits<F>::quiet_NaN();
-    F bestRightY = numeric_limits<F>::quiet_NaN();
+    double bestLeftY = numeric_limits<double>::quiet_NaN();
+    double bestRightY = numeric_limits<double>::quiet_NaN();
 
     sortedUsedSamples_.resize(usedSampleCount);
 
     size_t minNodeSize = options_->minNodeSize();
 
-    const F tol = sumW * sqrt(static_cast<F>(usedSampleCount)) * numeric_limits<F>::epsilon() / 2;
+    const double tol = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
     // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
-    const F minNodeWeight = std::max<F>(options_->minNodeWeight(), tol);
+    const double minNodeWeight = std::max<double>(options_->minNodeWeight(), tol);
         
     for (size_t j : usedVariables_) {
 
@@ -190,10 +181,10 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
         // find best split
         SWITCH_TIMER(t1, t2);
 
-        F leftSumW = 0;
-        F leftSumWY = 0;
-        F rightSumW = sumW;
-        F rightSumWY = sumWY;
+        double leftSumW = 0.0;
+        double leftSumWY = 0.0;
+        double rightSumW = sumW;
+        double rightSumWY = sumWY;
 
         const auto pBegin = begin(sortedUsedSamples_);
         const auto pEnd = end(sortedUsedSamples_);
@@ -205,13 +196,13 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
         while (p != pEnd - 1) {
             const size_t i = nextI;
             nextI = *++p;
-            const F w = weights_[i];
-            const F y = outData_[i];
+            const double w = weights_[i];
+            const double y = outData_[i];
             leftSumW += w;
             rightSumW -= w;
             leftSumWY += w * y;
             rightSumWY -= w * y;
-            const F score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
+            const double score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
             if (score <= bestScore) continue;  // usually true
 
         //..................................................
@@ -238,8 +229,8 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
         }
 
         //{
-        //    const F w = weights_[nextI];
-        //    const F y = outData_[nextI];
+        //    const double w = weights_[nextI];
+        //    const double y = outData_[nextI];
         //    leftSumW += w;
         //    rightSumW -= w;
         //    leftSumWY += w * y;
@@ -255,13 +246,13 @@ AbstractPredictor* StumpTrainer::trainImpl_() const
         cout << t0 << endl;
         cout << t1 << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
         cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
-        cout << 100.0f * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
+        cout << 100.0 * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
         cout << endl;
     }
 
     if (bestJ == static_cast<size_t>(-1))
-        return new TrivialPredictor{ static_cast<float>(sumWY / sumW), variableCount_ };
+        return new TrivialPredictor{ sumWY / sumW, variableCount_ };
     else
         return new StumpPredictor{ 
-            variableCount_, bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY) };
+            variableCount_, bestJ, bestX, bestLeftY, bestRightY };
 };
