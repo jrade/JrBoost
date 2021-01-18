@@ -40,17 +40,18 @@ void StumpTrainer::setWeights(const ArrayXd& weights)
     weights_ = weights;
 }
 
+void StumpTrainer::setStrata(const ArrayXd& strata)
+{
+    ASSERT((strata == strata.cast<bool>().cast<double>()).all());	// all elements must be 0 or 1
+    strata_ = strata.cast<size_t>();
+    stratum0Count_ = (strata_ == 0).cast<size_t>().sum();
+    stratum1Count_ = (strata_ == 1).cast<size_t>().sum();
+}
+
 void StumpTrainer::setOptions(const AbstractOptions& opt)
 {
     const StumpOptions& opt1 = dynamic_cast<const StumpOptions&>(opt);
     options_.reset(opt1.clone());
-}
-
-void StumpTrainer::setStrata(const ArrayXs& strata)
-{
-    strata_ = strata;
-    stratum0Count_ = (strata_ == 0).cast<size_t>().sum();
-    stratum1Count_ = (strata_ == 1).cast<size_t>().sum();
 }
 
 AbstractPredictor* StumpTrainer::train() const
@@ -59,13 +60,12 @@ AbstractPredictor* StumpTrainer::train() const
     ASSERT(variableCount_ > 0);
     ASSERT(static_cast<size_t>(outData_.size()) == sampleCount_);
     ASSERT(static_cast<size_t>(weights_.size()) == sampleCount_);
+    ASSERT(!options_->isStratified() || static_cast<size_t>(strata_.size()) == sampleCount_);
 
     size_t n = 0;
-
     size_t t0 = 0;
     size_t t1 = 0;
     size_t t2 = 0;
-
     START_TIMER(t0);
 
     // used sample mask
@@ -88,6 +88,10 @@ AbstractPredictor* StumpTrainer::train() const
         };
 
         usedSampleCount = usedSampleCountByStratum[0] + usedSampleCountByStratum[1];
+
+        //cout << sampleCountByStratum[0] << " " << sampleCountByStratum[1] << " ";
+        //cout << usedSampleCountByStratum[0] << " " << usedSampleCountByStratum[1] << endl;
+
         usedSampleMask_.resize(sampleCount_);
 
         fastStratifiedRandomMask(
@@ -98,6 +102,11 @@ AbstractPredictor* StumpTrainer::train() const
             begin(usedSampleCountByStratum),
             fastRNE
         );
+
+        //ASSERT(sampleCountByStratum[0] == 0);
+        //ASSERT(sampleCountByStratum[1] == 0);
+        //ASSERT(usedSampleCountByStratum[0] == 0);
+        //ASSERT(usedSampleCountByStratum[1] == 0);
     }
     
     else {

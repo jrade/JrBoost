@@ -1,32 +1,42 @@
-strata attribute
-	add some asserts
-	move to abstract base class?
-		remove StumpTRainer includes
-
 Qlucore wrapper
 
-multi-group
+	do timing of the hyperparameter optimization script - where is the bottleneck?
+		TRainer train: log times inside and outside
 
-parallellized hyperparameter evaluation
+	variable step size
+		n and eta as vectors
+
+		add gamma parameter: -0.3, -0.2, -0.1, 0.1, 0.2, 0.3
+		iterCount and eta as vectors instead
+
+
+	dynamic eta  (add a gammma parameter?)
+
+	min weight parameter?
+
+	parallellized hyperparameter evaluation
+
+-------------------------------------------------------------------------
+
+gradient boost algorithm
 
 trees
+
+multi-group
 
 should we worry about copying the indata matrix?
 
 dynamic eta (smaller in the first iterations)
-
-stratified sample subsets?? 
-	kanske snabb implementation som idag med 
 
 -------------------------------------------------------------------------
 
 try mixed debugging again
 
 low prio:
-	pass outData and weights as Ref<ArrayXf>
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 	faster uint64_t based Bernoulli distribution ??
 	allow more than two strata in StumpPredictor?
+	L2-penalty (lambda) or L1-penalty (alpha)
 
 -------------------------------------------------------------------
 

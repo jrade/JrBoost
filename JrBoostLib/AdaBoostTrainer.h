@@ -13,6 +13,7 @@ public:
     virtual void setInData(CRefXXf inData);
     virtual void setOutData(const ArrayXd& outData);
     virtual void setWeights(const ArrayXd& weights);
+    virtual void setStrata(const ArrayXd&) {}
     virtual void setOptions(const AbstractOptions& opt);
 
     virtual BoostPredictor* train() const;

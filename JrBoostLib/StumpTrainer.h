@@ -13,15 +13,12 @@ public:
     virtual void setInData(CRefXXf inData);
     virtual void setOutData(const ArrayXd& outData);
     virtual void setWeights(const ArrayXd& weights);
+    virtual void setStrata(const ArrayXd& strata);
     virtual void setOptions(const AbstractOptions& opt);
-
-    void setStrata(const ArrayXs& strata);
 
     virtual AbstractPredictor* train() const;
 
 private:
-    template<typename F> AbstractPredictor*  trainImpl_() const;
-
     CRefXXf inData_{ dummyArrayXXf };
     size_t sampleCount_{ 0 };
     size_t variableCount_{ 0 };
@@ -29,11 +26,12 @@ private:
 
     ArrayXd outData_;
     ArrayXd weights_;
-    unique_ptr<StumpOptions> options_;
 
-    ArrayXs strata_;
+    Eigen::Array<size_t, Eigen::Dynamic, 1> strata_;
     size_t stratum0Count_;
     size_t stratum1Count_;
+
+    unique_ptr<StumpOptions> options_;
 
     // buffers used by train()
     mutable vector<char> usedSampleMask_;

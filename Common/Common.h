@@ -29,7 +29,6 @@ using std::vector;
 
 using Eigen::ArrayXd;
 using CRefXXf = Eigen::Ref<const Eigen::ArrayXXf>;
-using ArrayXs = Eigen::Array<size_t, Eigen::Dynamic, 1>;
 
 inline void assign(CRefXXf& a, const CRefXXf& b)
 {
@@ -50,3 +49,5 @@ inline splitmix fastRNE{ std::random_device{} };
 #include "Assert.h"
 #include "FastAlgorithms.h"
 #include "Profiling.h"
+
+#define DYN_ETA
