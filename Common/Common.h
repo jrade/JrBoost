@@ -49,5 +49,3 @@ inline splitmix fastRNE{ std::random_device{} };
 #include "Assert.h"
 #include "FastAlgorithms.h"
 #include "Profiling.h"
-
-#define DYN_ETA

@@ -1,24 +1,29 @@
-Qlucore wrapper
 
-	do timing of the hyperparameter optimization script - where is the bottleneck?
-		TRainer train: log times inside and outside
+variable step size in logit booster as well
+	then commit
 
-	variable step size
-		n and eta as vectors
+log attribute in optimize options and booster options
 
-		add gamma parameter: -0.3, -0.2, -0.1, 0.1, 0.2, 0.3
-		iterCount and eta as vectors instead
+do timing of the hyperparameter optimization script - where is the bottleneck?
+	Trainer train: log times inside and outside
 
-
-	dynamic eta  (add a gammma parameter?)
-
-	min weight parameter?
-
-	parallellized hyperparameter evaluation
-
--------------------------------------------------------------------------
+min weight parameter
 
 gradient boost algorithm
+
+parallellized hyperparameter evaluation
+	new XVal class
+	have train function take vecctor of options object
+	do we need the mutable members in StumpTrainer	
+		do some timings
+
+sample eta1, eta2 and eta3 from the same subset, but impose a eta1 < eta2 < eta3 constraint
+
+follow up alpha boost idea
+
+log loss or lin loss target?
+
+-----------------------------------------------------------------------
 
 trees
 

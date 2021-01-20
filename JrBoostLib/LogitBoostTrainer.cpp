@@ -58,40 +58,47 @@ BoostPredictor* LogitBoostTrainer::train() const
     baseTrainer->setInData(inData_);
     baseTrainer->setStrata((outData_ + 1.0) / 2.0);
 
-    const size_t n = options_->iterationCount();
-    const double eta = options_->eta();
     ArrayXd adjOutData, adjWeights, f;
-
-    vector<double> coeff;
     vector<unique_ptr<AbstractPredictor>> basePredictors;
-        
-    for (size_t i = 0; i < n; ++i) {
+    vector<double> coeff;
 
-        double FAbsMin = F.abs().minCoeff();
-        adjWeights = 1.0 / ((F - FAbsMin).exp() + (-F - FAbsMin).exp()).square();
-        adjWeights /= adjWeights.maxCoeff();
-        baseTrainer->setWeights(adjWeights);
+    const vector<size_t>& iterCountList = options_->iterationCount();
+    const vector<double>& etaList = options_->eta();
+    size_t n = iterCountList.size();
+    ASSERT(etaList.size() == n);
 
-        adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
-        baseTrainer->setOutData(adjOutData);
+    size_t i = 0;
+    for (size_t j = 0; j < n; ++j) {
+        size_t iterCount = iterCountList[j];
+        double eta = etaList[j];
+        for (size_t k = 0; k < iterCount; ++i, ++k) {
 
-        SWITCH_TIMER(t0, t1);
-        unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
-        SWITCH_TIMER(t1, t0);
+            double FAbsMin = F.abs().minCoeff();
+            adjWeights = 1.0 / ((F - FAbsMin).exp() + (-F - FAbsMin).exp()).square();
+            adjWeights /= adjWeights.maxCoeff();
+            baseTrainer->setWeights(adjWeights);
 
-        f = basePredictor->predict(inData_);
-        double c = eta / std::max(0.5, f.abs().maxCoeff());
-        F += c * f;
-        coeff.push_back(2 * c);
-        basePredictors.push_back(std::move(basePredictor));
+            adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
+            baseTrainer->setOutData(adjOutData);
 
-        if (logStep > 0 && i % logStep == 0) {
-            cout << endl << i << endl;
-            cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
-            cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
-            cout << " -> " << 100.0 * (adjWeights != 0.0).cast<double>().sum() / sampleCount_ << "%" << endl;
-            cout << "y*y: " << (outData_ * adjOutData).minCoeff() << " - " << (outData_ * adjOutData).maxCoeff() << endl;
-            cout << "fy: " << (f * outData_).minCoeff() << " - " << (f * outData_).maxCoeff() << endl << endl;
+            SWITCH_TIMER(t0, t1);
+            unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
+            SWITCH_TIMER(t1, t0);
+
+            f = basePredictor->predict(inData_);
+            double c = eta / std::max(0.5, f.abs().maxCoeff());
+            F += c * f;
+            coeff.push_back(2 * c);
+            basePredictors.push_back(std::move(basePredictor));
+
+            if (logStep > 0 && i % logStep == 0) {
+                cout << i << "(" << eta << ")" << endl;
+                cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
+                cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
+                cout << " -> " << 100.0 * (adjWeights != 0.0).cast<double>().sum() / sampleCount_ << "%" << endl;
+                cout << "y*y: " << (outData_ * adjOutData).minCoeff() << " - " << (outData_ * adjOutData).maxCoeff() << endl;
+                cout << "fy: " << (f * outData_).minCoeff() << " - " << (f * outData_).maxCoeff() << endl << endl;
+            }
         }
     }
 

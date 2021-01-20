@@ -59,34 +59,41 @@ BoostPredictor* AdaBoostTrainer::train() const
     baseTrainer->setOutData(outData_);
     baseTrainer->setStrata((outData_ + 1.0) / 2.0);
 
-    const size_t n = options_->iterationCount();
-    const double eta = options_->eta();
     ArrayXd adjWeights, f;
     vector<unique_ptr<AbstractPredictor>> basePredictors;
-        
-    for (size_t i = 0; i < n; ++i) {
+    vector<double> coeff;
 
-        if (logStep > 0 && i % logStep == 0) {
-            cout << i << endl;
-            cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
-        }
+    const vector<size_t>& iterCountList = options_->iterationCount();
+    const vector<double>& etaList = options_->eta();
+    size_t n = iterCountList.size();
+    ASSERT(etaList.size() == n);
 
-        double FYMin = (F * outData_).minCoeff();
-        adjWeights = weights_ * (-F * outData_ + FYMin).exp();
-        baseTrainer->setWeights(adjWeights);
+    size_t i = 0;
+    for (size_t j = 0; j < n; ++j) {
+        size_t iterCount = iterCountList[j];
+        double eta = etaList[j];
+        for (size_t k = 0; k < iterCount; ++i, ++k) {
 
-        SWITCH_TIMER(t0, t1);
-        unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
-        SWITCH_TIMER(t1, t0);
+            double FYMin = (F * outData_).minCoeff();
+            adjWeights = weights_ * (-F * outData_ + FYMin).exp();
+            baseTrainer->setWeights(adjWeights);
 
-        f = basePredictor->predict(inData_);
-        F += eta * f;
-        basePredictors.push_back(std::move(basePredictor));
+            SWITCH_TIMER(t0, t1);
+            unique_ptr<AbstractPredictor> basePredictor{ baseTrainer->train() };
+            SWITCH_TIMER(t1, t0);
 
-        if (logStep > 0 && i % logStep == 0) {
-            cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
-            cout << " -> " << 100.0 * (adjWeights != 0).cast<double>().sum() / sampleCount_ << "%" << endl;
-            cout << "fy: " << (f * outData_).minCoeff() << " - " << (f * outData_).maxCoeff() << endl << endl;
+            f = basePredictor->predict(inData_);
+            F += eta * f;
+            basePredictors.push_back(std::move(basePredictor));
+            coeff.push_back(2 * eta);
+
+            if (logStep > 0 && i % logStep == 0) {
+                cout << i << "(" << eta << ")" << endl;
+                cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
+                cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
+                cout << " -> " << 100.0 * (adjWeights != 0).cast<double>().sum() / sampleCount_ << "%" << endl;
+                cout << "fy: " << (f * outData_).minCoeff() << " - " << (f * outData_).maxCoeff() << endl << endl;
+            }
         }
     }
 
@@ -95,5 +102,5 @@ BoostPredictor* AdaBoostTrainer::train() const
     //cout << 1.0e-6 * t1 << endl;
     //cout << endl;
 
-    return new BoostPredictor(variableCount_, 2  * f0, vector<double>(n, 2 * eta), std::move(basePredictors));
+    return new BoostPredictor(variableCount_, 2  * f0, std::move(coeff), std::move(basePredictors));
 }

@@ -35,8 +35,10 @@ baseOpt.profile = False
 
 opt = jrboost.AdaBoostOptions()
 #opt = jrboost.LogitBoostOptions()
-opt.iterationCount = 1000
-opt.eta = 1.0
+#opt.iterationCount = [100, 900]
+#opt.eta = [0.1, 1]
+opt.iterationCount = [1000,]
+opt.eta = [1.0,]
 opt.baseOptions = baseOpt
 
 trainer = opt.createTrainer()

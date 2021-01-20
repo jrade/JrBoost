@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "LogitBoostOptions.h"
 
-size_t LogitBoostOptions::iterationCount() const
+vector<size_t> LogitBoostOptions::iterationCount() const
 {
     return iterationCount_;
 }
 
-double LogitBoostOptions::eta() const
+vector<double> LogitBoostOptions::eta() const
 {
     return eta_;
 }
@@ -21,14 +21,14 @@ AbstractOptions* LogitBoostOptions::baseOptions() const
     return baseOptions_->clone();
 }
 
-void LogitBoostOptions::setIterationCount(size_t n)
+void LogitBoostOptions::setIterationCount(const vector<size_t>& n)
 {
     iterationCount_ = n;
 }
 
-void LogitBoostOptions::setEta(double eta)
+void LogitBoostOptions::setEta(const vector<double>& eta)
 {
-    ASSERT(eta > 0.0);
+    ASSERT(eta.empty() || *std::min_element(begin(eta), end(eta)) > 0.0);
     eta_ = eta;
 }
 

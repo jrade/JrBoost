@@ -33,8 +33,8 @@ baseOpt.usedVariableRatio = 0.2
 baseOpt.profile = False
 
 opt = jrboost.AdaBoostOptions()
-opt.iterationCount = 100
-opt.eta = 0.3
+opt.iterationCount = [100,]
+opt.eta = [0.3,]
 opt.baseOptions = baseOpt
 
 trainer = opt.createTrainer()

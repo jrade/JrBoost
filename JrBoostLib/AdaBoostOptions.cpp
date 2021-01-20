@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "AdaBoostOptions.h"
 
-size_t AdaBoostOptions::iterationCount() const
+vector<size_t> AdaBoostOptions::iterationCount() const
 {
     return iterationCount_;
 }
 
-double AdaBoostOptions::eta() const
+vector<double> AdaBoostOptions::eta() const
 {
     return eta_;
 }
@@ -21,14 +21,14 @@ AbstractOptions* AdaBoostOptions::baseOptions() const
     return baseOptions_->clone();
 }
 
-void AdaBoostOptions::setIterationCount(size_t n)
+void AdaBoostOptions::setIterationCount(const vector<size_t>& n)
 {
     iterationCount_ = n;
 }
 
-void AdaBoostOptions::setEta(double eta)
+void AdaBoostOptions::setEta(const vector<double>& eta)
 {
-    ASSERT(eta > 0.0);
+    ASSERT(eta.empty()  || *std::min_element(begin(eta), end(eta)) > 0.0);
     eta_ = eta;
 }
 
