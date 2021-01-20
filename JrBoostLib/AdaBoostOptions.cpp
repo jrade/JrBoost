@@ -1,25 +1,6 @@
 #include "pch.h"
 #include "AdaBoostOptions.h"
 
-vector<size_t> AdaBoostOptions::iterationCount() const
-{
-    return iterationCount_;
-}
-
-vector<double> AdaBoostOptions::eta() const
-{
-    return eta_;
-}
-
-bool AdaBoostOptions::highPrecision() const
-{
-    return highPrecision_;
-}
-
-AbstractOptions* AdaBoostOptions::baseOptions() const
-{
-    return baseOptions_->clone();
-}
 
 void AdaBoostOptions::setIterationCount(const vector<size_t>& n)
 {
@@ -32,9 +13,9 @@ void AdaBoostOptions::setEta(const vector<double>& eta)
     eta_ = eta;
 }
 
-void AdaBoostOptions::setHighPrecision(bool b)
+void AdaBoostOptions::setLogStep(size_t n)
 {
-    highPrecision_ = b;
+    logStep_ = n;
 }
 
 void AdaBoostOptions::setBaseOptions(const AbstractOptions& opt)
@@ -58,6 +39,6 @@ AdaBoostOptions::AdaBoostOptions(const AdaBoostOptions& a) :
     AbstractOptions{ a },
     iterationCount_{ a.iterationCount_ },
     eta_{ a.eta_ },
-    highPrecision_{ a.highPrecision_ },
+    logStep_{ a.logStep_ },
     baseOptions_{ a.baseOptions_->clone() }
 {}

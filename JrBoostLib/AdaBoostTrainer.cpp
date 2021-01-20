@@ -42,8 +42,6 @@ BoostPredictor* AdaBoostTrainer::train() const
     ASSERT(static_cast<size_t>(weights_.rows()) == sampleCount_);
     ASSERT(options_);
 
-    const size_t logStep = 0;
-
     size_t t0 = 0;
     size_t t1 = 0;
     START_TIMER(t0);
@@ -87,7 +85,7 @@ BoostPredictor* AdaBoostTrainer::train() const
             basePredictors.push_back(std::move(basePredictor));
             coeff.push_back(2 * eta);
 
-            if (logStep > 0 && i % logStep == 0) {
+            if (options_->logStep() > 0 && i % options_->logStep() == 0) {
                 cout << i << "(" << eta << ")" << endl;
                 cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
                 cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();

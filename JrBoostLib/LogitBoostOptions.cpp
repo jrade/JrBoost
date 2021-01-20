@@ -1,25 +1,6 @@
 #include "pch.h"
 #include "LogitBoostOptions.h"
 
-vector<size_t> LogitBoostOptions::iterationCount() const
-{
-    return iterationCount_;
-}
-
-vector<double> LogitBoostOptions::eta() const
-{
-    return eta_;
-}
-
-bool LogitBoostOptions::highPrecision() const
-{
-    return highPrecision_;
-}
-
-AbstractOptions* LogitBoostOptions::baseOptions() const
-{
-    return baseOptions_->clone();
-}
 
 void LogitBoostOptions::setIterationCount(const vector<size_t>& n)
 {
@@ -32,9 +13,9 @@ void LogitBoostOptions::setEta(const vector<double>& eta)
     eta_ = eta;
 }
 
-void LogitBoostOptions::setHighPrecision(bool b)
+void LogitBoostOptions::setLogStep(size_t n)
 {
-    highPrecision_ = b;
+    logStep_ = n;
 }
 
 void LogitBoostOptions::setBaseOptions(const AbstractOptions& opt)
@@ -58,6 +39,6 @@ LogitBoostOptions::LogitBoostOptions(const LogitBoostOptions& a) :
     AbstractOptions{ a },
     iterationCount_{ a.iterationCount_ },
     eta_{ a.eta_ },
-    highPrecision_{ a.highPrecision_ },
+    logStep_{ a.logStep_ },
     baseOptions_{ a.baseOptions_->clone() }
 {}

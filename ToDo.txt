@@ -1,13 +1,19 @@
 
-variable step size in logit booster as well
-	then commit
+Boosters:
+	logStep attribute
 
-log attribute in optimize options and booster options
+Base classifiers:
+	minCount, minWeight attributes
+
+log script:
+	logLevel attaribute
+
+play round with the min weight and min count attributes
+
+....................................................
 
 do timing of the hyperparameter optimization script - where is the bottleneck?
 	Trainer train: log times inside and outside
-
-min weight parameter
 
 gradient boost algorithm
 

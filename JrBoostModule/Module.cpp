@@ -64,8 +64,9 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<AdaBoostOptions, AbstractOptions>{ mod, "AdaBoostOptions" }
         .def(py::init<>())
         .def_property("iterationCount", &AdaBoostOptions::iterationCount, &AdaBoostOptions::setIterationCount)
-        .def_property("eta", &AdaBoostOptions::eta, &AdaBoostOptions::setEta)
-        .def_property("baseOptions", &AdaBoostOptions::baseOptions, &AdaBoostOptions::setBaseOptions);
+            .def_property("eta", &AdaBoostOptions::eta, &AdaBoostOptions::setEta)
+            .def_property("logStep", &AdaBoostOptions::logStep, &AdaBoostOptions::setLogStep)
+            .def_property("baseOptions", &AdaBoostOptions::baseOptions, &AdaBoostOptions::setBaseOptions);
 
     py::class_<LogitBoostTrainer, AbstractTrainer>{ mod, "LogitBoostTrainer" }
         .def(py::init<>());
@@ -74,6 +75,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def(py::init<>())
         .def_property("iterationCount", &LogitBoostOptions::iterationCount, &LogitBoostOptions::setIterationCount)
         .def_property("eta", &LogitBoostOptions::eta, &LogitBoostOptions::setEta)
-        .def_property("highPrecision", &LogitBoostOptions::highPrecision, &LogitBoostOptions::setHighPrecision)
+        .def_property("logStep", &LogitBoostOptions::logStep, &LogitBoostOptions::setLogStep)
         .def_property("baseOptions", &LogitBoostOptions::baseOptions, &LogitBoostOptions::setBaseOptions);
 }
