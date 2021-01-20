@@ -1,29 +1,25 @@
 #pragma once
 
-#include "AbstractTrainer.h"
-#include "BoostPredictor.h"
+#include "BoostOptions.h"
+#include "StumpTrainer.h"
 
-class LogitBoostOptions;
+class BoostPredictor;
 
-class LogitBoostTrainer : public AbstractTrainer {
+
+class LogitBoostTrainer {
 public:
-    LogitBoostTrainer();
-    virtual ~LogitBoostTrainer() = default;
+    LogitBoostTrainer(CRefXXf inData, const ArrayXd& outData, const ArrayXd& weights);
+    ~LogitBoostTrainer() = default;
+    BoostPredictor train(const BoostOptions& opt) const;
 
-    virtual void setInData(CRefXXf inData);
-    virtual void setOutData(const ArrayXd& outData);
-    virtual void setWeights(const ArrayXd& weights);
-    virtual void setStrata(const ArrayXd&) {}
-    virtual void setOptions(const AbstractOptions& opt);
-
-    virtual BoostPredictor* train() const;
+    // deleted:
+    LogitBoostTrainer() = delete;
+    LogitBoostTrainer(const LogitBoostTrainer&) = delete;
+    LogitBoostTrainer& operator=(const  LogitBoostTrainer&) = delete;
 
 private:
+    CRefXXf inData_;
     ArrayXd outData_;
     ArrayXd weights_;
-    unique_ptr<LogitBoostOptions> options_;
-
-    CRefXXf inData_{ dummyArrayXXf };
-    size_t sampleCount_ = 0;
-    size_t variableCount_ = 0;
+    StumpTrainer baseTrainer_;
 };

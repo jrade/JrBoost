@@ -10,6 +10,15 @@ StumpPredictor::StumpPredictor(size_t variableCount, size_t j, float x, double l
 {
 }
 
+StumpPredictor::StumpPredictor(size_t variableCount, double y) :
+    variableCount_{ variableCount },
+    j_{ 0 },
+    x_{ -numeric_limits<float>::infinity() },
+    leftY_{ numeric_limits<double>::quiet_NaN() },
+    rightY_{ y }
+{
+}
+
 ArrayXd StumpPredictor::predict(CRefXXf inData) const
 {
     size_t sampleCount = inData.rows();

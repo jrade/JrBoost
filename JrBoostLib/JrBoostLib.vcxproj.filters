@@ -4,19 +4,7 @@
     <ClInclude Include="pch.h">
       <Filter>Precompiled Header</Filter>
     </ClInclude>
-    <ClInclude Include="AbstractTrainer.h">
-      <Filter>Abstract</Filter>
-    </ClInclude>
-    <ClInclude Include="AbstractOptions.h">
-      <Filter>Abstract</Filter>
-    </ClInclude>
-    <ClInclude Include="AbstractPredictor.h">
-      <Filter>Abstract</Filter>
-    </ClInclude>
     <ClInclude Include="BoostPredictor.h">
-      <Filter>Boost</Filter>
-    </ClInclude>
-    <ClInclude Include="AdaBoostOptions.h">
       <Filter>Boost</Filter>
     </ClInclude>
     <ClInclude Include="AdaBoostTrainer.h">
@@ -31,14 +19,11 @@
     <ClInclude Include="StumpTrainer.h">
       <Filter>Stump</Filter>
     </ClInclude>
-    <ClInclude Include="LogitBoostOptions.h">
-      <Filter>Boost</Filter>
-    </ClInclude>
     <ClInclude Include="LogitBoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
-    <ClInclude Include="TrivialPredictor.h">
-      <Filter>Stump</Filter>
+    <ClInclude Include="BoostOptions.h">
+      <Filter>Boost</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -46,9 +31,6 @@
       <Filter>Precompiled Header</Filter>
     </ClCompile>
     <ClCompile Include="BoostPredictor.cpp">
-      <Filter>Boost</Filter>
-    </ClCompile>
-    <ClCompile Include="AdaBoostOptions.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
     <ClCompile Include="AdaBoostTrainer.cpp">
@@ -63,19 +45,16 @@
     <ClCompile Include="StumpTrainer.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
-    <ClCompile Include="LogitBoostOptions.cpp">
+    <ClCompile Include="LogitBoostTrainer.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
-    <ClCompile Include="LogitBoostTrainer.cpp">
+    <ClCompile Include="BoostOptions.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Precompiled Header">
       <UniqueIdentifier>{dbb42865-fbfd-4e86-b9db-2797caf3812d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Abstract">
-      <UniqueIdentifier>{0c6a9586-c3ad-4b15-9697-32ef37c9e0d7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Boost">
       <UniqueIdentifier>{218ce471-c2e9-439b-8a5e-6fad60ea77d1}</UniqueIdentifier>

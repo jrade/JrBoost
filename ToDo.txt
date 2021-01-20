@@ -1,43 +1,66 @@
 
-Boosters:
-	logStep attribute
+finish simplification:
+	make buffers data members in StumpTrainer
+	make RNG data member in StumpTrainer
+		time init with random device
+	alla arrayer som skickas genom constuctorerna kopieras
+		pass by value and move
+			check move support in Eigen
+	alla arrayer som skicka genom train-funnktionerna kopieras inte
 
-Base classifiers:
-	minCount, minWeight attributes
+multithread support
+	thread safety
+		rename StumpTrainer -> StumpTrainerImpl
+			class alignas(CACHE_LINE_SIZE) StumpTRainerImpl{};   // 64
+		add a StumpTrainer class that contains an array of StumpTRainerInpl objects, one for each thread
+	booster train method that takes vector of options objects
+	profile - how does it scale with the number of threads?
 
-log script:
-	logLevel attaribute
+........................................................
+
+variable count parameter in stump builder
+
+gradient boost
+	read xgb paper to check that my understanding is correct
+
+lambda and alpha parameters?
+
+.............................................
+
+def invert_permutation(p):
+    '''The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1. 
+    Returns an array s, where s[i] gives the index of i in p.
+    '''
+    s = np.empty_like(p)
+    s[p] = np.arange(p.size)
+    return s
+
+how id AdaBoostOptions.baseOptions handles by pybind11??
+	can we modify a const object?
+
+-----------------------------------------------------------
+
+ranking objects that work without filter objects
+
+more efficient cv objects
+
+depth 1 only or not?
+
+...........................................
 
 play round with the min weight and min count attributes
-
-....................................................
-
-do timing of the hyperparameter optimization script - where is the bottleneck?
-	Trainer train: log times inside and outside
-
-gradient boost algorithm
-
-parallellized hyperparameter evaluation
-	new XVal class
-	have train function take vecctor of options object
-	do we need the mutable members in StumpTrainer	
-		do some timings
-
-sample eta1, eta2 and eta3 from the same subset, but impose a eta1 < eta2 < eta3 constraint
 
 follow up alpha boost idea
 
 log loss or lin loss target?
+
+other dynamaic eta versions?
 
 -----------------------------------------------------------------------
 
 trees
 
 multi-group
-
-should we worry about copying the indata matrix?
-
-dynamic eta (smaller in the first iterations)
 
 -------------------------------------------------------------------------
 

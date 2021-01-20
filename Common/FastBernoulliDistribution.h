@@ -3,7 +3,9 @@
 template<typename N>
 class FastBernoulliDistribution {
 public:
-	FastBernoulliDistribution(N k, N n) : k_(k), n_(n)
+	FastBernoulliDistribution(N k, N n) : 
+		k_(static_cast<double>(k)), 
+		n_(static_cast<double>(n))
 	{
 		assert(0 <= k && k <= n);
 	}
@@ -12,14 +14,14 @@ public:
 	bool operator()(R& r)
 	{
 		double a = static_cast<double>(r() - R::min());
-		constexpr double b = static_cast<double>(R::max() - R::min())
-			* (1 + 2 * numeric_limits<double>::epsilon());
+		constexpr double b = static_cast<double>(R::max() - R::min()) 
+			* (1.0 + 2.0 * numeric_limits<double>::epsilon());
 		return  a * n_ < b * k_;
 	}
 
 private:
-	N k_;
-	N n_;
+	double k_;
+	double n_;
 };
 
 // The following three statements are true

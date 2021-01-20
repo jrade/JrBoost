@@ -1,40 +1,33 @@
 #pragma once
 
-#include "AbstractTrainer.h"
 #include "StumpPredictor.h"
+#include "StumpOptions.h"
 
-class StumpOptions;
+class StumpPredictor;
 
-class StumpTrainer : public AbstractTrainer {
+class StumpTrainer {
 public:
-    StumpTrainer();
-    virtual ~StumpTrainer() = default;
+    StumpTrainer(CRefXXf inData, const ArrayXd& strata);
+    ~StumpTrainer() = default;
+    StumpPredictor train(const ArrayXd& outData, const ArrayXd& weights, const StumpOptions& options) const;
 
-    virtual void setInData(CRefXXf inData);
-    virtual void setOutData(const ArrayXd& outData);
-    virtual void setWeights(const ArrayXd& weights);
-    virtual void setStrata(const ArrayXd& strata);
-    virtual void setOptions(const AbstractOptions& opt);
-
-    virtual AbstractPredictor* train() const;
+// deleted:
+    StumpTrainer() = delete;
+    StumpTrainer(const StumpTrainer&) = delete;
+    StumpTrainer& operator=(const StumpTrainer&) = delete;
 
 private:
-    CRefXXf inData_{ dummyArrayXXf };
-    size_t sampleCount_{ 0 };
-    size_t variableCount_{ 0 };
+    CRefXXf inData_;
+    size_t sampleCount_;
+    size_t variableCount_;
     vector<vector<size_t>> sortedSamples_;
-
-    ArrayXd outData_;
-    ArrayXd weights_;
 
     Eigen::Array<size_t, Eigen::Dynamic, 1> strata_;
     size_t stratum0Count_;
     size_t stratum1Count_;
 
-    unique_ptr<StumpOptions> options_;
-
-    // buffers used by train()
+    mutable splitmix fastRNE_{ std::random_device{} };
     mutable vector<char> usedSampleMask_;
-    mutable vector<size_t> sortedUsedSamples_;
     mutable vector<size_t> usedVariables_;
+    mutable vector<size_t> sortedUsedSamples_;
 };

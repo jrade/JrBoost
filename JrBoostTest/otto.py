@@ -33,17 +33,10 @@ baseOpt.usedSampleRatio = 1
 baseOpt.usedVariableRatio = 0.2
 baseOpt.profile = False
 
-opt = jrboost.AdaBoostOptions()
-#opt = jrboost.LogitBoostOptions()
-#opt.iterationCount = [100, 900]
-#opt.eta = [0.1, 1]
-opt.iterationCount = [1000,]
-opt.eta = [1.0,]
+opt = jrboost.BoostOptions()
+opt.iterationCount = 1000
+opt.eta = 1.0
 opt.baseOptions = baseOpt
-
-trainer = opt.createTrainer()
-trainer.setInData(inData)
-trainer.setWeights(weights)
 
 predFrame = pd.DataFrame(index = samples, columns = labels)
 
@@ -52,8 +45,8 @@ for label in labels:
     print(label)
 
     outData = outDataFrame[label].to_numpy();
-    trainer.setOutData(outData)
-    predictor = trainer.train()
+    trainer = jrboost.AdaBoostTrainer(inData, outData, weights)
+    predictor = trainer.train(opt)
     predFrame[label] = predictor.predict(inData)
 
 predFrame = 1.0 / (1.0 + np.exp(-predFrame))

@@ -1,29 +1,25 @@
 #pragma once
 
-#include "AbstractTrainer.h"
-#include "BoostPredictor.h"
+#include "BoostOptions.h"
+#include "StumpTrainer.h"
 
-class AdaBoostOptions;
+class BoostPredictor;
 
-class AdaBoostTrainer : public AbstractTrainer {
+
+class AdaBoostTrainer {
 public:
-    AdaBoostTrainer();
-    virtual ~AdaBoostTrainer() = default;
+    AdaBoostTrainer(CRefXXf inData, const ArrayXd& outData, const ArrayXd& weights);
+    ~AdaBoostTrainer() = default;
+    BoostPredictor train(const BoostOptions& opt) const;
 
-    virtual void setInData(CRefXXf inData);
-    virtual void setOutData(const ArrayXd& outData);
-    virtual void setWeights(const ArrayXd& weights);
-    virtual void setStrata(const ArrayXd&) {}
-    virtual void setOptions(const AbstractOptions& opt);
-
-    virtual BoostPredictor* train() const;
+ // deleted:
+    AdaBoostTrainer() = delete;
+    AdaBoostTrainer(const AdaBoostTrainer&) = delete;
+    AdaBoostTrainer& operator=(const  AdaBoostTrainer&) = delete;
 
 private:
+    CRefXXf inData_;
     ArrayXd outData_;
     ArrayXd weights_;
-    unique_ptr<AdaBoostOptions> options_;
-
-    CRefXXf inData_{ dummyArrayXXf };
-    size_t sampleCount_ = 0;
-    size_t variableCount_ = 0;
+    StumpTrainer baseTrainer_;
 };

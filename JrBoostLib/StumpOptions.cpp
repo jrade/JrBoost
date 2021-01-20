@@ -1,34 +1,6 @@
 #include "pch.h"
 #include "StumpOptions.h"
 
-double StumpOptions::usedSampleRatio() const
-{
-    return usedSampleRatio_;
-}
-
-double StumpOptions::usedVariableRatio() const
-{
-    return usedVariableRatio_;
-}
-
-size_t StumpOptions::minNodeSize() const
-{
-    return minNodeSize_;
-}
-
-double StumpOptions::minNodeWeight() const
-{
-    return minNodeWeight_;
-}
-
-bool StumpOptions::isStratified() const
-{
-    return isStratified_;
-}
-
-bool StumpOptions::profile() const {
-    return profile_; 
-}
 
 void StumpOptions::setUsedSampleRatio(double r)
 {
@@ -59,18 +31,6 @@ void StumpOptions::setMinNodeWeight(double w)
 }
 
 void StumpOptions::setProfile(bool p)
-{ 
+{
     profile_ = p;
-}
-
-StumpOptions* StumpOptions::clone() const
-{
-    return new StumpOptions{ *this };
-}
-
-StumpTrainer* StumpOptions::createTrainer() const
-{
-    StumpTrainer* trainer = new StumpTrainer;
-    trainer->setOptions(*this);
-    return trainer;
 }
