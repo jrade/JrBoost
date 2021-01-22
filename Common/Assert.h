@@ -1,5 +1,6 @@
 #pragma once
 
+
 class AssertionError : public runtime_error
 {
 public:
@@ -16,6 +17,7 @@ private:
         return ss.str();
     }
 };
+
 
 #ifdef NDEBUG
 

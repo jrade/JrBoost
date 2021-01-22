@@ -1,39 +1,46 @@
 #include "pch.h"
 #include "StumpTrainer.h"
+#include "StumpPredictor.h"
 
 
-StumpTrainer::StumpTrainer(CRefXXf inData, const ArrayXd& strata) :
+StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
     inData_{ inData },
-    sampleCount_{ static_cast<size_t>(inData.rows()) },
-    variableCount_{ static_cast<size_t>(inData.cols()) },
-    strata_{ strata.cast<size_t>() },
-    stratum0Count_{ (strata == 0.0).cast<size_t>().sum() },
-    stratum1Count_{ (strata == 1.0).cast<size_t>().sum() }
+    strata_{ strata },
+    stratum0Count_{ (strata == 0).cast<size_t>().sum() },
+    stratum1Count_{ (strata == 1).cast<size_t>().sum() },
+    fastRNE_{ std::random_device{} }
 {
-    ASSERT(inData.isFinite().all());
-    ASSERT(inData.rows() > 0);
-    ASSERT(inData.cols() > 0);
-    ASSERT((strata == strata.cast<bool>().cast<double>()).all());	// all elements must be 0 or 1
+    ASSERT(inData.rows() != 0);
+    ASSERT(inData.cols() != 0);
     ASSERT(inData.rows() == strata.rows());
 
-    sortedSamples_.resize(variableCount_);
-    vector<std::pair<float, size_t>> tmp{ sampleCount_ };
-    for (size_t j = 0; j < variableCount_; ++j) {
-        for (size_t i = 0; i < sampleCount_; ++i)
+    ASSERT(inData.isFinite().all());
+    ASSERT((strata < 2).all());
+
+    const size_t sampleCount = inData_.rows();
+    const size_t variableCount = inData_.cols();
+
+    sortedSamples_.resize(variableCount);
+    vector<std::pair<float, size_t>> tmp{ sampleCount };
+    for (size_t j = 0; j < variableCount; ++j) {
+        for (size_t i = 0; i < sampleCount; ++i)
             tmp[i] = { inData(i,j), i };
         std::sort(begin(tmp), end(tmp));
-        sortedSamples_[j].resize(sampleCount_);
-        for (size_t i = 0; i < sampleCount_; ++i)
+        sortedSamples_[j].resize(sampleCount);
+        for (size_t i = 0; i < sampleCount; ++i)
             sortedSamples_[j][i] = tmp[i].second;
     }
 }
 
-StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weights, const StumpOptions& options) const
+StumpPredictor StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
-    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
+    const size_t sampleCount = inData_.rows();
+    const size_t variableCount = inData_.cols();
+
+    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount);
     ASSERT(outData.isFinite().all());
 
-    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
+    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount);
     ASSERT((weights >= 0.0).all());
     ASSERT((weights < numeric_limits<double>::infinity()).all());
 
@@ -43,10 +50,11 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
     size_t t2 = 0;
     START_TIMER(t0);
 
+
     // used sample mask
 
     size_t usedSampleCount;
-    usedSampleMask_.resize(sampleCount_);
+    usedSampleMask_.resize(sampleCount);
 
     if (options.isStratified()) {
 
@@ -70,7 +78,7 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
 
         fastStratifiedRandomMask(
             &strata_(0),
-            &strata_(0) + sampleCount_,
+            &strata_(0) + sampleCount,
             begin(usedSampleMask_),
             begin(sampleCountByStratum),
             begin(usedSampleCountByStratum),
@@ -86,7 +94,7 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
     else {
         usedSampleCount = std::max(
             static_cast<size_t>(1),
-            static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * sampleCount_ + 0.5)
+            static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * sampleCount + 0.5)
         );
 
         fastRandomMask(
@@ -97,14 +105,15 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
         );
     }
 
+
     // used variables
 
     size_t usedVariableCount = std::max(
         static_cast<size_t>(1),
-        static_cast<size_t>(static_cast<double>(options.usedVariableRatio()) * variableCount_ + 0.5)
+        static_cast<size_t>(static_cast<double>(options.usedVariableRatio()) * variableCount + 0.5)
     );
 
-    usedVariables_.resize(variableCount_);
+    usedVariables_.resize(variableCount);
     std::iota(begin(usedVariables_), end(usedVariables_), 0);
     fastOrderedRandomSubset(
         begin(usedVariables_), 
@@ -116,11 +125,12 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
  
     usedVariables_.resize(usedVariableCount);
 
+
     // sums
 
     double sumW = 0.0;
     double sumWY = 0.0;
-    for (size_t i = 0; i < sampleCount_; ++i) {
+    for (size_t i = 0; i < sampleCount; ++i) {
         double m = usedSampleMask_[i];
         double w = weights[i];
         double y = outData[i];
@@ -129,6 +139,7 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
     }
 
     ASSERT(sumW != 0);
+
 
     // find best split
 
@@ -222,15 +233,15 @@ StumpPredictor StumpTrainer::train(const ArrayXd& outData, const ArrayXd& weight
 
     if (options.profile()) {
         cout << t0 << endl;
-        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
+        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount * usedVariableCount) << ")" << endl;
         cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
         cout << 100.0 * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
         cout << endl;
     }
 
     if (bestJ == static_cast<size_t>(-1))
-        return StumpPredictor{ variableCount_, sumWY / sumW };
+        return StumpPredictor{ variableCount, sumWY / sumW };
     else
         return StumpPredictor{ 
-            variableCount_, bestJ, bestX, bestLeftY, bestRightY };
+            variableCount, bestJ, bestX, bestLeftY, bestRightY };
 };

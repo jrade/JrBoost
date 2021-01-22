@@ -22,7 +22,7 @@ print(outDataFrame.head(5))
 print()
 
 inData = inDataFrame.to_numpy()
-inData = np.asfortranarray(inData, dtype = np.float32)
+inData = np.ascontiguousarray(inDataFrame)
 weights = np.full((sampleCount,), 1.0)
 
 #---------------------------------------------------------------

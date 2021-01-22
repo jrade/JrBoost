@@ -3,24 +3,26 @@
 #include "StumpTrainer.h"
 #include "BoostPredictor.h"
 
-LogitBoostTrainer::LogitBoostTrainer(CRefXXf inData, const ArrayXd& outData, const ArrayXd& weights) :
-    inData_{ inData },
-    outData_{ 2.0 * outData - 1.0 },
-    weights_{ weights },
-    baseTrainer_{ inData, outData }
-{
-    ASSERT((outData == outData.cast<bool>().cast<double>()).all());	// all elements must be 0 or 1
-    ASSERT((weights > 0.0).all());
-    ASSERT((weights < numeric_limits<double>::infinity()).all());
-}
 
-BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
+LogitBoostTrainer::LogitBoostTrainer(ArrayXXf inData, ArrayXs outData, ArrayXd weights) :
+    inData_{ std::move(inData) },
+    rawOutData_{ std::move(outData) },
+    outData_(2.0 * rawOutData_.cast<double>() - 1.0),
+    weights_{ std::move(weights) },
+    baseTrainer_{ inData_, rawOutData_ }
 {
     ASSERT(inData_.rows() != 0);
     ASSERT(inData_.cols() != 0);
     ASSERT(outData_.rows() == inData_.rows());
     ASSERT(weights_.rows() == inData_.rows());
 
+    ASSERT(inData_.isFinite().all());
+    ASSERT((rawOutData_ < 2).all());
+    ASSERT((weights_.isFinite()).all());
+}
+
+BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
+{
     size_t t0 = 0;
     size_t t1 = 0;
     START_TIMER(t0);
@@ -28,7 +30,7 @@ BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
     const size_t sampleCount = inData_.rows();
     const size_t variableCount = inData_.cols();
 
-    array<double, 2> p{ 0, 0 };
+    array<double, 2> p{ 0.0, 0.0 };
     for (size_t i = 0; i < sampleCount; ++i)
         p[outData_[i] == 1.0] += weights_[i];
     const double f0 = (std::log(p[1]) - std::log(p[0])) / 2.0;

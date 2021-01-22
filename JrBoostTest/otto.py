@@ -25,7 +25,7 @@ print(outDataFrame.head(5))
 print()
 
 inData = inDataFrame.to_numpy()
-inData = np.asfortranarray(inData, dtype = np.float32)
+inData = np.ascontiguousarray(inDataFrame, dtype=np.float64)
 weights = np.full((sampleCount,), 1.0)
 
 baseOpt = jrboost.StumpOptions()
@@ -45,6 +45,7 @@ for label in labels:
     print(label)
 
     outData = outDataFrame[label].to_numpy();
+    #outData = np.ascontiguousarray(outData)
     trainer = jrboost.AdaBoostTrainer(inData, outData, weights)
     predictor = trainer.train(opt)
     predFrame[label] = predictor.predict(inData)

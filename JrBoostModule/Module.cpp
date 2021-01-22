@@ -13,6 +13,7 @@
 
 namespace py = pybind11;
 
+
 PYBIND11_MODULE(jrboost, mod)
 {
     mod.doc() = "The jrboost module implements the logit boost machine learning algorithm";
@@ -24,7 +25,11 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::class_<StumpPredictor>{ mod, "StumpPredictor" }
         .def("variableCount", &StumpPredictor::variableCount)
-        .def("predict", &StumpPredictor::predict);
+        .def(
+            "predict", 
+            static_cast<ArrayXd(StumpPredictor::*)(CPyRefXXd) const>(&StumpPredictor::predict),
+            py::arg().noconvert()
+        );
 
     py::class_<StumpOptions>{ mod, "StumpOptions" }
         .def(py::init<>())
@@ -36,7 +41,7 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("profile", &StumpOptions::profile, &StumpOptions::setProfile);
 
     py::class_<StumpTrainer>{ mod, "StumpTrainer" }
-        .def(py::init<CRefXXf, const ArrayXd&>())
+        .def(py::init<RefXXf, RefXs>(), py::arg().noconvert(), py::arg().noconvert())
         .def("train", &StumpTrainer::train);
 
 
@@ -44,7 +49,11 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::class_<BoostPredictor>{ mod, "BoostPredictor" }
         .def("variableCount", &BoostPredictor::variableCount)
-        .def("predict", &BoostPredictor::predict);
+        .def(
+            "predict",
+            static_cast<ArrayXd(BoostPredictor::*)(CPyRefXXd) const>(&BoostPredictor::predict),
+            py::arg().noconvert()
+        );
 
     py::class_<BoostOptions>{ mod, "BoostOptions" }
         .def(py::init<>())
@@ -54,10 +63,10 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("baseOptions", &BoostOptions::baseOptions, &BoostOptions::setBaseOptions);
 
     py::class_<AdaBoostTrainer>{ mod, "AdaBoostTrainer" }
-        .def(py::init<CRefXXf, const ArrayXd&, const ArrayXd&>())
+        .def(py::init<ArrayXXf, ArrayXs, ArrayXd>())
         .def("train", &AdaBoostTrainer::train);
 
     py::class_<LogitBoostTrainer>{ mod, "LogitBoostTrainer" }
-        .def(py::init<CRefXXf, const ArrayXd&, const ArrayXd&>())
+        .def(py::init<ArrayXXf, ArrayXs, ArrayXd>())
         .def("train", &LogitBoostTrainer::train);
 }

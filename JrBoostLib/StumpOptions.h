@@ -1,5 +1,6 @@
 #pragma once
 
+
 class StumpOptions {
 public:   
     StumpOptions() = default;

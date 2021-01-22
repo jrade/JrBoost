@@ -24,5 +24,5 @@ private:
     size_t iterationCount_{ 1000 };
     double eta_{ 0.1 };
     size_t logStep_{ 0 };
-    StumpOptions baseOptions_;
+    StumpOptions baseOptions_{};
 };

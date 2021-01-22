@@ -8,7 +8,7 @@ class BoostPredictor;
 
 class AdaBoostTrainer {
 public:
-    AdaBoostTrainer(CRefXXf inData, const ArrayXd& outData, const ArrayXd& weights);
+    AdaBoostTrainer(ArrayXXf inData, ArrayXs outData, ArrayXd weights);  // stores copies the arrays
     ~AdaBoostTrainer() = default;
     BoostPredictor train(const BoostOptions& opt) const;
 
@@ -18,7 +18,8 @@ public:
     AdaBoostTrainer& operator=(const  AdaBoostTrainer&) = delete;
 
 private:
-    CRefXXf inData_;
+    ArrayXXf inData_;
+    ArrayXs rawOutData_;
     ArrayXd outData_;
     ArrayXd weights_;
     StumpTrainer baseTrainer_;

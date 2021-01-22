@@ -1,5 +1,6 @@
 #pragma once
 
+
 class StumpPredictor {
 public:
     StumpPredictor(StumpPredictor&&) = default;
@@ -8,6 +9,7 @@ public:
 
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXf inData) const;
+    ArrayXd predict(CPyRefXXd inData) const;
 
 // delete:
     StumpPredictor() = delete;

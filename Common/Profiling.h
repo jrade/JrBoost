@@ -6,6 +6,7 @@
 #include <x86intrin.h>
 #endif
 
+
 inline void START_TIMER(uint64_t & t)
 {
     t -= __rdtsc();

@@ -1,20 +1,17 @@
 
-finish simplification:
-	make buffers data members in StumpTrainer
-	make RNG data member in StumpTrainer
-		time init with random device
-	alla arrayer som skickas genom constuctorerna kopieras
-		pass by value and move
-			check move support in Eigen
-	alla arrayer som skicka genom train-funnktionerna kopieras inte
+multithreading
 
-multithread support
-	thread safety
+	StumpTrainer:
 		rename StumpTrainer -> StumpTrainerImpl
-			class alignas(CACHE_LINE_SIZE) StumpTRainerImpl{};   // 64
+		class alignas(std::hardware_destructive_interference_size) StumpTRainerImpl{};
 		add a StumpTrainer class that contains an array of StumpTRainerInpl objects, one for each thread
-	booster train method that takes vector of options objects
+
+	BoostTrainers:
+		train method that takes vector of options objects
+	
 	profile - how does it scale with the number of threads?
+
+time init with random device
 
 ........................................................
 
@@ -92,6 +89,9 @@ Gerstmann issues:
 Eigen issues:
 	can not reset Ref objects
 	no select with two constants
+	    StumpTrainer(CRefXXf inData, RefXs strata)
+			second argument should be CRefXs, but that leads to problems ...
+
 
 --------------------------------------------------------------------------------
 
