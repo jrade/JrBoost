@@ -1,247 +1,38 @@
 #include "pch.h"
 #include "StumpTrainer.h"
+#include "StumpTrainerShared.h"
+#include "StumpTrainerByThread.h"
 #include "StumpPredictor.h"
 
 
 StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
-    inData_{ inData },
-    strata_{ strata },
-    stratum0Count_{ (strata == 0).cast<size_t>().sum() },
-    stratum1Count_{ (strata == 1).cast<size_t>().sum() },
-    fastRNE_{ std::random_device{} }
+    sampleCount_(inData.rows())
 {
     ASSERT(inData.rows() != 0);
     ASSERT(inData.cols() != 0);
-    ASSERT(inData.rows() == strata.rows());
+    ASSERT(static_cast<size_t>(strata.rows()) == sampleCount_);
 
     ASSERT(inData.isFinite().all());
     ASSERT((strata < 2).all());
 
-    const size_t sampleCount = inData_.rows();
-    const size_t variableCount = inData_.cols();
-
-    sortedSamples_.resize(variableCount);
-    vector<std::pair<float, size_t>> tmp{ sampleCount };
-    for (size_t j = 0; j < variableCount; ++j) {
-        for (size_t i = 0; i < sampleCount; ++i)
-            tmp[i] = { inData(i,j), i };
-        std::sort(begin(tmp), end(tmp));
-        sortedSamples_[j].resize(sampleCount);
-        for (size_t i = 0; i < sampleCount; ++i)
-            sortedSamples_[j][i] = tmp[i].second;
-    }
+    shared_ = std::make_shared<const StumpTrainerShared>(inData, strata);
+    std::random_device rd;
+    size_t threadCount = omp_get_max_threads();
+    for (size_t threadId = 0; threadId < threadCount; ++threadId)
+        byThread_.push_back(std::make_shared<StumpTrainerByThread>(inData, shared_, rd));
 }
+
 
 StumpPredictor StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
-    const size_t sampleCount = inData_.rows();
-    const size_t variableCount = inData_.cols();
+    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
+    ASSERT((outData > -numeric_limits<double>::infinity()).all());
+    ASSERT((outData < numeric_limits<double>::infinity()).all());
 
-    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount);
-    ASSERT(outData.isFinite().all());
-
-    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount);
+    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
     ASSERT((weights >= 0.0).all());
     ASSERT((weights < numeric_limits<double>::infinity()).all());
 
-    size_t n = 0;
-    size_t t0 = 0;
-    size_t t1 = 0;
-    size_t t2 = 0;
-    START_TIMER(t0);
-
-
-    // used sample mask
-
-    size_t usedSampleCount;
-    usedSampleMask_.resize(sampleCount);
-
-    if (options.isStratified()) {
-
-        array<size_t, 2> sampleCountByStratum{ stratum0Count_, stratum1Count_ };
-
-        array<size_t, 2> usedSampleCountByStratum{
-            std::max(
-                static_cast<size_t>(1),
-                static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * stratum0Count_ + 0.5)
-            ),
-            std::max(
-                static_cast<size_t>(1),
-                static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * stratum1Count_ + 0.5)
-            )
-        };
-
-        usedSampleCount = usedSampleCountByStratum[0] + usedSampleCountByStratum[1];
-
-        //cout << sampleCountByStratum[0] << " " << sampleCountByStratum[1] << " ";
-        //cout << usedSampleCountByStratum[0] << " " << usedSampleCountByStratum[1] << endl;
-
-        fastStratifiedRandomMask(
-            &strata_(0),
-            &strata_(0) + sampleCount,
-            begin(usedSampleMask_),
-            begin(sampleCountByStratum),
-            begin(usedSampleCountByStratum),
-            fastRNE_
-        );
-
-        //ASSERT(sampleCountByStratum[0] == 0);
-        //ASSERT(sampleCountByStratum[1] == 0);
-        //ASSERT(usedSampleCountByStratum[0] == 0);
-        //ASSERT(usedSampleCountByStratum[1] == 0);
-    }
-    
-    else {
-        usedSampleCount = std::max(
-            static_cast<size_t>(1),
-            static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * sampleCount + 0.5)
-        );
-
-        fastRandomMask(
-            begin(usedSampleMask_), 
-            end(usedSampleMask_), 
-            usedSampleCount, 
-            fastRNE_
-        );
-    }
-
-
-    // used variables
-
-    size_t usedVariableCount = std::max(
-        static_cast<size_t>(1),
-        static_cast<size_t>(static_cast<double>(options.usedVariableRatio()) * variableCount + 0.5)
-    );
-
-    usedVariables_.resize(variableCount);
-    std::iota(begin(usedVariables_), end(usedVariables_), 0);
-    fastOrderedRandomSubset(
-        begin(usedVariables_), 
-        end(usedVariables_), 
-        begin(usedVariables_), 
-        begin(usedVariables_) + usedVariableCount, 
-        fastRNE_
-    );
- 
-    usedVariables_.resize(usedVariableCount);
-
-
-    // sums
-
-    double sumW = 0.0;
-    double sumWY = 0.0;
-    for (size_t i = 0; i < sampleCount; ++i) {
-        double m = usedSampleMask_[i];
-        double w = weights[i];
-        double y = outData[i];
-        sumW += m * w;
-        sumWY += m * w * y;
-    }
-
-    ASSERT(sumW != 0);
-
-
-    // find best split
-
-    double bestScore = sumWY * sumWY / sumW;
-    size_t bestJ = static_cast<size_t>(-1);
-    float bestX = numeric_limits<float>::quiet_NaN();
-    double bestLeftY = numeric_limits<double>::quiet_NaN();
-    double bestRightY = numeric_limits<double>::quiet_NaN();
-
-    sortedUsedSamples_.resize(usedSampleCount);
-    size_t minNodeSize = options.minNodeSize();
-    const double tol = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
-    // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
-    const double minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
-        
-    for (size_t j : usedVariables_) {
-
-        // prepare list of samples
-        SWITCH_TIMER(t0, t1);
-
-        fastCopyIf(
-            begin(sortedSamples_[j]),
-            begin(sortedUsedSamples_),
-            end(sortedUsedSamples_),
-            [&](size_t i) { return usedSampleMask_[i]; }
-        );
-
-        // find best split
-        SWITCH_TIMER(t1, t2);
-
-        double leftSumW = 0.0;
-        double leftSumWY = 0.0;
-        double rightSumW = sumW;
-        double rightSumWY = sumWY;
-
-        const auto pBegin = begin(sortedUsedSamples_);
-        const auto pEnd = end(sortedUsedSamples_);
-        auto p = pBegin;
-        size_t nextI = *p;
-
-        // this is where most execution time is spent ......
-
-        while (p != pEnd - 1) {
-            const size_t i = nextI;
-            nextI = *++p;
-            const double w = weights[i];
-            const double y = outData[i];
-            leftSumW += w;
-            rightSumW -= w;
-            leftSumWY += w * y;
-            rightSumWY -= w * y;
-            const double score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
-            if (score <= bestScore) continue;  // usually true
-
-        //..................................................
-
-            ++n;
-
-            if (p < pBegin + minNodeSize
-                || p > pEnd - minNodeSize
-                || leftSumW < minNodeWeight
-                || rightSumW < minNodeWeight
-            ) continue;
-
-            const float leftX = inData_(i, j);
-            const float rightX = inData_(nextI, j);
-            const float midX = (leftX + rightX) / 2;
-    
-            if (leftX == midX) continue;
-
-            bestScore = score;
-            bestJ = j;
-            bestX = midX;
-            bestLeftY = leftSumWY / leftSumW;
-            bestRightY = rightSumWY / rightSumW;
-        }
-
-        //{
-        //    const double w = weights_[nextI];
-        //    const double y = outData_[nextI];
-        //    leftSumW += w;
-        //    rightSumW -= w;
-        //    leftSumWY += w * y;
-        //    rightSumWY -= w * y;
-        //}
-
-        SWITCH_TIMER(t2, t0);
-    }
-
-    STOP_TIMER(t0);
-
-    if (options.profile()) {
-        cout << t0 << endl;
-        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount * usedVariableCount) << ")" << endl;
-        cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
-        cout << 100.0 * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
-        cout << endl;
-    }
-
-    if (bestJ == static_cast<size_t>(-1))
-        return StumpPredictor{ variableCount, sumWY / sumW };
-    else
-        return StumpPredictor{ 
-            variableCount, bestJ, bestX, bestLeftY, bestRightY };
-};
+    int threadId = omp_get_thread_num();
+    return byThread_[threadId]->train(outData, weights, options);
+}

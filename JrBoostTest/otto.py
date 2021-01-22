@@ -1,62 +1,142 @@
 import os
 os.environ['PATH'] += ';C:/Users/Rade/Anaconda3/Library/bin'
 
+import random, time
 import numpy as np
 import pandas as pd
 import util
 import jrboost
 
-dataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/train.csv'
-dataFrame = pd.read_csv(dataPath, sep = ',', index_col = 0)
 
-#dataFrame = dataFrame.sample(frac = 0.2)
 
-outDataSeries = dataFrame['target']
-outDataFrame = util.oneHotEncode(outDataSeries)
-inDataFrame = dataFrame.drop(['target'], axis = 1)
+def loadTrainData(frac = None):
+    trainDataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/train.csv'
+    trainDataFrame = pd.read_csv(trainDataPath, sep = ',', index_col = 0)
+    if frac is not None:
+        trainDataFrame = trainDataFrame.sample(frac = frac)
 
-samples = dataFrame.index
-sampleCount = len(samples)
-labels = outDataFrame.columns
+    trainOutDataSeries = trainDataFrame['target']
+    trainOutDataFrame = util.oneHotEncode(trainOutDataSeries)
+    trainInDataFrame = trainDataFrame.drop(['target'], axis = 1)
 
-print(inDataFrame.head(5))
-print()
-print(outDataFrame.head(5))
-print()
+    return trainInDataFrame, trainOutDataFrame
 
-inData = inDataFrame.to_numpy()
-inData = np.ascontiguousarray(inDataFrame, dtype=np.float64)
-weights = np.full((sampleCount,), 1.0)
 
-baseOpt = jrboost.StumpOptions()
-baseOpt.usedSampleRatio = 1
-baseOpt.usedVariableRatio = 0.2
-baseOpt.profile = False
+def loadTestData():
+    testDataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/test.csv'
+    testInDataFrame = pd.read_csv(testDataPath, sep = ',', index_col = 0)
+    return testInDataFrame
 
-opt = jrboost.BoostOptions()
-opt.iterationCount = 1000
-opt.eta = 1.0
-opt.baseOptions = baseOpt
 
-predFrame = pd.DataFrame(index = samples, columns = labels)
+def formatOptions(opt):
+    eta = opt.eta
+    usr = opt.base.usedSampleRatio
+    uvr = opt.base.usedVariableRatio
+    return f'eta = {eta}  usr = {usr}  uvr = {uvr}'
 
-for label in labels:
 
-    print(label)
+def optimizeHyperParams(inData, outData):
 
-    outData = outDataFrame[label].to_numpy();
-    #outData = np.ascontiguousarray(outData)
-    trainer = jrboost.AdaBoostTrainer(inData, outData, weights)
-    predictor = trainer.train(opt)
-    predFrame[label] = predictor.predict(inData)
+    optionsList = []
+    for usr in (0.2, 0.4, 0.6, 0.8, 1.0):
+        for uvr in (0.2, 0.4, 0.6, 0.8, 1.0):
+            for eta in (0.01, 0.02, 0.05, 0.1, 0.2):
+                opt = jrboost.BoostOptions()
+                opt.eta = eta
+                opt.iterationCount = 1000
+                opt.base.usedSampleRatio = usr
+                opt.base.usedVariableRatio = uvr
+                optionsList.append(opt)
 
-predFrame = 1.0 / (1.0 + np.exp(-predFrame))
-predFrame = predFrame.divide(predFrame.sum(axis = 1), axis = 0)
-predFrame = predFrame.clip(1.0e-15, 1.0)
-score = -(np.log(predFrame) * outDataFrame).sum().sum() / sampleCount
+    random.shuffle(optionsList)
+    optionsCount = len(optionsList)
+    score = np.zeros((optionsCount,))
 
-print()
-print(score)   # 0.5121  (1523 / 3507)
+    for trainSamples, testSamples in util.stratifiedRandomFolds(outData, 5):
 
-print()
-print("Done!")
+        trainInData = inData[trainSamples, :]
+        trainInData = np.asfortranarray(trainInData)
+        trainOutData = outData[trainSamples]
+
+        testInData = inData[testSamples, :]
+        testInData = np.asfortranarray(testInData)
+        testOutData = outData[testSamples]
+
+        trainer = jrboost.AdaBoostTrainer(trainInData, trainOutData)
+        predData = trainer.trainAndPredict(testInData, optionsList)
+        score += util.logLoss(testOutData, predData)
+
+    return optionsList[np.argmin(score)]
+
+
+def trainAndPredict(trainInData, trainOutData, testInData, opt):
+
+        trainInData = np.asfortranarray(trainInData)
+        testInData = np.asfortranarray(testInData)
+        trainer = jrboost.AdaBoostTrainer(trainInData, trainOutData)
+        predictor = trainer.train(opt)
+        testOutData = predictor.predict(testInData)
+        return testOutData
+
+#---------------------------------------------------------
+
+trainInDataFrame, trainOutDataFrame = loadTrainData(0.1)
+trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
+labels = trainOutDataFrame.columns
+
+testInDataFrame = loadTestData()
+testInData = testInDataFrame.to_numpy(dtype = np.float32)
+testOutDataFrame = pd.DataFrame(index = testInDataFrame.index, columns = labels, dtype = np.uint64)
+
+while True:
+
+    t = -time.time()
+
+    for label in labels:
+        print(label + ': ', end = '', flush = True)
+        trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint64);
+        trainOutData = np.ascontiguousarray(trainOutData)
+        opt = optimizeHyperParams(trainInData, trainOutData)
+        print(formatOptions(opt))
+
+        testOutData = trainAndPredict(trainInData, trainOutData, testInData, opt)
+        testOutData = 1 / (1 + np.exp(-testOutData))
+        testOutDataFrame[label] = testOutData
+
+    testOutDataFrame.to_csv('result.csv', sep = ',')
+
+    t += time.time()
+    print(util.formatTime(t))
+    print()
+
+
+print('Done!')
+
+
+# 0.922  (frac = 0.01)
+# 0.665  (frac = 0.1)
+
+
+
+# Class_1: eta = 0.05  usr = 0.6  uvr = 0.2
+# Class_2: eta = 0.05  usr = 0.6  uvr = 0.2
+# Class_3: eta = 0.1  usr = 1.0  uvr = 0.6
+# Class_4: eta = 0.05  usr = 1.0  uvr = 0.2
+# Class_5: eta = 0.02  usr = 0.6  uvr = 0.2
+# Class_6: eta = 0.05  usr = 0.6  uvr = 0.2
+# Class_7: eta = 0.05  usr = 0.8  uvr = 0.6
+# Class_8: eta = 0.1  usr = 1.0  uvr = 0.2
+# Class_9: eta = 0.05  usr = 0.6  uvr = 0.2
+# 0:27:35
+
+
+# Class_1: eta = 0.05  usr = 0.8  uvr = 0.6
+# Class_2: eta = 0.05  usr = 0.6  uvr = 0.2
+# Class_3: eta = 0.05  usr = 0.4  uvr = 0.2
+# Class_4: eta = 0.05  usr = 0.6  uvr = 0.2
+# Class_5: eta = 0.05  usr = 1.0  uvr = 0.2
+# Class_6: eta = 0.05  usr = 0.8  uvr = 0.2
+# Class_7: eta = 0.05  usr = 0.8  uvr = 0.2
+# Class_8: eta = 0.1  usr = 1.0  uvr = 0.4
+# Class_9: eta = 0.05  usr = 0.8  uvr = 0.8
+# 0:27:48

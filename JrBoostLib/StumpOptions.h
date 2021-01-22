@@ -27,6 +27,6 @@ private:
     double usedVariableRatio_{ 1.0 };
     size_t minNodeSize_{ 1 };
     double minNodeWeight_{ 0.0 };
-    bool isStratified_{ false };
+    bool isStratified_{ true };
     bool profile_{ false };
 };

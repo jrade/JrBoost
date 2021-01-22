@@ -21,29 +21,23 @@ print()
 print(outDataFrame.head(5))
 print()
 
-inData = inDataFrame.to_numpy()
-inData = np.ascontiguousarray(inDataFrame)
-weights = np.full((sampleCount,), 1.0)
-
 #---------------------------------------------------------------
 
-baseOpt = jrboost.StumpOptions()
-baseOpt.usedSampleRatio = 1
-baseOpt.usedVariableRatio = 0.2
-baseOpt.profile = False
+inData = inDataFrame.to_numpy(dtype = np.float32)
 
 opt = jrboost.BoostOptions()
-opt.iterationCount = 100
-opt.eta = 0.3
-opt.baseOptions = baseOpt
-
+opt.iterationCount = 1000
+opt.eta = 0.1
+opt.base.usedSampleRatio = 1
+opt.base.usedVariableRatio = 0.2
 
 predFrame = pd.DataFrame(index = samples, columns = labels)
 
 for label in labels:
 
-    outData = outDataFrame[label].to_numpy();
-    trainer = jrboost.AdaBoostTrainer(inData, outData, weights)
+    outData = outDataFrame[label].to_numpy(dtype = np.uint64);
+    outData = np.ascontiguousarray(outData)
+    trainer = jrboost.AdaBoostTrainer(inData, outData)
     predictor = trainer.train(opt)
     predFrame[label] = predictor.predict(inData)
 

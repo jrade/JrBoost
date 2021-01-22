@@ -17,8 +17,3 @@ void BoostOptions::setLogStep(size_t n)
 {
     logStep_ = n;
 }
-
-void BoostOptions::setBaseOptions(const StumpOptions& opt)
-{
-    baseOptions_ = opt;
-}

@@ -1,29 +1,63 @@
+train predictor: 1:19:10
 
-multithreading
 
-	StumpTrainer:
-		rename StumpTrainer -> StumpTrainerImpl
-		class alignas(std::hardware_destructive_interference_size) StumpTRainerImpl{};
-		add a StumpTrainer class that contains an array of StumpTRainerInpl objects, one for each thread
 
-	BoostTrainers:
-		train method that takes vector of options objects
-	
-	profile - how does it scale with the number of threads?
+must purge panda from the code
 
-time init with random device
+	revert to old stratified folds
+	optimized t-test implementation
 
-........................................................
+------------------------------------------------------
 
-variable count parameter in stump builder
+stratified folds that take pandas series and return pandas index
+	time again
+
+number of variables hyper param
+
+high level eval function ´that takes two pandas dataframe, two pandas series and an options list
+
+eval function that returns score
+
+run the old grid search again
+
+-------------------------------------------------
 
 gradient boost
 	read xgb paper to check that my understanding is correct
 
-lambda and alpha parameters?
+trees
 
-.............................................
+------------------------------------------------
 
+later:
+	how to handle sumW_ == 0.0
+		curretnly we return a stumppredictor that always predicts 0
+		a better fix would be make sample selection among samples with weight != 0 (or > some threshold)
+			this could be implemented as a stratified selection with weight 0 samples as a third stratum
+
+	data members of boosters should be const
+		can not iterate over const Eigen Ref object!!!!
+
+	SIMD parallelize the variable (j) loop
+
+------------------------------------
+
+profile
+
+	init with random device
+
+	profile data validation
+		StumpTrainer::train()
+			ASSERT((outData > -numeric_limits<double>::infinity()).all());
+			ASSERT((outData < numeric_limits<double>::infinity()).all());
+
+	AdaBoostTrainer::trainAndPredict
+		how does it scale with the number of options and number of threads?
+
+...........................................................
+
+
+...........................................................
 def invert_permutation(p):
     '''The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1. 
     Returns an array s, where s[i] gives the index of i in p.
@@ -37,39 +71,18 @@ how id AdaBoostOptions.baseOptions handles by pybind11??
 
 -----------------------------------------------------------
 
-ranking objects that work without filter objects
-
-more efficient cv objects
-
-depth 1 only or not?
-
-...........................................
-
-play round with the min weight and min count attributes
-
 follow up alpha boost idea
 
-log loss or lin loss target?
-
-other dynamaic eta versions?
-
------------------------------------------------------------------------
-
-trees
-
-multi-group
-
--------------------------------------------------------------------------
-
-try mixed debugging again
+----------------------------------------------------------------------
 
 low prio:
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 	faster uint64_t based Bernoulli distribution ??
 	allow more than two strata in StumpPredictor?
 	L2-penalty (lambda) or L1-penalty (alpha)
+	multi-group
 
--------------------------------------------------------------------
+----------------------------------------------------------------------
 
 PyBind11 issues:
 	investigate abstract factory crash (JrBooster Crash)
@@ -89,11 +102,14 @@ Gerstmann issues:
 Eigen issues:
 	can not reset Ref objects
 	no select with two constants
-	    StumpTrainer(CRefXXf inData, RefXs strata)
+	    StumpTrainerImpl(CRefXXf inData, RefXs strata)
 			second argument should be CRefXs, but that leads to problems ...
 
+NumPy issues:
+	inData[trainSamples, :] does not preserve Fortran (column major) order
 
---------------------------------------------------------------------------------
+
+------------------------------------------------------------------------
 
 läs: https://romanpoya.medium.com/a-look-at-the-performance-of-expression-templates-in-c-eigen-vs-blaze-vs-fastor-vs-armadillo-vs-2474ed38d982
 

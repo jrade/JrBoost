@@ -1,11 +1,15 @@
 // Fast random number engines by Arvid Gerstmann
 // For more details, see https://arvid.io/2018/07/02/better-cxx-prng/
-// Changes: 
+
+
+// Copyright (c) 2021 Johan Rade.
+// This code is licensed under MIT license.
 //     Added constructors that take std::random_device&&
 //     Made free functions (operator== and operator!=) inline
 
-/* Copyright (c) 2018 Arvid Gerstmann. */
-/* This code is licensed under MIT license. */
+// Copyright (c) 2018 Arvid Gerstmann.
+// This code is licensed under MIT license.
+
 #ifndef AG_RANDOM_H
 #define AG_RANDOM_H
 

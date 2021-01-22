@@ -16,14 +16,20 @@
     <ClInclude Include="StumpPredictor.h">
       <Filter>Stump</Filter>
     </ClInclude>
-    <ClInclude Include="StumpTrainer.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
     <ClInclude Include="LogitBoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
     <ClInclude Include="BoostOptions.h">
       <Filter>Boost</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpTrainer.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpTrainerShared.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpTrainerByThread.h">
+      <Filter>Stump</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -42,14 +48,20 @@
     <ClCompile Include="StumpPredictor.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
-    <ClCompile Include="StumpTrainer.cpp">
-      <Filter>Stump</Filter>
-    </ClCompile>
     <ClCompile Include="LogitBoostTrainer.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
     <ClCompile Include="BoostOptions.cpp">
       <Filter>Boost</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpTrainer.cpp">
+      <Filter>Stump</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpTrainerShared.cpp">
+      <Filter>Stump</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpTrainerByThread.cpp">
+      <Filter>Stump</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

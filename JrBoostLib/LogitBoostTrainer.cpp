@@ -1,25 +1,23 @@
 #include "pch.h"
 #include "LogitBoostTrainer.h"
-#include "StumpTrainer.h"
+#include "BoostOptions.h"
 #include "BoostPredictor.h"
 
 
-LogitBoostTrainer::LogitBoostTrainer(ArrayXXf inData, ArrayXs outData, ArrayXd weights) :
-    inData_{ std::move(inData) },
+LogitBoostTrainer::LogitBoostTrainer(CRefXXf inData, ArrayXs outData) :
+    inData_{ inData },
     rawOutData_{ std::move(outData) },
     outData_(2.0 * rawOutData_.cast<double>() - 1.0),
-    weights_{ std::move(weights) },
     baseTrainer_{ inData_, rawOutData_ }
 {
     ASSERT(inData_.rows() != 0);
     ASSERT(inData_.cols() != 0);
     ASSERT(outData_.rows() == inData_.rows());
-    ASSERT(weights_.rows() == inData_.rows());
 
     ASSERT(inData_.isFinite().all());
     ASSERT((rawOutData_ < 2).all());
-    ASSERT((weights_.isFinite()).all());
 }
+
 
 BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
 {
@@ -32,7 +30,7 @@ BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
 
     array<double, 2> p{ 0.0, 0.0 };
     for (size_t i = 0; i < sampleCount; ++i)
-        p[outData_[i] == 1.0] += weights_[i];
+        p[outData_[i] == 1.0] += 1.0;
     const double f0 = (std::log(p[1]) - std::log(p[0])) / 2.0;
     ArrayXd F = ArrayXd::Constant(sampleCount, f0);
 
@@ -51,7 +49,7 @@ BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
         adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
 
         SWITCH_TIMER(t0, t1);
-        StumpPredictor basePredictor{ baseTrainer_.train(adjOutData, adjWeights, opt.baseOptions()) };
+        StumpPredictor basePredictor{ baseTrainer_.train(adjOutData, adjWeights, opt.base()) };
         SWITCH_TIMER(t1, t0);
 
         f = basePredictor.predict(inData_);
@@ -71,9 +69,33 @@ BoostPredictor LogitBoostTrainer::train(const BoostOptions& opt) const
     }
 
     STOP_TIMER(t0);
-    cout << 1.0e-6 * t0 << endl;
-    cout << 1.0e-6 * t1 << endl;
-    cout << endl;
+    //cout << 1.0e-6 * t0 << endl;
+    //cout << 1.0e-6 * t1 << endl;
+    //cout << endl;
 
     return BoostPredictor(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
 }
+
+
+Eigen::ArrayXXd LogitBoostTrainer::trainAndPredict(ArrayXXf testInData, const vector<BoostOptions>& opt) const
+{
+    const size_t testSampleCount = testInData.rows();
+    int optCount = static_cast<int>(opt.size());
+    Eigen::ArrayXXd predOutData(testSampleCount, optCount);
+
+    std::exception_ptr ep;
+#pragma omp parallel for
+    for (int i = 0; i < optCount; ++i) {
+        try {
+            predOutData.col(i) = train(opt[i]).predict(testInData);
+        }
+        catch (const std::exception&) {
+#pragma omp critical
+            if (!ep) ep = std::current_exception();
+        }
+    }
+    if (ep) std::rethrow_exception(ep);
+
+    return predOutData;
+}
+

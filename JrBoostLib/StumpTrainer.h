@@ -1,12 +1,14 @@
 #pragma once
 
-#include "StumpOptions.h"
-
+class StumpOptions;
+class StumpTrainerShared;
+class StumpTrainerByThread;
 class StumpPredictor;
+
 
 class StumpTrainer {
 public:
-    StumpTrainer(CRefXXf inData, RefXs strata); // stores references to the arrays
+    StumpTrainer(CRefXXf inData, RefXs strata);
     ~StumpTrainer() = default;
     StumpPredictor train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
 
@@ -16,15 +18,7 @@ public:
     StumpTrainer& operator=(const StumpTrainer&) = delete;
 
 private:
-    CRefXXf inData_;
-    vector<vector<size_t>> sortedSamples_;
-
-    RefXs strata_;
-    size_t stratum0Count_;
-    size_t stratum1Count_;
-
-    mutable splitmix fastRNE_;
-    mutable vector<char> usedSampleMask_;
-    mutable vector<size_t> usedVariables_;
-    mutable vector<size_t> sortedUsedSamples_;
+    const size_t sampleCount_;
+    shared_ptr<const StumpTrainerShared> shared_;
+    vector<shared_ptr<StumpTrainerByThread>> byThread_;
 };

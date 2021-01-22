@@ -11,7 +11,6 @@ public:
 
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXf inData) const;
-    ArrayXd predict(CPyRefXXd inData) const;
 
 // deleted:
     BoostPredictor() = delete;

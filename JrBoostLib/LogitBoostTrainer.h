@@ -1,26 +1,26 @@
 #pragma once
 
-#include "BoostOptions.h"
 #include "StumpTrainer.h"
 
+class BoostOptions;
 class BoostPredictor;
 
 
 class LogitBoostTrainer {
 public:
-    LogitBoostTrainer(ArrayXXf inData, ArrayXs outData, ArrayXd weights);  // stores copies the arrays
+    LogitBoostTrainer(CRefXXf inData, ArrayXs outData);
     ~LogitBoostTrainer() = default;
     BoostPredictor train(const BoostOptions& opt) const;
+    Eigen::ArrayXXd trainAndPredict(ArrayXXf testInData, const vector<BoostOptions>& opt) const;
 
-// deleted:
+    // deleted:
     LogitBoostTrainer() = delete;
     LogitBoostTrainer(const LogitBoostTrainer&) = delete;
     LogitBoostTrainer& operator=(const  LogitBoostTrainer&) = delete;
 
 private:
-    ArrayXXf inData_;
-    ArrayXs rawOutData_;
-    ArrayXd outData_;
-    ArrayXd weights_;
-    StumpTrainer baseTrainer_;
+    const CRefXXf inData_;
+    ArrayXs rawOutData_;                    // pesky const issue - can not iterate over const array
+    const ArrayXd outData_;
+    const StumpTrainer baseTrainer_;
 };

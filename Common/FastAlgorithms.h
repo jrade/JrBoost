@@ -59,8 +59,8 @@ inline void fastStratifiedRandomMask(
 // postcondition: the range [q0, q1) contains a random subset of the elements in [p0, p1)
 // the order of the elements is preserved.
 
-template<typename T, typename R>
-inline void fastOrderedRandomSubset(T p0, T p1, T q0, T q1, R& r)
+template<typename T, typename U, typename R>
+inline void fastOrderedRandomSubset(T p0, T p1, U q0, U q1, R& r)
 {
 	ASSERT(q0 <= q1 && p0 <= p1);
 	ASSERT(q1 - q0 <= p1 - p0);

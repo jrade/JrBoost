@@ -9,7 +9,6 @@ public:
 
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXf inData) const;
-    ArrayXd predict(CPyRefXXd inData) const;
 
 // delete:
     StumpPredictor() = delete;
@@ -17,10 +16,9 @@ public:
     StumpPredictor& operator=(const StumpPredictor&) = delete;
 
 private:
-    friend class StumpTrainer;
+    friend class StumpTrainerByThread;
 
     StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY);
-    StumpPredictor(size_t variableCount, double y);
 
     size_t variableCount_;
     size_t j_;

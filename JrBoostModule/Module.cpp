@@ -9,8 +9,6 @@
 #include "../JrBoostLib/AdaBoostTrainer.h"
 #include "../JrBoostLib/LogitBoostTrainer.h"
 
-#pragma warning( disable : 26444 )
-
 namespace py = pybind11;
 
 
@@ -25,11 +23,7 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::class_<StumpPredictor>{ mod, "StumpPredictor" }
         .def("variableCount", &StumpPredictor::variableCount)
-        .def(
-            "predict", 
-            static_cast<ArrayXd(StumpPredictor::*)(CPyRefXXd) const>(&StumpPredictor::predict),
-            py::arg().noconvert()
-        );
+        .def("predict", &StumpPredictor::predict, py::arg().noconvert());
 
     py::class_<StumpOptions>{ mod, "StumpOptions" }
         .def(py::init<>())
@@ -49,24 +43,25 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::class_<BoostPredictor>{ mod, "BoostPredictor" }
         .def("variableCount", &BoostPredictor::variableCount)
-        .def(
-            "predict",
-            static_cast<ArrayXd(BoostPredictor::*)(CPyRefXXd) const>(&BoostPredictor::predict),
-            py::arg().noconvert()
-        );
+        .def("predict", &BoostPredictor::predict, py::arg().noconvert());
 
     py::class_<BoostOptions>{ mod, "BoostOptions" }
-        .def(py::init<>())
+    .def(py::init<>())
         .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
         .def_property("eta", &BoostOptions::eta, &BoostOptions::setEta)
         .def_property("logStep", &BoostOptions::logStep, &BoostOptions::setLogStep)
-        .def_property("baseOptions", &BoostOptions::baseOptions, &BoostOptions::setBaseOptions);
+        .def_property_readonly(
+            "base",
+            static_cast<StumpOptions& (BoostOptions::*)()>(&BoostOptions::base)
+        );
 
     py::class_<AdaBoostTrainer>{ mod, "AdaBoostTrainer" }
-        .def(py::init<ArrayXXf, ArrayXs, ArrayXd>())
-        .def("train", &AdaBoostTrainer::train);
+        .def(py::init<RefXXf, ArrayXs>(), py::arg().noconvert(), py::arg())
+        .def("train", &AdaBoostTrainer::train)
+        .def("trainAndPredict", &AdaBoostTrainer::trainAndPredict);
 
     py::class_<LogitBoostTrainer>{ mod, "LogitBoostTrainer" }
-        .def(py::init<ArrayXXf, ArrayXs, ArrayXd>())
-        .def("train", &LogitBoostTrainer::train);
+        .def(py::init<CRefXXf, ArrayXs>(), py::arg().noconvert(), py::arg())
+        .def("train", &LogitBoostTrainer::train)
+        .def("trainAndPredict", &LogitBoostTrainer::trainAndPredict);
 }

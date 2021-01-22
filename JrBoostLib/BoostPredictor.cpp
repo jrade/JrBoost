@@ -26,17 +26,3 @@ ArrayXd BoostPredictor::predict(CRefXXf inData) const
     return outData;
 }
 
-ArrayXd BoostPredictor::predict(CPyRefXXd inData) const
-{
-    size_t sampleCount = inData.rows();
-    size_t variableCount = inData.cols();
-
-    if (variableCount != variableCount_)
-        throw runtime_error("The data does not have the same number of variables as the training data.");
-
-    ArrayXd outData{ Eigen::ArrayXd::Constant(sampleCount, c0_) };
-    size_t n = basePredictors_.size();
-    for (size_t k = 0; k < n; ++k)
-        outData += c1_[k] * basePredictors_[k].predict(inData);
-    return outData;
-}
