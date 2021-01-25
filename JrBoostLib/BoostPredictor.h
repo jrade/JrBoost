@@ -20,7 +20,7 @@ public:
 private:
     BoostPredictor(size_t variableCount, double c0, vector<double>&& c1, vector<StumpPredictor>&& basePredictors);
 
-    friend class AdaBoostTrainer;
+    friend class BoostTrainer;
     friend class LogitBoostTrainer;
 
     size_t variableCount_;

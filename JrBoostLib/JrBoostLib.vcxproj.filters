@@ -7,17 +7,11 @@
     <ClInclude Include="BoostPredictor.h">
       <Filter>Boost</Filter>
     </ClInclude>
-    <ClInclude Include="AdaBoostTrainer.h">
-      <Filter>Boost</Filter>
-    </ClInclude>
     <ClInclude Include="StumpOptions.h">
       <Filter>Stump</Filter>
     </ClInclude>
     <ClInclude Include="StumpPredictor.h">
       <Filter>Stump</Filter>
-    </ClInclude>
-    <ClInclude Include="LogitBoostTrainer.h">
-      <Filter>Boost</Filter>
     </ClInclude>
     <ClInclude Include="BoostOptions.h">
       <Filter>Boost</Filter>
@@ -31,6 +25,10 @@
     <ClInclude Include="StumpTrainerByThread.h">
       <Filter>Stump</Filter>
     </ClInclude>
+    <ClInclude Include="Loss.h" />
+    <ClInclude Include="BoostTrainer.h">
+      <Filter>Boost</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -39,17 +37,11 @@
     <ClCompile Include="BoostPredictor.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
-    <ClCompile Include="AdaBoostTrainer.cpp">
-      <Filter>Boost</Filter>
-    </ClCompile>
     <ClCompile Include="StumpOptions.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
     <ClCompile Include="StumpPredictor.cpp">
       <Filter>Stump</Filter>
-    </ClCompile>
-    <ClCompile Include="LogitBoostTrainer.cpp">
-      <Filter>Boost</Filter>
     </ClCompile>
     <ClCompile Include="BoostOptions.cpp">
       <Filter>Boost</Filter>
@@ -62,6 +54,9 @@
     </ClCompile>
     <ClCompile Include="StumpTrainerByThread.cpp">
       <Filter>Stump</Filter>
+    </ClCompile>
+    <ClCompile Include="BoostTrainer.cpp">
+      <Filter>Boost</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

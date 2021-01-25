@@ -11,6 +11,7 @@
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -21,6 +22,7 @@ using std::array;
 using std::cout;
 using std::endl;
 using std::numeric_limits;
+using std::optional;
 using std::pair;
 using std::runtime_error;
 using std::shared_ptr;

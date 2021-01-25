@@ -35,12 +35,12 @@ def formatOptions(opt):
     return f'eta = {eta}  usr = {usr}  uvr = {uvr}'
 
 
-def optimizeHyperParams(inData, outData):
+def optimizeHyperParams(inData, outData, foldCount):
 
     optionsList = []
     for usr in (0.2, 0.4, 0.6, 0.8, 1.0):
         for uvr in (0.2, 0.4, 0.6, 0.8, 1.0):
-            for eta in (0.01, 0.02, 0.05, 0.1, 0.2):
+            for eta in (0.05, 0.1, 0.2, 0.5, 1.0):
                 opt = jrboost.BoostOptions()
                 opt.eta = eta
                 opt.iterationCount = 1000
@@ -50,9 +50,9 @@ def optimizeHyperParams(inData, outData):
 
     random.shuffle(optionsList)
     optionsCount = len(optionsList)
-    score = np.zeros((optionsCount,))
+    loss = np.zeros((optionsCount,))
 
-    for trainSamples, testSamples in util.stratifiedRandomFolds(outData, 5):
+    for trainSamples, testSamples in util.stratifiedRandomFolds(outData, foldCount):
 
         trainInData = inData[trainSamples, :]
         trainInData = np.asfortranarray(trainInData)
@@ -62,21 +62,26 @@ def optimizeHyperParams(inData, outData):
         testInData = np.asfortranarray(testInData)
         testOutData = outData[testSamples]
 
-        trainer = jrboost.AdaBoostTrainer(trainInData, trainOutData)
-        predData = trainer.trainAndPredict(testInData, optionsList)
-        score += util.logLoss(testOutData, predData)
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+        loss += trainer.trainAndEval(testInData, testOutData, optionsList)
 
-    return optionsList[np.argmin(score)]
+    sortedOptionsList = [optionsList[i] for i in np.argsort(loss)]
+    return sortedOptionsList
 
 
-def trainAndPredict(trainInData, trainOutData, testInData, opt):
+def trainAndPredict(trainInData, trainOutData, testInData, opts):
 
-        trainInData = np.asfortranarray(trainInData)
-        testInData = np.asfortranarray(testInData)
-        trainer = jrboost.AdaBoostTrainer(trainInData, trainOutData)
+    trainInData = np.asfortranarray(trainInData)
+    testInData = np.asfortranarray(testInData)
+    testSampleCount = testInData.shape[0]
+    testOutData = np.zeros((testSampleCount,))
+
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+    for opt in opts:
         predictor = trainer.train(opt)
-        testOutData = predictor.predict(testInData)
-        return testOutData
+        testOutData += predictor.predict(testInData)
+    testOutData /= len(opts)
+    return testOutData
 
 #---------------------------------------------------------
 
@@ -93,28 +98,33 @@ while True:
     t = -time.time()
 
     for label in labels:
-        print(label + ': ', end = '', flush = True)
+        print(label)
         trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint64);
         trainOutData = np.ascontiguousarray(trainOutData)
-        opt = optimizeHyperParams(trainInData, trainOutData)
-        print(formatOptions(opt))
+        opts = optimizeHyperParams(trainInData, trainOutData, 5)[:10]
+        for opt in opts:
+            print(f'  {formatOptions(opt)}')
 
-        testOutData = trainAndPredict(trainInData, trainOutData, testInData, opt)
+        testOutData = trainAndPredict(trainInData, trainOutData, testInData, opts)
         testOutData = 1 / (1 + np.exp(-testOutData))
         testOutDataFrame[label] = testOutData
+        print()
 
     testOutDataFrame.to_csv('result.csv', sep = ',')
 
     t += time.time()
     print(util.formatTime(t))
     print()
+    print()
 
 
 print('Done!')
 
 
-# 0.922  (frac = 0.01)
-# 0.665  (frac = 0.1)
+# 0.922  (frac = 0.01, logloss)
+# 0.665  (frac = 0.1, logloss)
+# 0.930 (frac = 0.01, linLoss, 10 opt)
+
 
 
 

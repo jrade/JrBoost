@@ -1,33 +1,46 @@
-train predictor: 1:19:10
+BoostTrainer::BoostTrainer moves??
 
+profile:
+	1. init sample mask is a bit slow
+		profile stratified and non-stratified versions again
 
+	2. profile leukemia boost with and without asserts
 
-must purge panda from the code
+	3. BoostTrainer::trainAndEval
+		how does it scale with the number of options and number of threads?
 
-	revert to old stratified folds
-	optimized t-test implementation
+		8 threads; 12:29, 12:31
 
-------------------------------------------------------
+		4 thread: 15:45, 13:48
 
-stratified folds that take pandas series and return pandas index
-	time again
+review the nested CV code
 
-number of variables hyper param
+produce report
+	first a simple one
+    add a train and predict function similar to train and eval
 
-high level eval function ´that takes two pandas dataframe, two pandas series and an options list
+stratifiedSubmask
+	not hard to implement actually
+	this shold take care of sumW_ = 0 problem
+	add a minSampleWeight parameter and profile how many samples that fall below this
 
-eval function that returns score
+full fledged F-statistic
 
-run the old grid search again
+test PGO
 
--------------------------------------------------
+--------------------------------------------------------------------
+
+play around with what we have - how good does it get?
+
+--------------------------------------------------------------------
 
 gradient boost
 	read xgb paper to check that my understanding is correct
 
 trees
+	pruning
 
-------------------------------------------------
+--------------------------------------------------------------------
 
 later:
 	how to handle sumW_ == 0.0
@@ -39,35 +52,7 @@ later:
 		can not iterate over const Eigen Ref object!!!!
 
 	SIMD parallelize the variable (j) loop
-
-------------------------------------
-
-profile
-
-	init with random device
-
-	profile data validation
-		StumpTrainer::train()
-			ASSERT((outData > -numeric_limits<double>::infinity()).all());
-			ASSERT((outData < numeric_limits<double>::infinity()).all());
-
-	AdaBoostTrainer::trainAndPredict
-		how does it scale with the number of options and number of threads?
-
-...........................................................
-
-
-...........................................................
-def invert_permutation(p):
-    '''The argument p is assumed to be some permutation of 0, 1, ..., len(p)-1. 
-    Returns an array s, where s[i] gives the index of i in p.
-    '''
-    s = np.empty_like(p)
-    s[p] = np.arange(p.size)
-    return s
-
-how id AdaBoostOptions.baseOptions handles by pybind11??
-	can we modify a const object?
+		time matr
 
 -----------------------------------------------------------
 
@@ -108,7 +93,6 @@ Eigen issues:
 NumPy issues:
 	inData[trainSamples, :] does not preserve Fortran (column major) order
 
-
 ------------------------------------------------------------------------
 
 läs: https://romanpoya.medium.com/a-look-at-the-performance-of-expression-templates-in-c-eigen-vs-blaze-vs-fastor-vs-armadillo-vs-2474ed38d982
@@ -124,3 +108,8 @@ Notes:
 	eigen: colmajor
 
 	https://docs.microsoft.com/en-us/visualstudio/python/working-with-c-cpp-python-in-visual-studio?view=vs-2019
+
+
+----------------------------------------------------------------------------
+
+https://stackoverflow.com/questions/29519222/how-to-transpose-a-16x16-matrix-using-simd-instructions

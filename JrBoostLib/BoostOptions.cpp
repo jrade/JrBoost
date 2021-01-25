@@ -2,6 +2,11 @@
 #include "BoostOptions.h"
 
 
+void BoostOptions::setMethod(Method m)
+{
+    method_ = m;
+}
+
 void BoostOptions::setIterationCount(size_t n)
 {
     iterationCount_ = n;

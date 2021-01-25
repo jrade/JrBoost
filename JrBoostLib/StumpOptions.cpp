@@ -14,6 +14,12 @@ void StumpOptions::setUsedVariableRatio(double r)
     usedVariableRatio_ = r;
 }
 
+void StumpOptions::setTopVariableCount(optional<size_t> n)
+{
+    ASSERT(!n || *n != 0);
+    topVariableCount_ = n;
+}
+
 void StumpOptions::setIsStratified(bool b)
 {
     isStratified_ = b;
