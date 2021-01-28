@@ -1,17 +1,22 @@
-BoostTrainer::BoostTrainer moves??
+commit
 
-profile:
-	1. init sample mask is a bit slow
-		profile stratified and non-stratified versions again
+profile
 
-	2. profile leukemia boost with and without asserts
+Absract Classifier
+	Trivial classifier
+	StumpClassifier
+	LinearCombinationClassifier
 
-	3. BoostTrainer::trainAndEval
-		how does it scale with the number of options and number of threads?
+PyBind11 issue:
+	investigate abstract factory crash (JrBooster Crash)
+		is the problem return values that are derived objects passed with unique_ptr to base class?
+		test with the Miniconda that somes bundles with Visual Studio
 
-		8 threads; 12:29, 12:31
+profile
 
-		4 thread: 15:45, 13:48
+memory pool?
+
+-----------------------------------------------
 
 review the nested CV code
 
@@ -19,18 +24,19 @@ produce report
 	first a simple one
     add a train and predict function similar to train and eval
 
+full fledged F-statistic
+
+------------------------------------------------
+
 stratifiedSubmask
 	not hard to implement actually
 	this shold take care of sumW_ = 0 problem
 	add a minSampleWeight parameter and profile how many samples that fall below this
-
-full fledged F-statistic
-
-test PGO
-
---------------------------------------------------------------------
+	also profile, seems a bit slow
 
 play around with what we have - how good does it get?
+
+test PGO
 
 --------------------------------------------------------------------
 
@@ -52,8 +58,12 @@ later:
 		can not iterate over const Eigen Ref object!!!!
 
 	SIMD parallelize the variable (j) loop
-		time matr
+		time matrix transpose
 
+	more memory efficient data in inner loop (use smalller integer types in arrays) - can save about 10%
+
+	profile the parallellized part only and check how the performance scales with the number of processors
+		
 -----------------------------------------------------------
 
 follow up alpha boost idea
@@ -70,9 +80,6 @@ low prio:
 ----------------------------------------------------------------------
 
 PyBind11 issues:
-	investigate abstract factory crash (JrBooster Crash)
-		is the problem return values that are derived objects passed with unique_ptr to base class?
-		test with the Miniconda that somes bundles with Visual Studio
 	how translate custom C++ exceptions to standard Python exceptions
 	no way of specifying noocnvert for property setters
 	

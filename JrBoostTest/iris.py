@@ -37,7 +37,7 @@ for label in labels:
 
     outData = outDataFrame[label].to_numpy(dtype = np.uint64);
     outData = np.ascontiguousarray(outData)
-    trainer = jrboost.AdaBoostTrainer(inData, outData)
+    trainer = jrboost.BoostTrainer(inData, outData)
     predictor = trainer.train(opt)
     predFrame[label] = predictor.predict(inData)
 

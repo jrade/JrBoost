@@ -13,8 +13,6 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(jrboost, mod)
 {
-    mod.doc() = "The jrboost module implements the logit boost machine learning algorithm";
-
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
 
@@ -60,7 +58,8 @@ PYBIND11_MODULE(jrboost, mod)
         .value("Logit", BoostOptions::Method::Logit);
 
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
-        .def(py::init<RefXXf, ArrayXs>(), py::arg().noconvert(), py::arg())
+        .def(py::init<RefXXf, RefXs>(), py::arg().noconvert(), py::arg())
         .def("train", &BoostTrainer::train)
-        .def("trainAndEval", &BoostTrainer::trainAndEval);
+        .def("trainAndEval", &BoostTrainer::trainAndEval)
+        .def_readwrite_static("threadCount", &BoostTrainer::threadCount);
 }

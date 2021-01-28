@@ -1,6 +1,6 @@
 #pragma once
 
-inline double linLoss(RefXs outData, RefXd predData)
+inline double linLoss(CRefXs outData, CRefXd predData)
 {
     return (
         outData.cast<double>() / (1.0 + predData.exp())

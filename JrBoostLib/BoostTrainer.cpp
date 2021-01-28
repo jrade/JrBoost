@@ -5,9 +5,9 @@
 #include "Loss.h"
 
 
-BoostTrainer::BoostTrainer(CRefXXf inData, ArrayXs outData) :
-    inData_{ std::move(inData) },
-    rawOutData_{ std::move(outData) },
+BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
+    inData_{ inData },
+    rawOutData_{ outData },
     outData_(2.0 * rawOutData_.cast<double>() - 1.0),
     baseTrainer_{ inData_, rawOutData_ }
 {
@@ -54,7 +54,7 @@ BoostPredictor BoostTrainer::trainAda_(const BoostOptions& opt) const
         adjWeights = (-F * outData_ + FYMin).exp();                         // weight?
 
         SWITCH_TIMER(t0, t1);
-        StumpPredictor basePredictor{ baseTrainer_.train(outData_, adjWeights, opt.base()) };
+        StumpPredictor basePredictor = baseTrainer_.train(outData_, adjWeights, opt.base());
         SWITCH_TIMER(t1, t0);
 
         f = basePredictor.predict(inData_);
@@ -111,7 +111,7 @@ BoostPredictor BoostTrainer::trainLogit_(const BoostOptions& opt) const
         adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
 
         SWITCH_TIMER(t0, t1);
-        StumpPredictor basePredictor{ baseTrainer_.train(adjOutData, adjWeights, opt.base()) };
+        StumpPredictor basePredictor = baseTrainer_.train(adjOutData, adjWeights, opt.base());
         SWITCH_TIMER(t1, t0);
 
         f = basePredictor.predict(inData_);
@@ -140,14 +140,14 @@ BoostPredictor BoostTrainer::trainLogit_(const BoostOptions& opt) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, ArrayXs testOutData, const vector<BoostOptions>& opt) const
+ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const vector<BoostOptions>& opt) const
 {
     const size_t testSampleCount = testInData.rows();
     int optCount = static_cast<int>(opt.size());
     ArrayXd scores(optCount);
 
     std::exception_ptr ep;
-#pragma omp parallel for //num_threads(4)
+    #pragma omp parallel for num_threads(threadCount)
     for (int i = 0; i < optCount; ++i) {
         try {
             BoostPredictor pred = train(opt[i]);

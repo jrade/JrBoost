@@ -85,7 +85,7 @@ def trainAndPredict(trainInData, trainOutData, testInData, opts):
 
 #---------------------------------------------------------
 
-trainInDataFrame, trainOutDataFrame = loadTrainData(0.1)
+trainInDataFrame, trainOutDataFrame = loadTrainData(0.01)
 trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
 labels = trainOutDataFrame.columns
 

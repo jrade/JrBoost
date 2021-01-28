@@ -1,5 +1,7 @@
 #pragma once
 
+// Note: profiling shows that the asserts in the code do not reduce performance 
+
 
 class AssertionError : public runtime_error
 {

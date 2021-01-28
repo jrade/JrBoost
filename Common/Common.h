@@ -67,3 +67,5 @@ using RandomNumberEngine = splitmix;
 #include "Assert.h"
 #include "FastAlgorithms.h"
 #include "Profiling.h"
+
+using SampleIndex = uint64_t;

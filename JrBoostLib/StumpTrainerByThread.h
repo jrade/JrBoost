@@ -29,7 +29,7 @@ private:
 
     vector<char> usedSampleMask_;
     vector<size_t> usedVariables_;
-    vector<size_t> sortedUsedSamples_;
+    vector<SampleIndex> sortedUsedSamples_;
 
     double sumW_;
     double sumWY_;

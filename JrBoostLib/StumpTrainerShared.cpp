@@ -14,11 +14,11 @@ StumpTrainerShared::StumpTrainerShared(CRefXXf inData, RefXs strata) :
 }
 
 
-vector<vector<size_t>> StumpTrainerShared::sortSamples_(CRefXXf inData) const
+vector<vector<SampleIndex>> StumpTrainerShared::sortSamples_(CRefXXf inData) const
 {
     const size_t variableCount = inData.cols();
 
-    vector<vector<size_t>> sortedSamples(variableCount);
+    vector<vector<SampleIndex>> sortedSamples(variableCount);
     vector<pair<float, size_t>> tmp{ sampleCount_ };
     for (size_t j = 0; j < variableCount; ++j) {
         for (size_t i = 0; i < sampleCount_; ++i)
@@ -26,7 +26,7 @@ vector<vector<size_t>> StumpTrainerShared::sortSamples_(CRefXXf inData) const
         std::sort(begin(tmp), end(tmp));
         sortedSamples[j].resize(sampleCount_);
         for (size_t i = 0; i < sampleCount_; ++i)
-            sortedSamples[j][i] = tmp[i].second;
+            sortedSamples[j][i] = static_cast<SampleIndex>(tmp[i].second);
     }
 
     return sortedSamples;
@@ -91,7 +91,7 @@ size_t StumpTrainerShared::initUsedSampleMask(vector<char>* usedSampleMask, cons
 }
 
 
-void StumpTrainerShared::initSortedUsedSamples(vector<size_t>* sortedUsedSamples, size_t usedSampleCount, const vector<char>& usedSampleMask, size_t j) const
+void StumpTrainerShared::initSortedUsedSamples(vector<SampleIndex>* sortedUsedSamples, size_t usedSampleCount, const vector<char>& usedSampleMask, size_t j) const
 {
     sortedUsedSamples->resize(usedSampleCount);
 
