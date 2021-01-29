@@ -1,26 +1,18 @@
 #pragma once
 
+#include "AbstractPredictor.h"
 
-class StumpPredictor {
+
+class StumpPredictor : public AbstractPredictor {
 public:
-    StumpPredictor(StumpPredictor&&) = default;
-    StumpPredictor& operator=(StumpPredictor&&) = default;
-    ~StumpPredictor() = default;
-
-    size_t variableCount() const { return variableCount_; }
-    ArrayXd predict(CRefXXf inData) const;
-
-// delete:
-    StumpPredictor() = delete;
-    StumpPredictor(const StumpPredictor&) = delete;
-    StumpPredictor& operator=(const StumpPredictor&) = delete;
+    virtual ~StumpPredictor() = default;
+    virtual ArrayXd predict(CRefXXf inData) const;
 
 private:
     friend class StumpTrainerByThread;
 
     StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY);
 
-    size_t variableCount_;
     size_t j_;
     float x_;
     double leftY_;

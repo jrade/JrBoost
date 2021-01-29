@@ -140,9 +140,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AbstractPredictor.h" />
     <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="BoostTrainer.h" />
-    <ClInclude Include="BoostPredictor.h" />
+    <ClInclude Include="LinearCombinationPredictor.h" />
     <ClInclude Include="Loss.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="StumpPredictor.h" />
@@ -150,11 +151,12 @@
     <ClInclude Include="StumpTrainer.h" />
     <ClInclude Include="StumpTrainerByThread.h" />
     <ClInclude Include="StumpTrainerShared.h" />
+    <ClInclude Include="TrivialPredictor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoostOptions.cpp" />
     <ClCompile Include="BoostTrainer.cpp" />
-    <ClCompile Include="BoostPredictor.cpp" />
+    <ClCompile Include="LinearCombinationPredictor.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -4,9 +4,6 @@
     <ClInclude Include="pch.h">
       <Filter>Precompiled Header</Filter>
     </ClInclude>
-    <ClInclude Include="BoostPredictor.h">
-      <Filter>Boost</Filter>
-    </ClInclude>
     <ClInclude Include="StumpOptions.h">
       <Filter>Stump</Filter>
     </ClInclude>
@@ -29,13 +26,19 @@
     <ClInclude Include="BoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
+    <ClInclude Include="LinearCombinationPredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="AbstractPredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="TrivialPredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
       <Filter>Precompiled Header</Filter>
-    </ClCompile>
-    <ClCompile Include="BoostPredictor.cpp">
-      <Filter>Boost</Filter>
     </ClCompile>
     <ClCompile Include="StumpOptions.cpp">
       <Filter>Stump</Filter>
@@ -58,6 +61,9 @@
     <ClCompile Include="BoostTrainer.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
+    <ClCompile Include="LinearCombinationPredictor.cpp">
+      <Filter>Predictor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Precompiled Header">
@@ -68,6 +74,9 @@
     </Filter>
     <Filter Include="Stump">
       <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Predictor">
+      <UniqueIdentifier>{0e4adbcd-62ea-4ea3-b2ed-62fcbf83d2bc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

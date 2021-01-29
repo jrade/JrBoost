@@ -3,6 +3,7 @@
 #include "StumpTrainerShared.h"
 #include "StumpOptions.h"
 #include "StumpPredictor.h"
+#include "TrivialPredictor.h"
 
 
 StumpTrainerByThread::StumpTrainerByThread(CRefXXf inData, shared_ptr<const StumpTrainerShared> shared, std::random_device& rd) :
@@ -15,13 +16,12 @@ StumpTrainerByThread::StumpTrainerByThread(CRefXXf inData, shared_ptr<const Stum
 }
 
 
-StumpPredictor StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
+unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
 {
     size_t n = 0;
     size_t t0 = 0;
     size_t t1 = 0;
     size_t t2 = 0;
-
 
     START_TIMER(t0);
     size_t usedSampleCount = shared_->initUsedSampleMask(&usedSampleMask_, options, rne_);
@@ -29,15 +29,14 @@ StumpPredictor StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const
     initSums_(outData, weights);
     if (sumW_ == 0) {
         cout << "Warning: sumW = 0" << endl;
-        return StumpPredictor{
-            variableCount_, 0, -std::numeric_limits<float>::infinity(), std::numeric_limits<double>::quiet_NaN(), 0.0 };
+        return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
     }
 
     double bestScore = sumWY_ * sumWY_ / sumW_;
-    size_t bestJ = 0;
-    float bestX = -numeric_limits<float>::infinity();
-    double bestLeftY = numeric_limits<double>::quiet_NaN();
-    double bestRightY = sumWY_ / sumW_;
+    size_t bestJ = static_cast<size_t>(-1);
+    float bestX = 0.0f;
+    double bestLeftY = 0.0;
+    double bestRightY = 0.0;
 
     const size_t minNodeSize = options.minNodeSize();
     const double tol = sumW_ * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
@@ -125,7 +124,9 @@ StumpPredictor StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const
         cout << endl;
     }
 
-    return StumpPredictor{ variableCount_, bestJ, bestX, bestLeftY, bestRightY };
+    if (bestJ == static_cast<size_t>(-1))
+        return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
+    return unique_ptr<AbstractPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
 };
 
 

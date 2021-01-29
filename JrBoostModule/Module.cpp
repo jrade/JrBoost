@@ -1,11 +1,8 @@
 #include "pch.h"
-
+#include "../JrBoostLib/AbstractPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
-#include "../JrBoostLib/StumpPredictor.h"
 #include "../JrBoostLib/StumpTrainer.h"
-
 #include "../JrBoostLib/BoostOptions.h"
-#include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/BoostTrainer.h"
 
 namespace py = pybind11;
@@ -16,11 +13,14 @@ PYBIND11_MODULE(jrboost, mod)
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
 
-    // Stump classes
+    // Abstract predictor
 
-    py::class_<StumpPredictor>{ mod, "StumpPredictor" }
-        .def("variableCount", &StumpPredictor::variableCount)
-        .def("predict", &StumpPredictor::predict, py::arg().noconvert());
+    py::class_<AbstractPredictor>{ mod, "Predictor" }
+        .def("variableCount", &AbstractPredictor::variableCount)
+        .def("predict", &AbstractPredictor::predict, py::arg().noconvert());
+
+
+    // Stump classes
 
     py::class_<StumpOptions>{ mod, "StumpOptions" }
         .def(py::init<>())
@@ -38,10 +38,6 @@ PYBIND11_MODULE(jrboost, mod)
 
 
     // Boost classes
-
-    py::class_<BoostPredictor>{ mod, "BoostPredictor" }
-        .def("variableCount", &BoostPredictor::variableCount)
-        .def("predict", &BoostPredictor::predict, py::arg().noconvert());
 
     py::class_<BoostOptions> opt{ mod, "BoostOptions" };
     opt.def(py::init<>())

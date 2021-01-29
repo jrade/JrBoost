@@ -2,7 +2,7 @@
 
 class StumpOptions;
 class StumpTrainerShared;
-class StumpPredictor;
+class AbstractPredictor;
 
 
 class StumpTrainerByThread {
@@ -10,7 +10,7 @@ public:
     StumpTrainerByThread(CRefXXf inData, shared_ptr<const StumpTrainerShared> shared, std::random_device& rd);
     ~StumpTrainerByThread() = default;
 
-    StumpPredictor train(CRefXd outData, CRefXd weights, const StumpOptions& options);
+    unique_ptr<AbstractPredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options);
 
 // deleted:
     StumpTrainerByThread() = delete;

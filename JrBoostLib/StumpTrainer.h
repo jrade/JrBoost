@@ -3,14 +3,14 @@
 class StumpOptions;
 class StumpTrainerShared;
 class StumpTrainerByThread;
-class StumpPredictor;
+class AbstractPredictor;
 
 
 class StumpTrainer {
 public:
     StumpTrainer(CRefXXf inData, RefXs strata);
     ~StumpTrainer() = default;
-    StumpPredictor train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
+    unique_ptr<AbstractPredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
 
 // deleted:
     StumpTrainer() = delete;

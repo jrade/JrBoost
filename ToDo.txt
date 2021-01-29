@@ -1,22 +1,5 @@
-commit
 
-profile
-
-Absract Classifier
-	Trivial classifier
-	StumpClassifier
-	LinearCombinationClassifier
-
-PyBind11 issue:
-	investigate abstract factory crash (JrBooster Crash)
-		is the problem return values that are derived objects passed with unique_ptr to base class?
-		test with the Miniconda that somes bundles with Visual Studio
-
-profile
-
-memory pool?
-
------------------------------------------------
+advanced profiling system
 
 review the nested CV code
 
@@ -25,8 +8,6 @@ produce report
     add a train and predict function similar to train and eval
 
 full fledged F-statistic
-
-------------------------------------------------
 
 stratifiedSubmask
 	not hard to implement actually
@@ -63,6 +44,8 @@ later:
 	more memory efficient data in inner loop (use smalller integer types in arrays) - can save about 10%
 
 	profile the parallellized part only and check how the performance scales with the number of processors
+
+	allocate tree nodes with a memory pool
 		
 -----------------------------------------------------------
 
@@ -82,6 +65,9 @@ low prio:
 PyBind11 issues:
 	how translate custom C++ exceptions to standard Python exceptions
 	no way of specifying noocnvert for property setters
+	investigate abstract factory crash (JrBooster Crash)
+		is the problem return values that are derived objects passed with unique_ptr to base class?
+		test with the Miniconda that somes bundles with Visual Studio
 	
 Gerstmann issues:
 	add move constructors to enable code such as

@@ -3,7 +3,7 @@
 #include "StumpTrainer.h"
 
 class BoostOptions;
-class BoostPredictor;
+class AbstractPredictor;
 
 
 class BoostTrainer {
@@ -11,7 +11,7 @@ public:
     BoostTrainer(CRefXXf inData, RefXs outData);
     ~BoostTrainer() = default;
 
-    BoostPredictor train(const BoostOptions& opt) const;
+    unique_ptr<AbstractPredictor> train(const BoostOptions& opt) const;
     ArrayXd trainAndEval(CRefXXf testInData, CRefXs testOutData, const vector<BoostOptions>& opt) const;
 
  // deleted:
@@ -22,8 +22,8 @@ public:
     inline static int threadCount = std::thread::hardware_concurrency();
 
 private:
-    BoostPredictor trainAda_(const BoostOptions& opt) const;
-    BoostPredictor trainLogit_(const BoostOptions& opt) const;
+    unique_ptr<AbstractPredictor> trainAda_(const BoostOptions& opt) const;
+    unique_ptr<AbstractPredictor> trainLogit_(const BoostOptions& opt) const;
 
 private:
     const CRefXXf inData_;

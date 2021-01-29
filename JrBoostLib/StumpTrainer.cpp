@@ -2,7 +2,7 @@
 #include "StumpTrainer.h"
 #include "StumpTrainerShared.h"
 #include "StumpTrainerByThread.h"
-#include "StumpPredictor.h"
+#include "AbstractPredictor.h"
 
 
 StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
@@ -24,7 +24,7 @@ StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
 }
 
 
-StumpPredictor StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
+unique_ptr<AbstractPredictor> StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
     ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
     ASSERT((outData > -numeric_limits<double>::infinity()).all());

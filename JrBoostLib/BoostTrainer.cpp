@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "BoostTrainer.h"
 #include "BoostOptions.h"
-#include "BoostPredictor.h"
+#include "LinearCombinationPredictor.h"
 #include "Loss.h"
 
 
@@ -20,14 +20,14 @@ BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
     ASSERT((rawOutData_ < 2).all());
 }
 
-BoostPredictor BoostTrainer::train(const BoostOptions& opt) const
+unique_ptr<AbstractPredictor> BoostTrainer::train(const BoostOptions& opt) const
 {
     return opt.method() == BoostOptions::Method::Ada ? trainAda_(opt) : trainLogit_(opt);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-BoostPredictor BoostTrainer::trainAda_(const BoostOptions& opt) const
+unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
 {
     size_t t0 = 0;
     size_t t1 = 0;
@@ -43,7 +43,7 @@ BoostPredictor BoostTrainer::trainAda_(const BoostOptions& opt) const
     ArrayXd F = ArrayXd::Constant(sampleCount, f0);
 
     ArrayXd adjWeights, f;
-    vector<StumpPredictor> basePredictors;
+    vector<unique_ptr<AbstractPredictor>> basePredictors;
     vector<double> coeff;
 
     const double eta = opt.eta();
@@ -54,10 +54,10 @@ BoostPredictor BoostTrainer::trainAda_(const BoostOptions& opt) const
         adjWeights = (-F * outData_ + FYMin).exp();                         // weight?
 
         SWITCH_TIMER(t0, t1);
-        StumpPredictor basePredictor = baseTrainer_.train(outData_, adjWeights, opt.base());
+        unique_ptr<AbstractPredictor> basePredictor{ baseTrainer_.train(outData_, adjWeights, opt.base()) };
         SWITCH_TIMER(t1, t0);
 
-        f = basePredictor.predict(inData_);
+        f = basePredictor->predict(inData_);
         F += eta * f;
         basePredictors.push_back(std::move(basePredictor));
         coeff.push_back(2 * eta);
@@ -76,12 +76,12 @@ BoostPredictor BoostTrainer::trainAda_(const BoostOptions& opt) const
     //cout << 1.0e-6 * t1 << endl;
     //cout << endl;
 
-    return BoostPredictor(variableCount, 2  * f0, std::move(coeff), std::move(basePredictors));
+    return std::make_unique<LinearCombinationPredictor>(variableCount, 2  * f0, std::move(coeff), std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-BoostPredictor BoostTrainer::trainLogit_(const BoostOptions& opt) const
+unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
 {
     size_t t0 = 0;
     size_t t1 = 0;
@@ -97,7 +97,7 @@ BoostPredictor BoostTrainer::trainLogit_(const BoostOptions& opt) const
     ArrayXd F = ArrayXd::Constant(sampleCount, f0);
 
     ArrayXd adjOutData, adjWeights, f;
-    vector<StumpPredictor> basePredictors;
+    vector<unique_ptr<AbstractPredictor>> basePredictors;
     vector<double> coeff;
 
     const double eta = opt.eta();
@@ -111,10 +111,10 @@ BoostPredictor BoostTrainer::trainLogit_(const BoostOptions& opt) const
         adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
 
         SWITCH_TIMER(t0, t1);
-        StumpPredictor basePredictor = baseTrainer_.train(adjOutData, adjWeights, opt.base());
+        unique_ptr<AbstractPredictor > basePredictor{ baseTrainer_.train(adjOutData, adjWeights, opt.base()) };
         SWITCH_TIMER(t1, t0);
 
-        f = basePredictor.predict(inData_);
+        f = basePredictor->predict(inData_);
         double c = eta / std::max(0.5, f.abs().maxCoeff());
         F += c * f;
         coeff.push_back(2 * c);
@@ -135,7 +135,7 @@ BoostPredictor BoostTrainer::trainLogit_(const BoostOptions& opt) const
     //cout << 1.0e-6 * t1 << endl;
     //cout << endl;
 
-    return BoostPredictor(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
+    return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -150,8 +150,8 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
     #pragma omp parallel for num_threads(threadCount)
     for (int i = 0; i < optCount; ++i) {
         try {
-            BoostPredictor pred = train(opt[i]);
-            ArrayXd predData = pred.predict(testInData);
+            unique_ptr<AbstractPredictor> pred{ train(opt[i]) };
+            ArrayXd predData = pred->predict(testInData);
             scores(i) = linLoss(testOutData, predData);
         }
         catch (const std::exception&) {
