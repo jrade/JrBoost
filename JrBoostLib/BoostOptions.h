@@ -25,6 +25,8 @@ public:
     StumpOptions& base() { return base_; }
     const StumpOptions& base() const { return base_; }
 
+    double cost() const;
+
 private:
     Method method_{ Method::Ada };
     size_t iterationCount_{ 1000 };

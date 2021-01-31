@@ -144,7 +144,7 @@
     <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="BoostTrainer.h" />
     <ClInclude Include="LinearCombinationPredictor.h" />
-    <ClInclude Include="Loss.h" />
+    <ClInclude Include="Util.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="StumpPredictor.h" />
     <ClInclude Include="StumpOptions.h" />
@@ -157,6 +157,7 @@
     <ClCompile Include="BoostOptions.cpp" />
     <ClCompile Include="BoostTrainer.cpp" />
     <ClCompile Include="LinearCombinationPredictor.cpp" />
+    <ClCompile Include="Memory.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

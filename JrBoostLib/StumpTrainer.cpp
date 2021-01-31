@@ -6,7 +6,8 @@
 
 
 StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
-    sampleCount_(inData.rows())
+    sampleCount_{ static_cast<size_t>(inData.rows()) },
+    shared_{ std::make_shared<const StumpTrainerShared>(inData, strata) }
 {
     ASSERT(inData.rows() != 0);
     ASSERT(inData.cols() != 0);
@@ -16,10 +17,9 @@ StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
     ASSERT((inData < numeric_limits<float>::infinity()).all());
     ASSERT((strata < 2).all());
 
-    shared_ = std::make_shared<const StumpTrainerShared>(inData, strata);
     std::random_device rd;
     size_t threadCount = omp_get_max_threads();
-    for (size_t threadId = 0; threadId < threadCount; ++threadId)
+    for (int threadId = 0; threadId < threadCount; ++threadId)
         byThread_.push_back(std::make_shared<StumpTrainerByThread>(inData, shared_, rd));
 }
 
@@ -35,5 +35,6 @@ unique_ptr<AbstractPredictor> StumpTrainer::train(CRefXd outData, CRefXd weights
     ASSERT((weights < numeric_limits<double>::infinity()).all());
 
     int threadId = omp_get_thread_num();
-    return byThread_[threadId]->train(outData, weights, options);
+    auto pred = byThread_[threadId]->train(outData, weights, options);
+    return pred;
 }

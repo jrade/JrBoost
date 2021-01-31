@@ -22,7 +22,6 @@
     <ClInclude Include="StumpTrainerByThread.h">
       <Filter>Stump</Filter>
     </ClInclude>
-    <ClInclude Include="Loss.h" />
     <ClInclude Include="BoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
@@ -34,6 +33,9 @@
     </ClInclude>
     <ClInclude Include="TrivialPredictor.h">
       <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>Util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -64,6 +66,9 @@
     <ClCompile Include="LinearCombinationPredictor.cpp">
       <Filter>Predictor</Filter>
     </ClCompile>
+    <ClCompile Include="Memory.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Precompiled Header">
@@ -77,6 +82,9 @@
     </Filter>
     <Filter Include="Predictor">
       <UniqueIdentifier>{0e4adbcd-62ea-4ea3-b2ed-62fcbf83d2bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{19bf0746-308c-4568-a7b1-0cffb93baf43}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

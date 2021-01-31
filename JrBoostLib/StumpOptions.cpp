@@ -14,9 +14,9 @@ void StumpOptions::setUsedVariableRatio(double r)
     usedVariableRatio_ = r;
 }
 
-void StumpOptions::setTopVariableCount(optional<size_t> n)
+void StumpOptions::setTopVariableCount(size_t n)
 {
-    ASSERT(!n || *n != 0);
+    ASSERT(n != 0);
     topVariableCount_ = n;
 }
 
@@ -27,7 +27,7 @@ void StumpOptions::setIsStratified(bool b)
 
 void StumpOptions::setMinNodeSize(size_t n)
 {
-    ASSERT(n > 0);
+    ASSERT(n != 0);
     minNodeSize_ = n;
 }
 
@@ -36,7 +36,7 @@ void StumpOptions::setMinNodeWeight(double w)
     minNodeWeight_ = w;
 }
 
-void StumpOptions::setProfile(bool p)
+double StumpOptions::cost() const
 {
-    profile_ = p;
+    return usedSampleRatio_ * usedVariableRatio_ * topVariableCount_;
 }

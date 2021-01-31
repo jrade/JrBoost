@@ -18,11 +18,16 @@ LinearCombinationPredictor::LinearCombinationPredictor(
 
 ArrayXd LinearCombinationPredictor::predict(CRefXXf inData) const
 {
+    CLOCK::PUSH(CLOCK::LCP_P);
+
     validateInData_(inData);
     size_t sampleCount = inData.rows();
     ArrayXd outData{ Eigen::ArrayXd::Constant(sampleCount, c0_) };
     size_t n = basePredictors_.size();
     for (size_t k = 0; k < n; ++k)
         outData += c1_[k] * basePredictors_[k]->predict(inData);
+
+    CLOCK::POP(n * sampleCount);
+
     return outData;
 }

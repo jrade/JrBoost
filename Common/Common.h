@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -54,6 +55,8 @@ using CRefXXf = Eigen::Ref<const ArrayXXf>;
 using CRefXd = Eigen::Ref<const ArrayXd>;
 using CRefXs = Eigen::Ref<const ArrayXs>;
 
+using ArrayXf = Eigen::ArrayXf;
+
 
 // Random number engines (by Arvid Gerstmann)
 
@@ -69,3 +72,4 @@ using RandomNumberEngine = splitmix;
 #include "Profiling.h"
 
 using SampleIndex = uint64_t;
+

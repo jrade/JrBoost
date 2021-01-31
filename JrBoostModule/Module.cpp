@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "../JrBoostLib/Util.h"
 #include "../JrBoostLib/AbstractPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
 #include "../JrBoostLib/StumpTrainer.h"
@@ -12,6 +13,24 @@ PYBIND11_MODULE(jrboost, mod)
 {
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
+    mod.def("linLoss", &linLoss);
+    mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(), py::arg().noconvert());
+    mod.def("ompSetNumThreads", &omp_set_num_threads);
+
+
+    // CLOCK submodule
+
+    py::module clockMod = mod.def_submodule("CLOCK");
+
+    clockMod
+        .def("PUSH", &CLOCK::PUSH)
+        .def("POP", &CLOCK::POP, py::arg() = 0)
+        .def("PRINT", &CLOCK::PRINT);
+
+    py::enum_<CLOCK::ID>(clockMod, "ID")
+        .value("MAIN", CLOCK::MAIN)
+        .export_values();
+
 
     // Abstract predictor
 
@@ -23,14 +42,13 @@ PYBIND11_MODULE(jrboost, mod)
     // Stump classes
 
     py::class_<StumpOptions>{ mod, "StumpOptions" }
-        .def(py::init<>())
+    .def(py::init<>())
         .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
         .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
         .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
         .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
         .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
-        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
-        .def_property("profile", &StumpOptions::profile, &StumpOptions::setProfile);
+        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified);
 
     py::class_<StumpTrainer>{ mod, "StumpTrainer" }
         .def(py::init<RefXXf, RefXs>(), py::arg().noconvert(), py::arg().noconvert())
@@ -40,6 +58,7 @@ PYBIND11_MODULE(jrboost, mod)
     // Boost classes
 
     py::class_<BoostOptions> opt{ mod, "BoostOptions" };
+
     opt.def(py::init<>())
         .def_property("method", &BoostOptions::method, &BoostOptions::setMethod)
         .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
@@ -49,6 +68,7 @@ PYBIND11_MODULE(jrboost, mod)
             "base",
             static_cast<StumpOptions& (BoostOptions::*)()>(&BoostOptions::base)
         );
+
     py::enum_<BoostOptions::Method>(opt, "Method")
         .value("Ada", BoostOptions::Method::Ada)
         .value("Logit", BoostOptions::Method::Logit);
@@ -56,6 +76,5 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
         .def(py::init<RefXXf, RefXs>(), py::arg().noconvert(), py::arg())
         .def("train", &BoostTrainer::train)
-        .def("trainAndEval", &BoostTrainer::trainAndEval)
-        .def_readwrite_static("threadCount", &BoostTrainer::threadCount);
+        .def("trainAndEval", &BoostTrainer::trainAndEval);
 }

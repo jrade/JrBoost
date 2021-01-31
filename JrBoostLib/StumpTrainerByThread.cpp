@@ -6,7 +6,11 @@
 #include "TrivialPredictor.h"
 
 
-StumpTrainerByThread::StumpTrainerByThread(CRefXXf inData, shared_ptr<const StumpTrainerShared> shared, std::random_device& rd) :
+StumpTrainerByThread::StumpTrainerByThread(
+    CRefXXf inData,
+    shared_ptr<const StumpTrainerShared> shared,
+    std::random_device& rd
+) :
     inData_(inData),
     sampleCount_(inData.rows()),
     variableCount_(inData.cols()),
@@ -18,17 +22,15 @@ StumpTrainerByThread::StumpTrainerByThread(CRefXXf inData, shared_ptr<const Stum
 
 unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
 {
-    size_t n = 0;
-    size_t t0 = 0;
-    size_t t1 = 0;
-    size_t t2 = 0;
+    CLOCK::PUSH(CLOCK::ST_TRAIN);
 
-    START_TIMER(t0);
+    size_t n = 0;
     size_t usedSampleCount = shared_->initUsedSampleMask(&usedSampleMask_, options, rne_);
     initUsedVariables_(options);
     initSums_(outData, weights);
     if (sumW_ == 0) {
         cout << "Warning: sumW = 0" << endl;
+        CLOCK::POP();
         return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
     }
 
@@ -43,14 +45,13 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
     // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
     const double minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
         
-    SWITCH_TIMER(t0, t1);
-
     for (size_t j : usedVariables_) {
 
+        CLOCK::PUSH(CLOCK::T1);
         shared_->initSortedUsedSamples(&sortedUsedSamples_, usedSampleCount, usedSampleMask_, j);
+        CLOCK::POP(sampleCount_);
 
         // find best split
-        SWITCH_TIMER(t1, t2);
 
         double leftSumW = 0.0;
         double leftSumWY = 0.0;
@@ -64,6 +65,8 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 
         // this is where most execution time is spent ......
 
+        CLOCK::PUSH(CLOCK::T2);
+            
         while (p != pEnd - 1) {
 
             const size_t i = nextI;
@@ -110,31 +113,27 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         //    rightSumWY -= w * y;
         //}
 
-        SWITCH_TIMER(t2, t1);
+        CLOCK::POP(usedSampleCount);  // CLOCK::T2
     }
 
-    STOP_TIMER(t1);
+   // cout << 100.0 * n / ((usedSampleCount - 1) * usedVariables_.size()) << "%" << endl;
 
-    if (options.profile()) {
-        size_t usedVariableCount = usedVariables_.size();
-        cout << t0 << endl;
-        cout << t1 << " (" << static_cast<float>(t1) / (sampleCount_ * usedVariableCount) << ")" << endl;
-        cout << t2 << " (" << static_cast<float>(t2) / (usedSampleCount * usedVariableCount) << ")" << endl;
-        cout << 100.0 * n / ((usedSampleCount - 1) * usedVariableCount) << "%" << endl;
-        cout << endl;
-    }
+    unique_ptr<AbstractPredictor> pred;
 
     if (bestJ == static_cast<size_t>(-1))
-        return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
-    return unique_ptr<AbstractPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
+        pred = std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
+    else
+        pred.reset(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
+
+    CLOCK::POP();
+
+    return pred;
 };
 
 
 void StumpTrainerByThread::initUsedVariables_(const StumpOptions& options)
 {
-    size_t candidateVariableCount = variableCount_;
-    if (options.topVariableCount())
-        candidateVariableCount = std::min(candidateVariableCount, *options.topVariableCount());
+    size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
 
     size_t usedVariableCount = std::max(
         static_cast<size_t>(1),

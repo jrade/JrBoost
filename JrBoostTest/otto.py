@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import util
 import jrboost
+from jrboost import CLOCK
 
 
 
@@ -48,7 +49,6 @@ def optimizeHyperParams(inData, outData, foldCount):
                 opt.base.usedVariableRatio = uvr
                 optionsList.append(opt)
 
-    random.shuffle(optionsList)
     optionsCount = len(optionsList)
     loss = np.zeros((optionsCount,))
 
@@ -96,27 +96,30 @@ testOutDataFrame = pd.DataFrame(index = testInDataFrame.index, columns = labels,
 while True:
 
     t = -time.time()
+    CLOCK.PUSH(CLOCK.MAIN)
 
     for label in labels:
         print(label)
         trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint64);
         trainOutData = np.ascontiguousarray(trainOutData)
         opts = optimizeHyperParams(trainInData, trainOutData, 5)[:10]
-        for opt in opts:
-            print(f'  {formatOptions(opt)}')
+        #for opt in opts:
+        #    print(f'  {formatOptions(opt)}')
 
         testOutData = trainAndPredict(trainInData, trainOutData, testInData, opts)
         testOutData = 1 / (1 + np.exp(-testOutData))
         testOutDataFrame[label] = testOutData
         print()
 
-    testOutDataFrame.to_csv('result.csv', sep = ',')
-
+    CLOCK.POP()
     t += time.time()
+    CLOCK.PRINT()
     print(util.formatTime(t))
+
     print()
     print()
 
+    testOutDataFrame.to_csv('result.csv', sep = ',')
 
 print('Done!')
 

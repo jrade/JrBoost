@@ -1,13 +1,53 @@
 
-advanced profiling system
+numpy arrays are by default row major ("C storage order")
+Eigen arrays are by default column major ("Fortran storage order")
 
-review the nested CV code
+----------------------------------------------------------------------------------
 
-produce report
-	first a simple one
-    add a train and predict function similar to train and eval
+main               20946   1.6%
+  t-rank           22369   1.7%    4.0
+  train boost     133276  10.0%   28.6
+    train stump  1121972  84.3%   16.4
+  predict          14867   1.1%   12.8
+  OMP barrier       2773   0.2%
+  dyn. memory      15129   1.1%  491.1
+0:11:08
 
-full fledged F-statistic
+
+main               22566   1.6%
+  t-rank           23557   1.7%    4.2
+  train boost     118343   8.4%   29.6
+    train stump   276772  19.6%
+      T1          356664  25.2%    3.2
+      T2          586490  41.5%   10.4
+  predict          12930   0.9%   13.0
+  OMP barrier       2383   0.2%
+  dyn. memory      14285   1.0%  534.2
+0:11:49
+
+----------------------------------------------------------------------------------
+
+move stuff from Common to Util
+	clean up common headers
+
+profile boost train
+	is it exp that takes time or is it something stupid?
+		speed up exp with Agner Fog's VCLC++ vector class library?
+
+profile with different instruction sets
+
+use numpy instead of pandas in cv code
+	pass sample list to t-test function instead of using the value 2 as a mask
+
+profile on work computer with different numbers of threads
+	include ccc in output again
+
+stump trainer
+	improve the profiling
+	rerun old versions and compare
+	any reason to reuse buffers, simpler thread safety if we do not
+
+----------------------------------------------------------
 
 stratifiedSubmask
 	not hard to implement actually
@@ -15,11 +55,18 @@ stratifiedSubmask
 	add a minSampleWeight parameter and profile how many samples that fall below this
 	also profile, seems a bit slow
 
-play around with what we have - how good does it get?
+========================================================
 
-test PGO
+clean repo
 
---------------------------------------------------------------------
+push to GitHub
+
+==============================================================
+
+
+produce report
+	first a simple one
+    add a train and predict function similar to train and eval
 
 gradient boost
 	read xgb paper to check that my understanding is correct
@@ -31,22 +78,21 @@ trees
 
 later:
 	how to handle sumW_ == 0.0
-		curretnly we return a stumppredictor that always predicts 0
+		currently we return a stumppredictor that always predicts 0
 		a better fix would be make sample selection among samples with weight != 0 (or > some threshold)
 			this could be implemented as a stratified selection with weight 0 samples as a third stratum
 
 	data members of boosters should be const
 		can not iterate over const Eigen Ref object!!!!
 
-	SIMD parallelize the variable (j) loop
-		time matrix transpose
-
 	more memory efficient data in inner loop (use smalller integer types in arrays) - can save about 10%
 
 	profile the parallellized part only and check how the performance scales with the number of processors
 
 	allocate tree nodes with a memory pool
-		
+
+	test PGO
+
 -----------------------------------------------------------
 
 follow up alpha boost idea

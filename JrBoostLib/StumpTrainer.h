@@ -19,6 +19,6 @@ public:
 
 private:
     const size_t sampleCount_;
-    shared_ptr<const StumpTrainerShared> shared_;
+    const shared_ptr<const StumpTrainerShared> shared_;
     vector<shared_ptr<StumpTrainerByThread>> byThread_;
 };
