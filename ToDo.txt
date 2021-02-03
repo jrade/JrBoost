@@ -27,7 +27,9 @@ main               22566   1.6%
 
 ----------------------------------------------------------------------------------
 
-profile boost train
+predict that writes into existing array
+
+then profile boost train again
 	is it exp that takes time or is it something stupid?
 		speed up exp with Agner Fog's VCLC++ vector class library?
 

@@ -50,14 +50,19 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
     vector<unique_ptr<AbstractPredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
+
     for (size_t i = 0; i < iterationCount; ++i) {
 
         double FYMin = Fy.minCoeff();
+
         adjWeights = (-Fy + FYMin).exp();
 
         basePredictors[i] = baseTrainer_->train(outData_, adjWeights, opt.base());
+
+        CLOCK::PUSH(CLOCK::EXP);
         coeff[i] = 2 * eta;
         Fy += eta * outData_ * basePredictors[i]->predict(inData_);
+        CLOCK::POP(sampleCount);
 
         if (opt.logStep() > 0 && i % opt.logStep() == 0) {
             cout << i << "(" << eta << ")" << endl;
@@ -66,6 +71,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
             cout << " -> " << 100.0 * (adjWeights != 0).cast<double>().sum() / sampleCount << "%" << endl;
         }
     }
+
 
     return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
 }

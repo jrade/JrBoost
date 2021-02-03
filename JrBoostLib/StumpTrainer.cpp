@@ -26,6 +26,8 @@ StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
 
 unique_ptr<AbstractPredictor> StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
+    CLOCK::PUSH(CLOCK::ST_VAL);
+
     ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
     ASSERT((outData > -numeric_limits<double>::infinity()).all());
     ASSERT((outData < numeric_limits<double>::infinity()).all());
@@ -34,7 +36,10 @@ unique_ptr<AbstractPredictor> StumpTrainer::train(CRefXd outData, CRefXd weights
     ASSERT((weights >= 0.0).all());
     ASSERT((weights < numeric_limits<double>::infinity()).all());
 
+    CLOCK::POP(sampleCount_);
+
     int threadId = omp_get_thread_num();
-    auto pred = byThread_[threadId]->train(outData, weights, options);
+
+    unique_ptr<AbstractPredictor> pred = byThread_[threadId]->train(outData, weights, options);
     return pred;
 }
