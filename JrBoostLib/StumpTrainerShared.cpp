@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StumpTrainerShared.h"
 #include "StumpOptions.h"
+#include "FastAlgorithms.h"
 
 
 StumpTrainerShared::StumpTrainerShared(CRefXXf inData, RefXs strata) :

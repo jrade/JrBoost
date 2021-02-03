@@ -37,6 +37,12 @@
     <ClInclude Include="Util.h">
       <Filter>Util</Filter>
     </ClInclude>
+    <ClInclude Include="FastAlgorithms.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="FastBernoulliDistribution.h">
+      <Filter>Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">

@@ -4,6 +4,7 @@
 #include "StumpOptions.h"
 #include "StumpPredictor.h"
 #include "TrivialPredictor.h"
+#include "FastAlgorithms.h"
 
 
 StumpTrainerByThread::StumpTrainerByThread(

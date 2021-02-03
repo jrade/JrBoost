@@ -143,6 +143,8 @@
     <ClInclude Include="AbstractPredictor.h" />
     <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="BoostTrainer.h" />
+    <ClInclude Include="FastAlgorithms.h" />
+    <ClInclude Include="FastBernoulliDistribution.h" />
     <ClInclude Include="LinearCombinationPredictor.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="pch.h" />

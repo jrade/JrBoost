@@ -60,7 +60,7 @@ using ArrayXf = Eigen::ArrayXf;
 
 // Random number engines (by Arvid Gerstmann)
 
-#include "FastRandomNumbers.h"
+#include "AGRandom.h"
 
 using RandomNumberEngine = splitmix;
 
@@ -68,8 +68,6 @@ using RandomNumberEngine = splitmix;
 // Other
 
 #include "Assert.h"
-#include "FastAlgorithms.h"
 #include "Profiling.h"
 
 using SampleIndex = uint64_t;
-
