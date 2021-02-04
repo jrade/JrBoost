@@ -7,6 +7,7 @@ class StumpPredictor : public AbstractPredictor {
 public:
     virtual ~StumpPredictor() = default;
     virtual ArrayXd predict(CRefXXf inData) const;
+    virtual void predict(CRefXXf inData, double c, RefXd outData) const;
 
 private:
     friend class StumpTrainerByThread;

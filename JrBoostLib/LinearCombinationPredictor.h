@@ -12,7 +12,9 @@ public:
         vector<unique_ptr<AbstractPredictor>>&& basePredictors
     );
     virtual ~LinearCombinationPredictor() = default;
+
     virtual ArrayXd predict(CRefXXf inData) const;
+    virtual void predict(CRefXXf inData, double c, RefXd outData) const;
 
 private:
     double c0_;

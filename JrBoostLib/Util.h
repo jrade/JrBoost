@@ -36,46 +36,40 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
         *(q++) = (r++)->first;
 }
 
-
 inline ArrayXs tStatisticRank(
     Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
-    CRefXs outData
+    CRefXs outData,
+    Eigen::Ref<const Eigen::Array<int32_t, Eigen::Dynamic, 1>> samples
 )
 {
     CLOCK::PUSH(CLOCK::T_RANK);
-        
+
     size_t variableCount = inData.cols();
-    size_t sampleCount = inData.rows();
+    size_t sampleCount = samples.rows();
 
-    size_t n0 = 0;
-    size_t n1 = 0;
-    ArrayXf mean0 = ArrayXf::Constant(variableCount, 0.0f);
-    ArrayXf mean1 = ArrayXf::Constant(variableCount, 0.0f);
+    size_t n[2] = { 0, 0 };
+    ArrayXf mean[2];
+    mean[0] = ArrayXf::Constant(variableCount, 0.0f);
+    mean[1] = ArrayXf::Constant(variableCount, 0.0f);
     for (int i = 0; i < sampleCount; ++i) {
-        size_t k = outData(i);
-        if (k == 0) {
-            ++n0;
-            mean0 += inData.row(i);
-        }
-        else if (k == 1) {
-            ++n1;
-            mean1 += inData.row(i);
-        }
+        size_t j = samples[i];
+        size_t k = outData(j);
+        ++n[k];
+        mean[k] += inData.row(j);
     }
-    mean0 /= static_cast<float>(n0);
-    mean1 /= static_cast<float>(n1);
+    for (int k = 0; k < 2; ++k)
+        mean[k] /= static_cast<float>(n[k]);
 
-    ArrayXf SS0 = ArrayXf::Constant(variableCount, 0.0f);
-    ArrayXf SS1 = ArrayXf::Constant(variableCount, 0.0f);
+    ArrayXf SS[2];
+    SS[0] = ArrayXf::Constant(variableCount, 0.0f);
+    SS[1] = ArrayXf::Constant(variableCount, 0.0f);
     for (int i = 0; i < sampleCount; ++i) {
-        size_t k = outData(i);
-        if (k == 0)
-            SS0 += (inData.row(i) - mean0.transpose()).square();
-        else if (k == 1)
-            SS1 += (inData.row(i) - mean1.transpose()).square();
+        size_t j = samples[i];
+        size_t k = outData(j);
+        SS[k] += (inData.row(j) - mean[k].transpose()).square();
     }
 
-    ArrayXf t2 = (mean1 - mean0).square() / (SS0 + SS1 + numeric_limits<float>::min());
+    ArrayXf t2 = (mean[1] - mean[0]).square() / (SS[0] + SS[1] + numeric_limits<float>::min());
 
     ArrayXs ind(variableCount);
     sortedIndices(
@@ -85,7 +79,7 @@ inline ArrayXs tStatisticRank(
         [](auto x) { return -x; }
     );
 
-    CLOCK::POP((n0 + n1) * variableCount);
+    CLOCK::POP(sampleCount * variableCount);
 
     return ind;
 }

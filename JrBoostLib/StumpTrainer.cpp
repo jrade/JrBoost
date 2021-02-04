@@ -26,6 +26,7 @@ StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
 
 unique_ptr<AbstractPredictor> StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
+    CLOCK::PUSH(CLOCK::ST_TRAIN);
     CLOCK::PUSH(CLOCK::ST_VAL);
 
     ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
@@ -39,7 +40,9 @@ unique_ptr<AbstractPredictor> StumpTrainer::train(CRefXd outData, CRefXd weights
     CLOCK::POP(sampleCount_);
 
     int threadId = omp_get_thread_num();
-
     unique_ptr<AbstractPredictor> pred = byThread_[threadId]->train(outData, weights, options);
+
+    CLOCK::POP();
+
     return pred;
 }

@@ -27,7 +27,20 @@ ArrayXd LinearCombinationPredictor::predict(CRefXXf inData) const
     for (size_t k = 0; k < n; ++k)
         outData += c1_[k] * basePredictors_[k]->predict(inData);
 
-    CLOCK::POP(n * sampleCount);
+    CLOCK::POP();
 
     return outData;
+}
+
+void LinearCombinationPredictor::predict(CRefXXf inData, double c, RefXd outData) const
+{
+    CLOCK::PUSH(CLOCK::LCP_P);
+
+    validateInData_(inData);
+    size_t n = basePredictors_.size();
+    outData += c * c0_;
+    for (size_t k = 0; k < n; ++k)
+        basePredictors_[k]->predict(inData, c * c1_[k], outData);
+
+    CLOCK::POP();
 }

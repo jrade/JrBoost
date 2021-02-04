@@ -23,8 +23,6 @@ StumpTrainerByThread::StumpTrainerByThread(
 
 unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
 {
-    CLOCK::PUSH(CLOCK::ST_TRAIN);
-
     size_t n = 0;
     size_t usedSampleCount = shared_->initUsedSampleMask(&usedSampleMask_, options, rne_);
     initUsedVariables_(options);
@@ -48,9 +46,9 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         
     for (size_t j : usedVariables_) {
 
-        CLOCK::PUSH(CLOCK::T1);
+        //CLOCK::PUSH(CLOCK::T1);
         shared_->initSortedUsedSamples(&sortedUsedSamples_, usedSampleCount, usedSampleMask_, j);
-        CLOCK::POP(sampleCount_);
+        //CLOCK::POP(sampleCount_);
 
         // find best split
 
@@ -66,7 +64,7 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 
         // this is where most execution time is spent ......
 
-        CLOCK::PUSH(CLOCK::T2);
+        //CLOCK::PUSH(CLOCK::T2);
             
         while (p != pEnd - 1) {
 
@@ -114,7 +112,7 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         //    rightSumWY -= w * y;
         //}
 
-        CLOCK::POP(usedSampleCount);  // CLOCK::T2
+        //CLOCK::POP(usedSampleCount);  // CLOCK::T2
     }
 
    // cout << 100.0 * n / ((usedSampleCount - 1) * usedVariables_.size()) << "%" << endl;
@@ -125,8 +123,6 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         pred = std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
     else
         pred.reset(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
-
-    CLOCK::POP();
 
     return pred;
 };

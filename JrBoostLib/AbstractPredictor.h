@@ -5,6 +5,7 @@ public:
     virtual ~AbstractPredictor() = default;
     size_t variableCount() const { return variableCount_; }
     virtual ArrayXd predict(CRefXXf inData) const = 0;
+    virtual void predict(CRefXXf inData, double c, RefXd outData) const = 0;
 
 protected:
     AbstractPredictor(size_t variableCount) : variableCount_(variableCount) {}

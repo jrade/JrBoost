@@ -5,24 +5,23 @@
 
 namespace CLOCK {
 
-    enum ID { MAIN, T_RANK, BT_TRAIN, EXP, ST_TRAIN, ST_VAL, T1, T2, LCP_P, OMP_BARRIER, MEMORY, CLOCK_COUNT };
+    enum ID { MAIN, T_RANK, BT_TRAIN, ST_TRAIN, ST_VAL, /*T1, T2,*/ LCP_P, OMP_BARRIER, MEMORY, CLOCK_COUNT };
 
     inline void PUSH(int i);
     inline void POP(size_t itemCount = 0);
     inline void PRINT();
 
-    inline string names[CLOCK_COUNT] = {
+    inline const string names[CLOCK_COUNT] = {
         "main",
         "  t-rank",
         "  train boost",
-        "    exponentiate",
         "    train stump",
         "      validate",
-        "      T1",
-        "      T2",
+        //"      T1",
+       // "      T2",
         "  predict",
         "  OMP barrier",
-        "  dyn. memory"
+        "  dyn. memory",
     };
 
     inline void log(string name, size_t clockCount, size_t totalClockCount, size_t itemCount)

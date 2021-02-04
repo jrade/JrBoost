@@ -44,25 +44,24 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
         p[rawOutData_[i]] += 1.0;
     const double f0 = (std::log(p[1]) - std::log(p[0])) / 2.0;
 
-    ArrayXd Fy = f0 * outData_;
+    ArrayXd F(sampleCount);
+    ArrayXd Fy(sampleCount);
     ArrayXd adjWeights(sampleCount);
+
+    F = f0;
 
     vector<unique_ptr<AbstractPredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
-
     for (size_t i = 0; i < iterationCount; ++i) {
 
-        double FYMin = Fy.minCoeff();
+        Fy = F * outData_;
+        adjWeights = (-Fy + Fy.minCoeff()).exp();
+        unique_ptr<AbstractPredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt.base());
+        basePred->predict(inData_, eta, F);
 
-        adjWeights = (-Fy + FYMin).exp();
-
-        basePredictors[i] = baseTrainer_->train(outData_, adjWeights, opt.base());
-
-        CLOCK::PUSH(CLOCK::EXP);
+        basePredictors[i] = std::move(basePred);
         coeff[i] = 2 * eta;
-        Fy += eta * outData_ * basePredictors[i]->predict(inData_);
-        CLOCK::POP(sampleCount);
 
         if (opt.logStep() > 0 && i % opt.logStep() == 0) {
             cout << i << "(" << eta << ")" << endl;
@@ -71,7 +70,6 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
             cout << " -> " << 100.0 * (adjWeights != 0).cast<double>().sum() / sampleCount << "%" << endl;
         }
     }
-
 
     return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
 }
@@ -128,6 +126,8 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
 
 ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const vector<BoostOptions>& opt) const
 {
+    ASSERT(testInData.rows() == testOutData.rows());
+    size_t testSampleCount = static_cast<size_t>(testInData.rows());
     size_t optCount = opt.size();
 
     // In each iteration of the loop we build and evaluate a classifier with one set of options
@@ -148,13 +148,15 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
 
     #pragma omp parallel
     {
+        ArrayXd predData(testSampleCount);
+
         #pragma omp for nowait schedule(dynamic)
-        // different iterations take very different time so static scheduling is inefficient
         for (int i = 0; i < static_cast<int>(optCount); ++i) {
             try {
                 size_t j = optIndicesSortedByCost[i];
                 unique_ptr<AbstractPredictor> pred = train(opt[j]);
-                ArrayXd predData = pred->predict(testInData);
+                predData = 0.0;
+                pred->predict(testInData, 1.0, predData);
                 scores(j) = linLoss(testOutData, predData);
             }
             catch (const std::exception&) {
@@ -169,4 +171,3 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
     if (ep) std::rethrow_exception(ep);
     return scores;
 }
-

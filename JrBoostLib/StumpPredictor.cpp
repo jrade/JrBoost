@@ -22,3 +22,13 @@ ArrayXd StumpPredictor::predict(CRefXXf inData) const
         outData(i) = (inData(i, j_) < x_) ? leftY_ : rightY_;
     return outData;
 }
+
+void StumpPredictor::predict(CRefXXf inData, double c, RefXd outData) const
+{
+    validateInData_(inData);
+    size_t sampleCount = inData.rows();
+    for (size_t i = 0; i < sampleCount; ++i) {
+        double y = (inData(i, j_) < x_) ? leftY_ : rightY_;
+        outData(i) += c * y;
+    }
+}

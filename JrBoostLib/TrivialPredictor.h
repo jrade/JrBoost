@@ -21,6 +21,12 @@ public:
         return ArrayXd::Constant(sampleCount, y_);
     }
 
+    virtual void predict(CRefXXf inData, double c, RefXd outData) const
+    {
+        validateInData_(inData);
+        outData += c * y_;
+    }
+
 private:
     size_t variableCount_;
     double y_;

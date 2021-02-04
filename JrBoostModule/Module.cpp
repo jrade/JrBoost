@@ -14,7 +14,13 @@ PYBIND11_MODULE(jrboost, mod)
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
     mod.def("linLoss", &linLoss);
-    mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(), py::arg().noconvert());
+    mod.def(
+        "tStatisticRank",
+        &tStatisticRank,
+        py::arg().noconvert(),
+        py::arg().noconvert(),
+        py::arg().noconvert()
+    );
     mod.def("ompSetNumThreads", &omp_set_num_threads);
 
 
@@ -36,7 +42,11 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::class_<AbstractPredictor>{ mod, "Predictor" }
         .def("variableCount", &AbstractPredictor::variableCount)
-        .def("predict", &AbstractPredictor::predict, py::arg().noconvert());
+        .def(
+            "predict", 
+            static_cast<ArrayXd (AbstractPredictor::*)(CRefXXf inData) const>(&AbstractPredictor::predict),
+            py::arg().noconvert()
+        );
 
 
     // Stump classes
