@@ -27,4 +27,5 @@ private:
     RefXs rawOutData_;                    // pesky const issue - can not iterate over const array
     const ArrayXd outData_;
     const unique_ptr<StumpTrainer> baseTrainer_{ std::make_unique<StumpTrainer>(inData_, rawOutData_) };
+    const double f0_;
 };

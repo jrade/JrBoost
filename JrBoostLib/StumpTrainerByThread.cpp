@@ -23,13 +23,20 @@ StumpTrainerByThread::StumpTrainerByThread(
 
 unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
 {
-    size_t n = 0;
+    CLOCK::PUSH(CLOCK::USED_SAMPLES);
     size_t usedSampleCount = shared_->initUsedSampleMask(&usedSampleMask_, options, rne_);
+    CLOCK::POP(sampleCount_);
+
+    CLOCK::PUSH(CLOCK::USED_VARIABLES);
     initUsedVariables_(options);
+    CLOCK::POP();
+
+    CLOCK::PUSH(CLOCK::SUMS);
     initSums_(outData, weights);
+    CLOCK::POP(usedSampleCount);
+
     if (sumW_ == 0) {
         cout << "Warning: sumW = 0" << endl;
-        CLOCK::POP();
         return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
     }
 
@@ -46,9 +53,11 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         
     for (size_t j : usedVariables_) {
 
-        //CLOCK::PUSH(CLOCK::T1);
+        CLOCK::PUSH(CLOCK::ZERO);
+
+        CLOCK::PUSH(CLOCK::SORTED_USED_SAMPLES);
         shared_->initSortedUsedSamples(&sortedUsedSamples_, usedSampleCount, usedSampleMask_, j);
-        //CLOCK::POP(sampleCount_);
+        CLOCK::POP(sampleCount_);
 
         // find best split
 
@@ -64,7 +73,7 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 
         // this is where most execution time is spent ......
 
-        //CLOCK::PUSH(CLOCK::T2);
+        CLOCK::PUSH(CLOCK::BEST_SPLIT);
             
         while (p != pEnd - 1) {
 
@@ -81,8 +90,6 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
             if (score <= bestScore) continue;  // usually true
 
         //..................................................
-
-            ++n;
 
             if (p < pBegin + minNodeSize
                 || p > pEnd - minNodeSize
@@ -103,28 +110,15 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
             bestRightY = rightSumWY / rightSumW;
         }
 
-        //{
-        //    const double w = weights_[nextI];
-        //    const double y = outData_[nextI];
-        //    leftSumW += w;
-        //    rightSumW -= w;
-        //    leftSumWY += w * y;
-        //    rightSumWY -= w * y;
-        //}
+        CLOCK::POP(usedSampleCount);  // CLOCK::BEST_SPLIT
 
-        //CLOCK::POP(usedSampleCount);  // CLOCK::T2
+        CLOCK::POP(3);  // CLOCK::ZERO
     }
 
-   // cout << 100.0 * n / ((usedSampleCount - 1) * usedVariables_.size()) << "%" << endl;
-
-    unique_ptr<AbstractPredictor> pred;
-
     if (bestJ == static_cast<size_t>(-1))
-        pred = std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
+        return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
     else
-        pred.reset(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
-
-    return pred;
+        return unique_ptr<StumpPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
 };
 
 

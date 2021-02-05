@@ -9,7 +9,11 @@
 BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
     inData_{ inData },
     rawOutData_{ outData },
-    outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 }
+    outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 },
+    f0_{ (
+        log(static_cast<double>(outData.sum()))
+            - log(static_cast<double>((1 - outData).sum()))
+        ) / 2.0 }
 {
     ASSERT(inData_.rows() != 0);
     ASSERT(inData_.cols() != 0);
@@ -17,7 +21,7 @@ BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
 
     ASSERT((inData > -numeric_limits<float>::infinity()).all());
     ASSERT((inData < numeric_limits<float>::infinity()).all());
-    ASSERT((rawOutData_ < 2).all());
+    ASSERT((outData < 2).all());
 }
 
 unique_ptr<AbstractPredictor> BoostTrainer::train(const BoostOptions& opt) const
@@ -39,16 +43,11 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
     const double eta = opt.eta();
     const size_t iterationCount = opt.iterationCount();
 
-    array<double, 2> p{ 0.0, 0.0 };
-    for (size_t i = 0; i < sampleCount; ++i)
-        p[rawOutData_[i]] += 1.0;
-    const double f0 = (std::log(p[1]) - std::log(p[0])) / 2.0;
-
     ArrayXd F(sampleCount);
     ArrayXd Fy(sampleCount);
     ArrayXd adjWeights(sampleCount);
 
-    F = f0;
+    F = f0_;
 
     vector<unique_ptr<AbstractPredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
@@ -71,7 +70,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
         }
     }
 
-    return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
+    return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0_, std::move(coeff), std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -81,11 +80,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
     const size_t sampleCount = inData_.rows();
     const size_t variableCount = inData_.cols();
 
-    array<double, 2> p{ 0.0, 0.0 };
-    for (size_t i = 0; i < sampleCount; ++i)
-        p[outData_[i] == 1.0] += 1.0;
-    const double f0 = (std::log(p[1]) - std::log(p[0])) / 2.0;
-    ArrayXd F = ArrayXd::Constant(sampleCount, f0);
+    ArrayXd F = ArrayXd::Constant(sampleCount, f0_);
 
     ArrayXd adjOutData, adjWeights, f;
     vector<unique_ptr<AbstractPredictor>> basePredictors;
@@ -119,7 +114,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
         }
     }
 
-    return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0, std::move(coeff), std::move(basePredictors));
+    return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0_, std::move(coeff), std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

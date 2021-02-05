@@ -7,7 +7,7 @@
 #endif
 
 
-inline uint64_t clockCycleCount()
+inline int64_t clockCycleCount()
 {
     __faststorefence();
     uint64_t t = __rdtsc();

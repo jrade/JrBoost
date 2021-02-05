@@ -28,14 +28,14 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::module clockMod = mod.def_submodule("CLOCK");
 
+    py::enum_<CLOCK::ID>(clockMod, "ID")
+        .value("MAIN", CLOCK::MAIN)
+        .export_values();
+
     clockMod
         .def("PUSH", &CLOCK::PUSH)
         .def("POP", &CLOCK::POP, py::arg() = 0)
         .def("PRINT", &CLOCK::PRINT);
-
-    py::enum_<CLOCK::ID>(clockMod, "ID")
-        .value("MAIN", CLOCK::MAIN)
-        .export_values();
 
 
     // Abstract predictor
