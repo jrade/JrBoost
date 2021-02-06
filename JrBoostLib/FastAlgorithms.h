@@ -74,7 +74,19 @@ inline void fastOrderedRandomSubset(T p0, T p1, U q0, U q1, R& r)
 	}
 }
 
-// see the discussion of m above
+//----------------------------------------------------------------------------------------------------------------------
+
+template<typename N, typename U, typename R>
+inline void fastRandomSubIndices(N n, U q0, U q1, R& r)
+{
+	N i = 0;
+	while (q0 != q1) {
+		*q0 = i;
+		q0 += FastBernoulliDistribution<size_t>(q1 - q0, n)(r);
+		++i;
+		--n;
+	}
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 

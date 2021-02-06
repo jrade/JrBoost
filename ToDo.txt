@@ -1,126 +1,44 @@
+profiling
+	add CLOCK::SWITCH function
+	improve StumpBuilder profiling
+		check the numbers again
+	refactor the profiling code (std::stack, struct Clock with start and stop functions)
 
-labels							   6 
-  outer folds					  20
-    inner folds					   5
-	  hyper params				1000
-	    boost iterations		1000
-		  tree levels			   1
-		    variables			  50
-			  samples			 200
-total: 6.0e12
+no point in reusing buffers
+	verify this again with the improved profiling
+	simplify the code! get rid of the by_thread and shared classes!!
+	how to initialize the thread local random number engines?
 
-1500s
-400s = 7 min
-
-
-main                 19375   1.5%
-  t-rank             21522   1.7%    3.8
-  train boost        74820   5.8%   17.5
-    train stump     511011  39.8%
-      validate       36567   2.8%    8.6
-      T2            596131  46.4%    9.7
-  predict             7875   0.6%
-  OMP barrier         2482   0.2%
-  dyn. memory        14031   1.1%  493.4
-0:10:44
-
-
-
-main                      3870   2.1%
-  t-rank                  4939   2.7%    4.2
-  train boost            12174   6.7%   16.0
-    train stump            402   0.2%
-      validate            5875   3.2%    7.7
-      used samples       12209   6.7%   16.1
-      used variables      5268   2.9%
-      sums                3244   1.8%    8.6
-      sorted used s.     47017  25.9%    2.3
-      best split         85943  47.3%    7.9
-  predict                 1354   0.7%
-  OMP barrier              413   0.2%
-  dyn. memory             1832   1.0%  301.7
-null                     -2763  -1.5%   -6.1
-
-Profiling overhead: 39.4%
-0:02:30
-
-====================================================================================
-
-/O2 =  /Og /Oi /Ot /Oy /Ob2 /GF /Gy
-
-/GL /O2 and /Ot make a big difference
-
-/arch:AVX is faster than /arch:SSE and /arch:SSE2
-/arch:AVX2 is not faster than /arch:AVX
-the sppedup comes from BoostTrainer::trainAda_() (possibly the exp() call)
-
-/fp:pecise, /fp:fast and /fp:strict make no measurable difference
-
-====================================================================================
-
-numpy arrays are by default row major ("C storage order")
-Eigen arrays are by default column major ("Fortran storage order")
-
-----------------------------------------------------------------------------------
-
-fencing increases the mean but decreases the variance of the overhead
-	so fencung is a good idea.
-
-time the software without any clocks
-	need a simple meachanism for turning on and off the clocks, ideally without recompiling
-
--------------------------------------------------------------------------------
-
-profiling:
-
-	auto-calibration
-		allocate null clock at the end
-		add a run count array
-		make 100000 runs of that clock at the end
-		run a manual null clock to check the auto-calibration
-
-	CLOCK::END
-		prints and zeros the clocks
-		prints and zeros the slow path ratio
-		saves the new calibration value
-
-stump trainer
-
-	profile how often the slow branch is taken
-
-	profile with different instruction sets
-
-	smarter checks of min node size and min node weight
-
-	is it worth it to save resuse the buffers?
-		without buffer reuse the code could be simplified a lot
-
-	explicit SIMD optimization of the inner loop has no effect
-		does the compiler already do this?
-		profile the code with different instruction sets and compare
+profile with different indata, outdata and sample index types
+	turn all three into typedesf?
+	other sample index type can save 10%?
 
 profile on work computer with different numbers of threads
+	how does it scale?
 
-what type to use for out data matrix in python and in C interface??
+======================================================================
 
-profile again with different indata, outdata and sample index types
-	turn all three into typedesf?
+clean repo
+	test with CERN boson data instead
 
-----------------------------------------------------------
+push to GitHub
 
-stratifiedSubmask
+=====================================================================
+
+play around with instance with minNodeSize and minNodeWeight
+
+Pandas free Python code
+
+sampleIndex_t typedef
+	select Bernoulli implementation based on this type
+
+minSampleWeight and stratifiedSubmask
 	not hard to implement actually
 	this shold take care of sumW_ = 0 problem
 	add a minSampleWeight parameter and profile how many samples that fall below this
 	also profile, seems a bit slow
 
-========================================================
-
-clean repo
-
-push to GitHub
-
-==============================================================
+what type to use for out data matrix in python and in C interface??
 
 produce report
 	first a simple one
@@ -131,38 +49,21 @@ gradient boost
 
 trees
 	pruning
+	allocate nodes with a memory pool
 
---------------------------------------------------------------------
+data members of boosters should be const
+	can not iterate over const Eigen Ref object!!!!
 
-later:
-	how to handle sumW_ == 0.0
-		currently we return a stumppredictor that always predicts 0
-		a better fix would be make sample selection among samples with weight != 0 (or > some threshold)
-			this could be implemented as a stratified selection with weight 0 samples as a third stratum
-
-	data members of boosters should be const
-		can not iterate over const Eigen Ref object!!!!
-
-	more memory efficient data in inner loop (use smalller integer types in arrays) - can save about 10%
-
-	profile the parallellized part only and check how the performance scales with the number of processors
-
-	allocate tree nodes with a memory pool
-
-	test PGO
-
------------------------------------------------------------
-
-follow up alpha boost idea
+test PGO
 
 ----------------------------------------------------------------------
 
 low prio:
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
-	faster uint64_t based Bernoulli distribution ??
 	allow more than two strata in StumpPredictor?
 	L2-penalty (lambda) or L1-penalty (alpha)
 	multi-group
+	follow up alpha boost idea
 
 ----------------------------------------------------------------------
 
@@ -192,21 +93,5 @@ NumPy issues:
 
 ------------------------------------------------------------------------
 
-läs: https://romanpoya.medium.com/a-look-at-the-performance-of-expression-templates-in-c-eigen-vs-blaze-vs-fastor-vs-armadillo-vs-2474ed38d982
+take a look at std::span, std::view, std::mdview, ranges etc in C++20
 
-Notes:
-	MSVS 2019:
-		Tools > Options > Python > Conda: ..../conda.exe
-		compiler flag:  /permissive-
-		Run-time Library = Multi-threaded DLL (/MD) (for all configurations!)
-		mixed debugging
-
-	numpy: rowmajor
-	eigen: colmajor
-
-	https://docs.microsoft.com/en-us/visualstudio/python/working-with-c-cpp-python-in-visual-studio?view=vs-2019
-
-
-----------------------------------------------------------------------------
-
-https://stackoverflow.com/questions/29519222/how-to-transpose-a-16x16-matrix-using-simd-instructions

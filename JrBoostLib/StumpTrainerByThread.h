@@ -22,7 +22,7 @@ public:
     StumpTrainerByThread& operator=(const StumpTrainerByThread&) = delete;
 
 private:
-    void initUsedVariables_(const StumpOptions& opt);
+    size_t initUsedVariables_(const StumpOptions& opt);
     void initSums_(const CRefXd& outData, const CRefXd& weights);
 
     const CRefXXf inData_;

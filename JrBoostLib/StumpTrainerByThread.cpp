@@ -28,8 +28,8 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
     CLOCK::POP(sampleCount_);
 
     CLOCK::PUSH(CLOCK::USED_VARIABLES);
-    initUsedVariables_(options);
-    CLOCK::POP();
+    size_t candidateVariableCount = initUsedVariables_(options);
+    CLOCK::POP(candidateVariableCount);
 
     CLOCK::PUSH(CLOCK::SUMS);
     initSums_(outData, weights);
@@ -52,8 +52,6 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
     const double minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
         
     for (size_t j : usedVariables_) {
-
-        CLOCK::PUSH(CLOCK::ZERO);
 
         CLOCK::PUSH(CLOCK::SORTED_USED_SAMPLES);
         shared_->initSortedUsedSamples(&sortedUsedSamples_, usedSampleCount, usedSampleMask_, j);
@@ -89,6 +87,8 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 
             if (score <= bestScore) continue;  // usually true
 
+            ++CLOCK::slowBranchCount;
+
         //..................................................
 
             if (p < pBegin + minNodeSize
@@ -111,9 +111,16 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         }
 
         CLOCK::POP(usedSampleCount);  // CLOCK::BEST_SPLIT
-
-        CLOCK::POP(3);  // CLOCK::ZERO
+        CLOCK::splitIterationCount += usedSampleCount;
     }
+
+    //usedSampleMask_.shrink_to_fit();
+    //usedVariables_.shrink_to_fit();
+    //sortedUsedSamples_.shrink_to_fit();
+
+    //vector<char>().swap(usedSampleMask_);
+    //vector<size_t>().swap(usedVariables_);
+    //vector<SampleIndex>().swap(sortedUsedSamples_);
 
     if (bestJ == static_cast<size_t>(-1))
         return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
@@ -122,7 +129,7 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 };
 
 
-void StumpTrainerByThread::initUsedVariables_(const StumpOptions& options)
+size_t StumpTrainerByThread::initUsedVariables_(const StumpOptions& options)
 {
     size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
 
@@ -135,19 +142,13 @@ void StumpTrainerByThread::initUsedVariables_(const StumpOptions& options)
     ASSERT(usedVariableCount <= candidateVariableCount);
     ASSERT(candidateVariableCount <= variableCount_);
 
-    // now select usedVariableCount variables at random among the first candidateVariableCount variables
-
-    usedVariables_.resize(candidateVariableCount);
-    std::iota(begin(usedVariables_), end(usedVariables_), 0);
-
-    fastOrderedRandomSubset(
-        cbegin(usedVariables_),
-        cend(usedVariables_),
-        begin(usedVariables_),
-        begin(usedVariables_) + usedVariableCount,
-        rne_
-    );
     usedVariables_.resize(usedVariableCount);
+    auto q0 = begin(usedVariables_);
+    auto q1 = end(usedVariables_);
+    size_t n = candidateVariableCount;
+    fastRandomSubIndices(n, q0, q1, rne_);
+
+    return candidateVariableCount;
 }
 
 

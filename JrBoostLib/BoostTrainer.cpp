@@ -129,6 +129,8 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
     // Differents sets of options can take very different time.
     // To ensure that the OMP threads are balanced we use dynamical scheduling and we sort the options objects
     // from the most time-consuming to the least.
+    // In one test case, this decraesed the time spent waiting at the barrier
+    // from 3.9% to 0.2% of the total execution time.
 
     vector<size_t> optIndicesSortedByCost(optCount);
     sortedIndices(

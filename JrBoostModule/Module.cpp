@@ -14,6 +14,7 @@ PYBIND11_MODULE(jrboost, mod)
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
     mod.def("linLoss", &linLoss);
+
     mod.def(
         "tStatisticRank",
         &tStatisticRank,
