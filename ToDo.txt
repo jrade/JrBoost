@@ -1,42 +1,41 @@
-profiling
-	add CLOCK::SWITCH function
-	improve StumpBuilder profiling
-		check the numbers again
-	refactor the profiling code (std::stack, struct Clock with start and stop functions)
 
-no point in reusing buffers
-	verify this again with the improved profiling
-	simplify the code! get rid of the by_thread and shared classes!!
-	how to initialize the thread local random number engines?
+Må:
+	profiling
+		refactor the profiling code (std::stack, struct Clock with start and stop functions)
 
-profile with different indata, outdata and sample index types
-	turn all three into typedesf?
-	other sample index type can save 10%?
+Ti:
+	no point in reusing buffers
+		verify this again with the improved profiling
+		simplify the code! get rid of the by_thread and shared classes!!
+		how to initialize the thread local random number engines?
 
-profile on work computer with different numbers of threads
-	how does it scale?
+O:
+	profile with different indata, outdata and sample index types
+		turn all three into typedesf?
+		other sample index type can save 10%?
 
-======================================================================
+	profile on work computer with different numbers of threads
+		how does it scale?
 
-clean repo
-	test with CERN boson data instead
+To - S:
+	clean repo
+		test with CERN boson data instead
 
-push to GitHub
+	push to GitHub
 
 =====================================================================
 
-play around with instance with minNodeSize and minNodeWeight
+play around with for instance with minNodeSize and minNodeWeight
 
 Pandas free Python code
 
 sampleIndex_t typedef
 	select Bernoulli implementation based on this type
 
-minSampleWeight and stratifiedSubmask
+minSampleWeight and stratifiedRandomSubmask
 	not hard to implement actually
 	this shold take care of sumW_ = 0 problem
 	add a minSampleWeight parameter and profile how many samples that fall below this
-	also profile, seems a bit slow
 
 what type to use for out data matrix in python and in C interface??
 

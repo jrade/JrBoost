@@ -24,21 +24,23 @@ StumpTrainerByThread::StumpTrainerByThread(
 unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
 {
     CLOCK::PUSH(CLOCK::USED_SAMPLES);
+
     size_t usedSampleCount = shared_->initUsedSampleMask(&usedSampleMask_, options, rne_);
-    CLOCK::POP(sampleCount_);
 
-    CLOCK::PUSH(CLOCK::USED_VARIABLES);
+    CLOCK::SWITCH(sampleCount_, CLOCK::USED_VARIABLES);
+
     size_t candidateVariableCount = initUsedVariables_(options);
-    CLOCK::POP(candidateVariableCount);
 
-    CLOCK::PUSH(CLOCK::SUMS);
+    CLOCK::SWITCH(candidateVariableCount, CLOCK::SUMS);
+
     initSums_(outData, weights);
-    CLOCK::POP(usedSampleCount);
 
     if (sumW_ == 0) {
         cout << "Warning: sumW = 0" << endl;
         return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
     }
+
+    CLOCK::SWITCH(sampleCount_, CLOCK::SORTED_USED_SAMPLES);
 
     double bestScore = sumWY_ * sumWY_ / sumW_;
     size_t bestJ = static_cast<size_t>(-1);
@@ -53,9 +55,9 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         
     for (size_t j : usedVariables_) {
 
-        CLOCK::PUSH(CLOCK::SORTED_USED_SAMPLES);
         shared_->initSortedUsedSamples(&sortedUsedSamples_, usedSampleCount, usedSampleMask_, j);
-        CLOCK::POP(sampleCount_);
+
+        CLOCK::SWITCH(sampleCount_, CLOCK::BEST_SPLIT);
 
         // find best split
 
@@ -70,8 +72,6 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         size_t nextI = *p;
 
         // this is where most execution time is spent ......
-
-        CLOCK::PUSH(CLOCK::BEST_SPLIT);
             
         while (p != pEnd - 1) {
 
@@ -110,9 +110,12 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
             bestRightY = rightSumWY / rightSumW;
         }
 
-        CLOCK::POP(usedSampleCount);  // CLOCK::BEST_SPLIT
+        CLOCK::SWITCH(usedSampleCount, CLOCK::SORTED_USED_SAMPLES);
+
         CLOCK::splitIterationCount += usedSampleCount;
     }
+
+    CLOCK::POP();
 
     //usedSampleMask_.shrink_to_fit();
     //usedVariables_.shrink_to_fit();

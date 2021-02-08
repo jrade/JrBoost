@@ -113,6 +113,32 @@ namespace CLOCK {
         }
     }
 
+    inline void SWITCH_IMPL(size_t itemCount, ID id)
+    {
+        uint64_t t = clockCycleCount();
+        ASSERT(stackIndex_ >= 0);
+
+        ID prevId = clockIndexStack_[stackIndex_];
+        clockCounts_[prevId] += t;
+        ++callCounts_[prevId];
+        itemCounts_[prevId] += itemCount;
+
+        clockIndexStack_[stackIndex_] = id;
+        clockCounts_[id] -= t;
+    }
+
+    inline void SWITCH(size_t itemCount, ID id)
+    {
+        static size_t k = 0;
+#pragma omp master
+        {
+            if (++k % 100 == 0) {
+                SWITCH_IMPL(itemCount, CLOCK_COUNT);
+                SWITCH_IMPL(0, id);
+            }
+            SWITCH_IMPL(itemCount, id);
+        }
+    }
 
     inline void PRINT()
     {
@@ -136,7 +162,7 @@ namespace CLOCK {
 
         cout << "zero calibration: " << zeroCalibration << endl;
         cout << "profiling overhead: "
-            << (100.0 * totalZeroCalibration) / (totalClockCount + totalZeroCalibration) << "%" << endl;
+            << (100.0 * totalZeroCalibration) / totalClockCount << "%" << endl;
         cout << "slow branch: " << (100.0 * slowBranchCount) / splitIterationCount << "%" << endl;
 
         for (int id = 0; id <= CLOCK_COUNT; ++id) {
