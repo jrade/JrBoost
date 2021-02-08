@@ -3,7 +3,7 @@
 #include "BoostOptions.h"
 #include "LinearCombinationPredictor.h"
 #include "StumpTrainer.h"
-#include "Util.h"
+#include "../Tools/Util.h"
 
 
 BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
@@ -26,11 +26,11 @@ BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
 
 unique_ptr<AbstractPredictor> BoostTrainer::train(const BoostOptions& opt) const
 {
-    CLOCK::PUSH(CLOCK::BT_TRAIN);
+    PROFILE::PUSH(PROFILE::BT_TRAIN);
     auto pred = opt.method() == BoostOptions::Method::Ada ? trainAda_(opt) : trainLogit_(opt);
     size_t sampleCount = static_cast<size_t>(inData_.rows());
     size_t iterationCount = opt.iterationCount();
-    CLOCK::POP(sampleCount * iterationCount);
+    PROFILE::POP(sampleCount * iterationCount);
     return pred;
 }
 
@@ -161,9 +161,9 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
                 if (!ep) ep = std::current_exception();
             }
         } // don't wait here ...
-        CLOCK::PUSH(CLOCK::OMP_BARRIER);
+        PROFILE::PUSH(PROFILE::OMP_BARRIER);
     } // ... but here so we can measure the wait time
-    CLOCK::POP();
+    PROFILE::POP();
 
     if (ep) std::rethrow_exception(ep);
     return scores;

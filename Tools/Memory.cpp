@@ -1,11 +1,12 @@
 #include "pch.h"
+#include "Profile.h"
 
 
 void* operator new(size_t n)
 {
-    CLOCK::PUSH(CLOCK::MEMORY);
+    PROFILE::PUSH(PROFILE::MEMORY);
     void* p = malloc(n);
-    CLOCK::POP(1);
+    PROFILE::POP(1);
     if (!p) throw std::bad_alloc();
     return p;
 }
@@ -13,16 +14,17 @@ void* operator new(size_t n)
 
 void operator delete(void* p) noexcept
 {
-    CLOCK::PUSH(CLOCK::MEMORY);
+    PROFILE::PUSH(PROFILE::MEMORY);
     free(p);
-    CLOCK::POP(0);
+    PROFILE::POP(0);
 }
+
 
 void* operator new[](size_t n)
 {
-    CLOCK::PUSH(CLOCK::MEMORY);
+    PROFILE::PUSH(PROFILE::MEMORY);
     void* p = malloc(n);
-    CLOCK::POP(1);
+    PROFILE::POP(1);
     if (!p) throw std::bad_alloc();
     return p;
 }
@@ -30,7 +32,7 @@ void* operator new[](size_t n)
 
 void operator delete[](void* p) noexcept
 {
-    CLOCK::PUSH(CLOCK::MEMORY);
+    PROFILE::PUSH(PROFILE::MEMORY);
     free(p);
-    CLOCK::POP(0);
+    PROFILE::POP(0);
 }

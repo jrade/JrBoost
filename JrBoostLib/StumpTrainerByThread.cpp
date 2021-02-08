@@ -4,7 +4,7 @@
 #include "StumpOptions.h"
 #include "StumpPredictor.h"
 #include "TrivialPredictor.h"
-#include "FastAlgorithms.h"
+#include "../Tools/FastAlgorithms.h"
 
 
 StumpTrainerByThread::StumpTrainerByThread(
@@ -23,15 +23,15 @@ StumpTrainerByThread::StumpTrainerByThread(
 
 unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd weights, const StumpOptions& options)
 {
-    CLOCK::PUSH(CLOCK::USED_SAMPLES);
+    PROFILE::PUSH(PROFILE::USED_SAMPLES);
 
     size_t usedSampleCount = shared_->initUsedSampleMask(&usedSampleMask_, options, rne_);
 
-    CLOCK::SWITCH(sampleCount_, CLOCK::USED_VARIABLES);
+    PROFILE::SWITCH(sampleCount_, PROFILE::USED_VARIABLES);
 
     size_t candidateVariableCount = initUsedVariables_(options);
 
-    CLOCK::SWITCH(candidateVariableCount, CLOCK::SUMS);
+    PROFILE::SWITCH(candidateVariableCount, PROFILE::SUMS);
 
     initSums_(outData, weights);
 
@@ -40,7 +40,7 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
         return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
     }
 
-    CLOCK::SWITCH(sampleCount_, CLOCK::SORTED_USED_SAMPLES);
+    PROFILE::SWITCH(sampleCount_, PROFILE::SORTED_USED_SAMPLES);
 
     double bestScore = sumWY_ * sumWY_ / sumW_;
     size_t bestJ = static_cast<size_t>(-1);
@@ -57,7 +57,7 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 
         shared_->initSortedUsedSamples(&sortedUsedSamples_, usedSampleCount, usedSampleMask_, j);
 
-        CLOCK::SWITCH(sampleCount_, CLOCK::BEST_SPLIT);
+        PROFILE::SWITCH(sampleCount_, PROFILE::BEST_SPLIT);
 
         // find best split
 
@@ -87,9 +87,9 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
 
             if (score <= bestScore) continue;  // usually true
 
-            ++CLOCK::slowBranchCount;
-
         //..................................................
+
+            ++PROFILE::SLOW_BRANCH_COUNT;
 
             if (p < pBegin + minNodeSize
                 || p > pEnd - minNodeSize
@@ -110,12 +110,11 @@ unique_ptr<AbstractPredictor> StumpTrainerByThread::train(CRefXd outData, CRefXd
             bestRightY = rightSumWY / rightSumW;
         }
 
-        CLOCK::SWITCH(usedSampleCount, CLOCK::SORTED_USED_SAMPLES);
-
-        CLOCK::splitIterationCount += usedSampleCount;
+        PROFILE::SWITCH(usedSampleCount, PROFILE::SORTED_USED_SAMPLES);
+        PROFILE::SPLIT_ITERATION_COUNT += usedSampleCount;
     }
 
-    CLOCK::POP();
+    PROFILE::POP();
 
     //usedSampleMask_.shrink_to_fit();
     //usedVariables_.shrink_to_fit();
@@ -138,7 +137,7 @@ size_t StumpTrainerByThread::initUsedVariables_(const StumpOptions& options)
 
     size_t usedVariableCount = std::max(
         static_cast<size_t>(1),
-        static_cast<size_t>(static_cast<double>(options.usedVariableRatio()) * candidateVariableCount + 0.5)
+        static_cast<size_t>(options.usedVariableRatio() * candidateVariableCount + 0.5)
     );
 
     ASSERT(0 < usedVariableCount);

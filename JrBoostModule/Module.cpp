@@ -1,5 +1,6 @@
 #include "pch.h"
-#include "../JrBoostLib/Util.h"
+#include "../Tools/Util.h"
+#include "../Tools/Assert.h"
 #include "../JrBoostLib/AbstractPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
 #include "../JrBoostLib/StumpTrainer.h"
@@ -25,18 +26,18 @@ PYBIND11_MODULE(jrboost, mod)
     mod.def("ompSetNumThreads", &omp_set_num_threads);
 
 
-    // CLOCK submodule
+    // PROFILE submodule
 
-    py::module clockMod = mod.def_submodule("CLOCK");
+    py::module clockMod = mod.def_submodule("PROFILE");
 
-    py::enum_<CLOCK::ID>(clockMod, "ID")
-        .value("MAIN", CLOCK::MAIN)
+    py::enum_<PROFILE::CLOCK_ID>(clockMod, "CLOCK_ID")
+        .value("MAIN", PROFILE::MAIN)
         .export_values();
 
     clockMod
-        .def("PUSH", &CLOCK::PUSH)
-        .def("POP", &CLOCK::POP, py::arg() = 0)
-        .def("PRINT", &CLOCK::PRINT);
+        .def("PUSH", &PROFILE::PUSH)
+        .def("POP", &PROFILE::POP, py::arg() = 0)
+        .def("PRINT", &PROFILE::PRINT);
 
 
     // Abstract predictor

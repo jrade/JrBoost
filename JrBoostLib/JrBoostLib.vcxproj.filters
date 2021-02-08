@@ -34,15 +34,6 @@
     <ClInclude Include="TrivialPredictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>
-    <ClInclude Include="Util.h">
-      <Filter>Util</Filter>
-    </ClInclude>
-    <ClInclude Include="FastAlgorithms.h">
-      <Filter>Util</Filter>
-    </ClInclude>
-    <ClInclude Include="FastBernoulliDistribution.h">
-      <Filter>Util</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -71,9 +62,6 @@
     </ClCompile>
     <ClCompile Include="LinearCombinationPredictor.cpp">
       <Filter>Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="Memory.cpp">
-      <Filter>Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

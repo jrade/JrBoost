@@ -18,7 +18,7 @@ LinearCombinationPredictor::LinearCombinationPredictor(
 
 ArrayXd LinearCombinationPredictor::predict(CRefXXf inData) const
 {
-    CLOCK::PUSH(CLOCK::LCP_P);
+    PROFILE::PUSH(PROFILE::LCP_P);
 
     validateInData_(inData);
     size_t sampleCount = inData.rows();
@@ -27,14 +27,14 @@ ArrayXd LinearCombinationPredictor::predict(CRefXXf inData) const
     for (size_t k = 0; k < n; ++k)
         outData += c1_[k] * basePredictors_[k]->predict(inData);
 
-    CLOCK::POP();
+    PROFILE::POP();
 
     return outData;
 }
 
 void LinearCombinationPredictor::predict(CRefXXf inData, double c, RefXd outData) const
 {
-    CLOCK::PUSH(CLOCK::LCP_P);
+    PROFILE::PUSH(PROFILE::LCP_P);
 
     validateInData_(inData);
     size_t n = basePredictors_.size();
@@ -42,5 +42,5 @@ void LinearCombinationPredictor::predict(CRefXXf inData, double c, RefXd outData
     for (size_t k = 0; k < n; ++k)
         basePredictors_[k]->predict(inData, c * c1_[k], outData);
 
-    CLOCK::POP();
+    PROFILE::POP();
 }

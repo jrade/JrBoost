@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "StumpTrainerShared.h"
 #include "StumpOptions.h"
-#include "FastAlgorithms.h"
+#include "../Tools/FastAlgorithms.h"
 
 
 StumpTrainerShared::StumpTrainerShared(CRefXXf inData, RefXs strata) :
@@ -46,11 +46,11 @@ size_t StumpTrainerShared::initUsedSampleMask(vector<char>* usedSampleMask, cons
         array<size_t, 2> usedSampleCountByStratum{
             std::max(
                 static_cast<size_t>(1),
-                static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * stratum0Count_ + 0.5)
+                static_cast<size_t>(options.usedSampleRatio() * stratum0Count_ + 0.5)
             ),
             std::max(
                 static_cast<size_t>(1),
-                static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * stratum1Count_ + 0.5)
+                static_cast<size_t>(options.usedSampleRatio() * stratum1Count_ + 0.5)
             )
         };
 

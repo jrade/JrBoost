@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import util
 import jrboost
-from jrboost import CLOCK
+from jrboost import PROFILE
 
 
 
@@ -96,7 +96,7 @@ testOutDataFrame = pd.DataFrame(index = testInDataFrame.index, columns = labels,
 while True:
 
     t = -time.time()
-    CLOCK.PUSH(CLOCK.MAIN)
+    PROFILE.PUSH(PROFILE.MAIN)
 
     for label in labels:
         print(label)
@@ -111,9 +111,9 @@ while True:
         testOutDataFrame[label] = testOutData
         print()
 
-    CLOCK.POP()
+    PROFILE.POP()
     t += time.time()
-    CLOCK.PRINT()
+    PROFILE.PRINT()
     print(util.formatTime(t))
 
     print()

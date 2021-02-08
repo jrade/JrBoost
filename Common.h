@@ -58,16 +58,15 @@ using CRefXs = Eigen::Ref<const ArrayXs>;
 using ArrayXf = Eigen::ArrayXf;
 
 
-// Random number engines (by Arvid Gerstmann)
+// Tools
 
-#include "AGRandom.h"
+#include "Tools/Assert.h"
+#include "Tools/AGRandom.h"
+#include "Tools/Profile.h"
 
 using RandomNumberEngine = splitmix;
 
-
-// Other
-
-#include "Assert.h"
-#include "Profiling.h"
-
 using SampleIndex = uint64_t;
+
+
+

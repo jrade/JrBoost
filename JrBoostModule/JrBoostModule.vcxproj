@@ -156,6 +156,9 @@
     <ProjectReference Include="..\JrBoostLib\JrBoostLib.vcxproj">
       <Project>{5e1798b2-cbdb-45a1-811a-884850c61c3c}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Tools\Tools.vcxproj">
+      <Project>{0f2bd381-7f90-4a76-90d2-e6399145cde2}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />

@@ -1,7 +1,24 @@
 
-Må:
-	profiling
-		refactor the profiling code (std::stack, struct Clock with start and stop functions)
+main                     18749   1.6%
+  t-rank                 22618   1.9%    4.0
+  train boost            74215   6.2%   20.3
+    train stump          13087   1.1%
+      validate           32106   2.7%    9.1
+      used samples       45815   3.8%   12.8
+      used variables     15467   1.3%   13.5
+      sums               20456   1.7%    6.0
+      sorted used s.    341544  28.6%    3.8
+      best split        589351  49.4%   11.6
+  predict                 7149   0.6%
+  OMP barrier             1872   0.2%
+  dyn. memory            10793   0.9%  633.3
+
+zero calibration: 104
+profiling overhead: 14.6%
+slow branch: 1.5%
+
+0:11:27
+
 
 Ti:
 	no point in reusing buffers
@@ -11,6 +28,7 @@ Ti:
 
 O:
 	profile with different indata, outdata and sample index types
+		make consistent use of SampleIndex type
 		turn all three into typedesf?
 		other sample index type can save 10%?
 

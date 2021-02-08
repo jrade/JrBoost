@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Profile.h"
+
 
 inline double linLoss(CRefXs outData, CRefXd predData)
 {
@@ -36,13 +38,14 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
         *(q++) = (r++)->first;
 }
 
+
 inline ArrayXs tStatisticRank(
     Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
     CRefXs outData,
     Eigen::Ref<const Eigen::Array<int32_t, Eigen::Dynamic, 1>> samples
 )
 {
-    CLOCK::PUSH(CLOCK::T_RANK);
+    PROFILE::PUSH(PROFILE::T_RANK);
 
     size_t variableCount = inData.cols();
     size_t sampleCount = samples.rows();
@@ -79,7 +82,7 @@ inline ArrayXs tStatisticRank(
         [](auto x) { return -x; }
     );
 
-    CLOCK::POP(sampleCount * variableCount);
+    PROFILE::POP(sampleCount * variableCount);
 
     return ind;
 }
