@@ -24,8 +24,14 @@ private:
 
 private:
     const CRefXXf inData_;
+    const size_t sampleCount_;
+    const size_t variableCount_;
     RefXs rawOutData_;                    // pesky const issue - can not iterate over const array
     const ArrayXd outData_;
-    const unique_ptr<StumpTrainer> baseTrainer_{ std::make_unique<StumpTrainer>(inData_, rawOutData_) };
+    const shared_ptr<StumpTrainer> baseTrainer_;
     const double f0_;
+
+    inline static thread_local ArrayXd F_;
+    inline static thread_local ArrayXd Fy_;
+    inline static thread_local ArrayXd adjWeights_;
 };

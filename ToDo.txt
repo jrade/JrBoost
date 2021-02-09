@@ -1,39 +1,46 @@
 
-main                     18749   1.6%
-  t-rank                 22618   1.9%    4.0
-  train boost            74215   6.2%   20.3
-    train stump          13087   1.1%
-      validate           32106   2.7%    9.1
-      used samples       45815   3.8%   12.8
-      used variables     15467   1.3%   13.5
-      sums               20456   1.7%    6.0
-      sorted used s.    341544  28.6%    3.8
-      best split        589351  49.4%   11.6
-  predict                 7149   0.6%
-  OMP barrier             1872   0.2%
-  dyn. memory            10793   0.9%  633.3
 
-zero calibration: 104
-profiling overhead: 14.6%
-slow branch: 1.5%
 
-0:11:27
 
+main                     19046   1.7%
+  t-rank                 22056   2.0%    3.9
+  train boost            79284   7.1%   21.3
+    train stump          30225   2.7%    8.2
+      used samples       45953   4.1%   12.1
+      used variables     15312   1.4%   12.5
+      sums               16161   1.5%    4.6
+      sorted used s.    300411  27.0%    3.2
+      best split        564124  50.6%   10.7
+  predict                 7152   0.6%
+  OMP barrier             1712   0.2%
+  dyn. memory            12385   1.1%  637.6
+
+zero calibration: 82
+profiling overhead: 12.0%
+slow branch: 1.4%
+
+0:10:26
+
+=====================================================================
 
 Ti:
-	no point in reusing buffers
-		verify this again with the improved profiling
-		simplify the code! get rid of the by_thread and shared classes!!
-		how to initialize the thread local random number engines?
+	make consistent use of SampleIndex type
+	profile with different values
 
-O:
 	profile with different indata, outdata and sample index types
 		make consistent use of SampleIndex type
 		turn all three into typedesf?
 		other sample index type can save 10%?
 
+O:
 	profile on work computer with different numbers of threads
 		how does it scale?
+
+	minSampleWeight and stratifiedRandomSubmask
+		not hard to implement actually
+		this shold take care of sumW_ = 0 problem
+		add a minSampleWeight parameter and profile how many samples that fall below this
+		play around with this stuff
 
 To - S:
 	clean repo
@@ -43,23 +50,18 @@ To - S:
 
 =====================================================================
 
-play around with for instance with minNodeSize and minNodeWeight
-
 Pandas free Python code
 
 sampleIndex_t typedef
 	select Bernoulli implementation based on this type
-
-minSampleWeight and stratifiedRandomSubmask
-	not hard to implement actually
-	this shold take care of sumW_ = 0 problem
-	add a minSampleWeight parameter and profile how many samples that fall below this
 
 what type to use for out data matrix in python and in C interface??
 
 produce report
 	first a simple one
     add a train and predict function similar to train and eval
+
+-----------------------------------------------------------------------
 
 gradient boost
 	read xgb paper to check that my understanding is correct

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Profile.h"
-
 
 inline double linLoss(CRefXs outData, CRefXd predData)
 {

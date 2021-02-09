@@ -10,7 +10,7 @@ public:
     virtual void predict(CRefXXf inData, double c, RefXd outData) const;
 
 private:
-    friend class StumpTrainerByThread;
+    friend class StumpTrainer;
 
     StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY);
 

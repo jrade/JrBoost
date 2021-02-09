@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Profile.h"
-#include "Assert.h"
 #include "ClockCycleCount.h"
 
 

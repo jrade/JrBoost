@@ -13,15 +13,6 @@
     <ClInclude Include="BoostOptions.h">
       <Filter>Boost</Filter>
     </ClInclude>
-    <ClInclude Include="StumpTrainer.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
-    <ClInclude Include="StumpTrainerShared.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
-    <ClInclude Include="StumpTrainerByThread.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
     <ClInclude Include="BoostTrainer.h">
       <Filter>Boost</Filter>
     </ClInclude>
@@ -33,6 +24,9 @@
     </ClInclude>
     <ClInclude Include="TrivialPredictor.h">
       <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpTrainer.h">
+      <Filter>Stump</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -48,20 +42,14 @@
     <ClCompile Include="BoostOptions.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
-    <ClCompile Include="StumpTrainer.cpp">
-      <Filter>Stump</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpTrainerShared.cpp">
-      <Filter>Stump</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpTrainerByThread.cpp">
-      <Filter>Stump</Filter>
-    </ClCompile>
     <ClCompile Include="BoostTrainer.cpp">
       <Filter>Boost</Filter>
     </ClCompile>
     <ClCompile Include="LinearCombinationPredictor.cpp">
       <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpTrainer.cpp">
+      <Filter>Stump</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -76,9 +64,6 @@
     </Filter>
     <Filter Include="Predictor">
       <UniqueIdentifier>{0e4adbcd-62ea-4ea3-b2ed-62fcbf83d2bc}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Util">
-      <UniqueIdentifier>{19bf0746-308c-4568-a7b1-0cffb93baf43}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

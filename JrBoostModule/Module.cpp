@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "../Tools/Util.h"
-#include "../Tools/Assert.h"
 #include "../JrBoostLib/AbstractPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
 #include "../JrBoostLib/StumpTrainer.h"

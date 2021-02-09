@@ -61,10 +61,7 @@ using ArrayXf = Eigen::ArrayXf;
 // Tools
 
 #include "Tools/Assert.h"
-#include "Tools/AGRandom.h"
 #include "Tools/Profile.h"
-
-using RandomNumberEngine = splitmix;
 
 using SampleIndex = uint64_t;
 
