@@ -8,7 +8,7 @@ class PROFILE {
 public:
     enum CLOCK_ID {
         MAIN, T_RANK, BOOST_TRAIN,
-        ST_TRAIN, USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
+        VALIDATE, USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
         LCP_P, OMP_BARRIER, MEMORY,
         CLOCK_COUNT
     };
@@ -28,8 +28,11 @@ private:
 
     static Clock clocks_[CLOCK_COUNT + 1];
     static const string names_[CLOCK_COUNT];
-    static vector<CLOCK_ID> clockIndexStack_;
-    static bool guard_;
+    static CLOCK_ID clockIndexStack_[1000];
+    static int clockIndexStackPos_;
+    // Using a std::vector for the clock index stack would lead to problems if we log new and delete.
+    // (1) Static initialization problems: PROFILE::PUSH() may be called before the std::vector has been initialized
+    // (2) Reentrant calls: PROFILE::PUSH() -> vector::push() -> operator new() -> PROFILE::PUSH()
     static size_t i_;
 };
 
@@ -37,12 +40,12 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "main",
     "  t-rank",
     "  train boost",
-    "    train stump",
-    "      used samples",
-    "      used variables",
-    "      sums",
-    "      sorted used s.",
-    "      best split",
+    "    validate",
+    "    used samples",
+    "    used variables",
+    "    sums",
+    "    sorted used s.",
+    "    best split",
     "  predict",
     "  OMP barrier",
     "  dyn. memory",

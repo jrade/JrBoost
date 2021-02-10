@@ -51,7 +51,7 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
 {
     // validate data ...........................................................
 
-    PROFILE::PUSH(PROFILE::ST_TRAIN);
+    PROFILE::PUSH(PROFILE::VALIDATE);
     size_t ITEM_COUNT = sampleCount_;
 
     ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
@@ -89,6 +89,7 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     initSums_(outData, weights);
 
     if (sumW_ == 0) {
+        PROFILE::POP(ITEM_COUNT);
         cout << "Warning: sumW = 0" << endl;
         return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
     }
@@ -108,6 +109,7 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
     const double minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
 
+    size_t slowBranchCount = 0;
         
     for (size_t j : usedVariables_) {
 
@@ -152,7 +154,7 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
 
         //..................................................
 
-            ++PROFILE::SLOW_BRANCH_COUNT;
+            ++slowBranchCount;
 
             if (p < pBegin + minNodeSize
                 || p > pEnd - minNodeSize
@@ -176,7 +178,11 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     }
 
     PROFILE::POP(ITEM_COUNT);
-    PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;
+#pragma omp master
+    {
+        PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;
+        PROFILE::SLOW_BRANCH_COUNT += slowBranchCount;
+    }
 
     if (!splitFound)
         return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);

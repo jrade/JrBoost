@@ -23,10 +23,9 @@ slow branch: 1.4%
 
 =====================================================================
 
-O:
-	profile on work computer with different numbers of threads
-		how does it scale?
+logging of new and delete before stack has been initialized leads to problems
 
+O:
 	merge fast algorithms into StumpTrainer
 		get rid of the file FastAlgorithms.h
 
