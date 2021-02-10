@@ -23,13 +23,9 @@ slow branch: 1.4%
 
 =====================================================================
 
-logging of new and delete before stack has been initialized leads to problems
+do we have a regression - poor results for ER+ER-like????   <-----------------
 
-O:
-	merge fast algorithms into StumpTrainer
-		get rid of the file FastAlgorithms.h
-
-	select the right BernoulliDist
+OMP warnings - make sure we can run with debugger in debug mode
 
 To:
 	minSampleWeight and stratifiedRandomSubmask
@@ -52,6 +48,11 @@ next week:
 			move things into local varables
 			access arrays through raw poiners
 				how to get pointer to buffer of Eigen::CRef object?
+
+time without:
+	ASSERT
+	StumpTrainer::train data validation
+	PROFILE
 
 =====================================================================
 
@@ -112,6 +113,22 @@ Eigen issues:
 	no select with two constants
 	    StumpTrainerImpl(CRefXXf inData, RefXs strata)
 			second argument should be CRefXs, but that leads to problems ...
+
+	Eigen::Ref<Eigen::ArrayXf> u;
+	auto p1 = u.begin();
+	auto p2 = begin(u);
+	auto p3 = u.cbegin();
+	auto p4 = cbegin(u);
+	float* p5 = &u(0);
+
+	Eigen::Ref<Eigen::ArrayXf> u;
+	auto q1 = u.cbegin();
+	auto q2 = cbegin(u);
+	const float* q3 = &u(0);
+
+	also reverse iterators
+
+
 
 NumPy issues:
 	inData[trainSamples, :] does not preserve Fortran (column major) order

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Clock.h"
+#include "../Tools/StaticStack.h"
 
 #define DO_PROFILE
 
@@ -28,8 +29,7 @@ private:
 
     static Clock clocks_[CLOCK_COUNT + 1];
     static const string names_[CLOCK_COUNT];
-    static CLOCK_ID clockIndexStack_[1000];
-    static int clockIndexStackPos_;
+    static StaticStack<CLOCK_ID, 1000> clockIndexStack_;
     // Using a std::vector for the clock index stack would lead to problems if we log new and delete.
     // (1) Static initialization problems: PROFILE::PUSH() may be called before the std::vector has been initialized
     // (2) Reentrant calls: PROFILE::PUSH() -> vector::push() -> operator new() -> PROFILE::PUSH()

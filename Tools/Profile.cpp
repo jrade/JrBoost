@@ -20,7 +20,7 @@ void PROFILE::POP(size_t itemCount)
 #pragma omp master
     {
         pop_(itemCount);
-        if (clockIndexStackPos_ != -1 && clockIndexStack_[clockIndexStackPos_] == CLOCK_COUNT)
+        if (!clockIndexStack_.empty() && clockIndexStack_.top() == CLOCK_COUNT)
             pop_(0);
     }
 }
@@ -101,12 +101,12 @@ void PROFILE::push_(CLOCK_ID id)
 {
     uint64_t t = clockCycleCount();
 
-    if (clockIndexStackPos_ != -1) {
-        CLOCK_ID prevId = clockIndexStack_[clockIndexStackPos_];
+    if (!clockIndexStack_.empty()) {
+        CLOCK_ID prevId = clockIndexStack_.top();
         clocks_[prevId].stop(t);
     }
 
-    clockIndexStack_[++clockIndexStackPos_] = id;
+    clockIndexStack_.push(id);
     // this may call operator new() which may call PROFILE::PUSH() in an infinite loop
     // that is prevented by the guard check
     clocks_[id].start(t);
@@ -116,13 +116,13 @@ void PROFILE::pop_(size_t itemCount)
 {
     uint64_t t = clockCycleCount();
 
-    ASSERT(clockIndexStackPos_ != -1);
-    CLOCK_ID id = clockIndexStack_[clockIndexStackPos_];
+    ASSERT(!clockIndexStack_.empty());
+    CLOCK_ID id = clockIndexStack_.top();
     clocks_[id].stop(t, itemCount);
-    --clockIndexStackPos_;
+    clockIndexStack_.pop();
 
-    if (clockIndexStackPos_ != -1) {
-        CLOCK_ID prevId = clockIndexStack_[clockIndexStackPos_];
+    if (!clockIndexStack_.empty()) {
+        CLOCK_ID prevId = clockIndexStack_.top();
         clocks_[prevId].start(t);
     }
 }
@@ -131,11 +131,11 @@ void PROFILE::switch_(size_t itemCount, CLOCK_ID id)
 {
     uint64_t t = clockCycleCount();
 
-    ASSERT(clockIndexStackPos_ != -1);
-    CLOCK_ID prevId = clockIndexStack_[clockIndexStackPos_];
+    ASSERT(!clockIndexStack_.empty());
+    CLOCK_ID prevId = clockIndexStack_.top();
     clocks_[prevId].stop(t, itemCount);
 
-    clockIndexStack_[clockIndexStackPos_] = id;
+    clockIndexStack_.top() = id;
     clocks_[id].start(t);
 }
 
@@ -145,6 +145,5 @@ uint64_t PROFILE::SPLIT_ITERATION_COUNT = 0;
 uint64_t PROFILE::SLOW_BRANCH_COUNT = 0;
 
 Clock PROFILE::clocks_[CLOCK_COUNT + 1];
-PROFILE::CLOCK_ID PROFILE::clockIndexStack_[1000];
-int PROFILE::clockIndexStackPos_ = -1;
+StaticStack<PROFILE::CLOCK_ID, 1000> PROFILE::clockIndexStack_;
 size_t PROFILE::i_ = 0;

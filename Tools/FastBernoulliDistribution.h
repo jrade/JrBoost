@@ -1,28 +1,27 @@
 #pragma once
 
-//template<typename N>
-//class FastBernoulliDistribution {
-//public:
-//	FastBernoulliDistribution(N k, N n) : 
-//		k_(static_cast<double>(k)), 
-//		n_(static_cast<double>(n))
-//	{
-//		assert(0 <= k && k <= n);
-//	}
-//
-//	template<class R>
-//	bool operator()(R& r)
-//	{
-//		double a = static_cast<double>(r() - R::min());
-//		constexpr double b = static_cast<double>(R::max() - R::min()) 
-//			* (1.0 + 2.0 * numeric_limits<double>::epsilon());
-//		return  a * n_ < b * k_;
-//	}
-//
-//private:
-//	double k_;
-//	double n_;
-//};
+class FastBernoulliDistribution {
+public:
+	FastBernoulliDistribution(uint64_t k, uint64_t n) : 
+		k_(static_cast<double>(k)), 
+		n_(static_cast<double>(n))
+	{
+		assert(0 <= k && k <= n);
+	}
+
+	template<class R>
+	bool operator()(R& r)
+	{
+		double a = static_cast<double>(r() - R::min());
+		constexpr double b = static_cast<double>(R::max() - R::min()) 
+			* (1.0 + 2.0 * numeric_limits<double>::epsilon());
+		return  a * n_ < b * k_;
+	}
+
+private:
+	double k_;
+	double n_;
+};
 
 // The following three statements are true
 //     (1) returns true with probability approximately k / n
@@ -45,13 +44,11 @@
 // so
 //    a * b + 2 * e > a * b
 
+//----------------------------------------------------------------------------------------------------------------------
 
-
-
-template<typename N>
-class FastBernoulliDistribution {
+class VeryFastBernoulliDistribution {
 public:
-	FastBernoulliDistribution(N k, N n) :
+	VeryFastBernoulliDistribution(uint64_t k, uint64_t n) :
 		k_(k),
 		n_(n)
 	{

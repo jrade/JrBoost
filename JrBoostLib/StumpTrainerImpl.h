@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Tools/AGRandom.h"
+#include "../Tools/FastBernoulliDistribution.h"
 
 class StumpOptions;
 class AbstractPredictor;
@@ -32,6 +33,11 @@ public:
 
 private:
     using RandomNumberEngine_ = splitmix;
+    using BernoulliDistribution = typename std::conditional<
+        sizeof(SampleIndex) == 8,
+            FastBernoulliDistribution,
+        VeryFastBernoulliDistribution
+    >::type;
 
     vector<vector<SampleIndex>> createSortedSamples_() const;
     size_t initUsedSampleMask_(const StumpOptions& opt) const;

@@ -31,6 +31,10 @@ public:
         return impl_->train(outData, weights, options);
     }
 
+// deleted:
+    StumpTrainer(const StumpTrainer&) = delete;
+    StumpTrainer& operator=(const StumpTrainer&) = delete;
+
 private:
     const unique_ptr<StumpTrainerImplBase> impl_;
 };

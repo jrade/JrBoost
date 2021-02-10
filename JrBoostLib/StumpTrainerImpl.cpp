@@ -3,7 +3,6 @@
 #include "StumpOptions.h"
 #include "StumpPredictor.h"
 #include "TrivialPredictor.h"
-#include "../Tools/FastAlgorithms.h"
 
 
 template<typename SampleIndex>
@@ -197,47 +196,43 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& op
     size_t usedSampleCount;
     usedSampleMask_.resize(sampleCount_);
 
-    if (options.isStratified()) {
+    if (!options.isStratified()) {
+        usedSampleCount = static_cast<size_t>(options.usedSampleRatio() * sampleCount_ + 0.5);
+        if (usedSampleCount == 0) usedSampleCount = 1;
 
-        array<size_t, 2> sampleCountByStratum{ stratum0Count_, stratum1Count_ };
-
-        array<size_t, 2> usedSampleCountByStratum{
-            std::max(static_cast<size_t>(1), static_cast<size_t>(options.usedSampleRatio() * stratum0Count_ + 0.5)),
-            std::max(static_cast<size_t>(1), static_cast<size_t>(options.usedSampleRatio() * stratum1Count_ + 0.5))
-        };
-
-        usedSampleCount = usedSampleCountByStratum[0] + usedSampleCountByStratum[1];
-
-        //cout << sampleCountByStratum[0] << " " << sampleCountByStratum[1] << " ";
-        //cout << usedSampleCountByStratum[0] << " " << usedSampleCountByStratum[1] << endl;
-
-        fastStratifiedRandomMask(
-            &strata_(0),
-            &strata_(0) + sampleCount_,
-            begin(usedSampleMask_),
-            begin(sampleCountByStratum),
-            begin(usedSampleCountByStratum),
-            rne_
-        );
-
-        //ASSERT(sampleCountByStratum[0] == 0);
-        //ASSERT(sampleCountByStratum[1] == 0);
-        //ASSERT(usedSampleCountByStratum[0] == 0);
-        //ASSERT(usedSampleCountByStratum[1] == 0);
+        size_t n = sampleCount_;
+        size_t k = usedSampleCount;
+        // create a random mask of length n with k ones and n - k zeros
+        for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
+            bool b = BernoulliDistribution(k, n) (rne_);
+            *p = b;
+            k -= b;
+            --n;
+        }
     }
 
     else {
-        usedSampleCount = std::max(
-            static_cast<size_t>(1),
-            static_cast<size_t>(options.usedSampleRatio() * sampleCount_ + 0.5)
-        );
+        // same as above, but done per stratum
 
-        fastRandomMask(
-            begin(usedSampleMask_),
-            end(usedSampleMask_),
-            usedSampleCount,
-            rne_
-        );
+        array<size_t, 2> n{ stratum0Count_, stratum1Count_ };
+
+        size_t usedStratum0Count = static_cast<size_t>(options.usedSampleRatio() * stratum0Count_ + 0.5);
+        if (usedStratum0Count == 0 && stratum0Count_ > 0) usedStratum0Count = 1;
+        size_t usedStratum1Count = static_cast<size_t>(options.usedSampleRatio() * stratum1Count_ + 0.5);
+        if (usedStratum1Count == 0 && stratum1Count_ > 0) usedStratum1Count = 1;
+        array<size_t, 2> k{ usedStratum0Count, usedStratum1Count };
+
+        const size_t* s = &strata_(0);
+        for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
+            size_t stratum = *s;
+            ++s;
+            bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne_);
+            *p = b;
+            k[stratum] -= b;
+            --n[stratum];
+        }
+
+        usedSampleCount = usedStratum0Count + usedStratum1Count;
     }
 
     return usedSampleCount;
@@ -248,20 +243,26 @@ template<typename SampleIndex>
 size_t StumpTrainerImpl<SampleIndex>::initUsedVariables_(const StumpOptions& options) const
 {
     size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
-    size_t usedVariableCount = std::max(
-        static_cast<size_t>(1),
-        static_cast<size_t>(options.usedVariableRatio() * candidateVariableCount + 0.5)
-    );
-
+    size_t usedVariableCount = static_cast<size_t>(options.usedVariableRatio() * candidateVariableCount + 0.5);
+    if (usedVariableCount == 0) usedVariableCount = 1;
+        
     ASSERT(0 < usedVariableCount);
     ASSERT(usedVariableCount <= candidateVariableCount);
     ASSERT(candidateVariableCount <= variableCount_);
 
     usedVariables_.resize(usedVariableCount);
-    auto q0 = begin(usedVariables_);
-    auto q1 = end(usedVariables_);
     size_t n = candidateVariableCount;
-    fastRandomSubIndices(n, q0, q1, rne_);
+    size_t k = usedVariableCount;
+    size_t i = 0;
+    auto p = begin(usedVariables_);
+    while (k > 0) {
+        *p = i;
+        bool b = BernoulliDistribution(k, n)(rne_);
+        p += b;
+        k -= b;
+        --n;
+        ++i;
+    }
 
     return candidateVariableCount;
 }
@@ -287,12 +288,16 @@ void StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCoun
 {
     sortedUsedSamples_.resize(usedSampleCount);
 
-    fastCopyIf(
-        cbegin(sortedSamples_[j]),
-        begin(sortedUsedSamples_),
-        end(sortedUsedSamples_),
-        [&](size_t i) { return usedSampleMask_[i]; }
-    );
+    auto p0 = cbegin(sortedSamples_[j]);
+    auto q0 = begin(sortedUsedSamples_);
+    auto q1 = end(sortedUsedSamples_);
+
+    while (q0 != q1) {
+        SampleIndex i = *p0;
+        *q0 = i;
+        ++p0;
+        q0 += usedSampleMask_[i];
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
