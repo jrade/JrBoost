@@ -1,17 +1,17 @@
 #include "pch.h"
-#include "StumpTrainer.h"
+#include "StumpTrainerImpl.h"
 #include "StumpOptions.h"
 #include "StumpPredictor.h"
 #include "TrivialPredictor.h"
 #include "../Tools/FastAlgorithms.h"
 
 
-StumpTrainer::StumpTrainer(
-    CRefXXf inData, RefXs strata) :
+template<typename SampleIndex>
+StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, RefXs strata) :
     inData_{ inData },
     sampleCount_{ static_cast<size_t>(inData.rows()) },
     variableCount_{ static_cast<size_t>(inData.cols()) },
-    sortedSamples_{ sortSamples_() },
+    sortedSamples_{ createSortedSamples_() },
     strata_{ strata },
     stratum0Count_{ (strata == 0).cast<size_t>().sum() },
     stratum1Count_{ (strata == 1).cast<size_t>().sum() }
@@ -25,17 +25,19 @@ StumpTrainer::StumpTrainer(
     ASSERT((strata < 2).all());
 }
 
-vector<vector<SampleIndex>> StumpTrainer::sortSamples_() const
+
+template<typename SampleIndex>
+vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_() const
 {
     vector<vector<SampleIndex>> sortedSamples(variableCount_);
-    vector<pair<float, size_t>> tmp{ sampleCount_ };
+    vector<pair<float, SampleIndex>> tmp{ sampleCount_ };
     for (size_t j = 0; j < variableCount_; ++j) {
         for (size_t i = 0; i < sampleCount_; ++i)
-            tmp[i] = { inData_(i,j), i };
-        std::sort(begin(tmp), end(tmp));
+            tmp[i] = { inData_(i,j), static_cast<SampleIndex>(i) };
+        std::sort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
         sortedSamples[j].resize(sampleCount_);
         for (size_t i = 0; i < sampleCount_; ++i)
-            sortedSamples[j][i] = static_cast<SampleIndex>(tmp[i].second);
+            sortedSamples[j][i] = tmp[i].second;
     }
 
     return sortedSamples;
@@ -43,12 +45,13 @@ vector<vector<SampleIndex>> StumpTrainer::sortSamples_() const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<AbstractPredictor> StumpTrainer::train(
+template<typename SampleIndex>
+unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
     // validate data ...........................................................
 
-    PROFILE::PUSH(PROFILE::STUMP_TRAIN);
+    PROFILE::PUSH(PROFILE::ST_TRAIN);
     size_t ITEM_COUNT = sampleCount_;
 
     ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
@@ -94,10 +97,11 @@ unique_ptr<AbstractPredictor> StumpTrainer::train(
     // prepare for finding best split ..........................................
 
     double bestScore = sumWY_ * sumWY_ / sumW_;
-    size_t bestJ = static_cast<size_t>(-1);
+    size_t bestJ = 0;
     float bestX = 0.0f;
     double bestLeftY = 0.0;
     double bestRightY = 0.0;
+    bool splitFound = false;
 
     const size_t minNodeSize = options.minNodeSize();
     const double tol = sumW_ * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
@@ -167,20 +171,22 @@ unique_ptr<AbstractPredictor> StumpTrainer::train(
             bestX = midX;
             bestLeftY = leftSumWY / leftSumW;
             bestRightY = rightSumWY / rightSumW;
+            splitFound = true;
         }
     }
 
     PROFILE::POP(ITEM_COUNT);
     PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;
 
-    if (bestJ == static_cast<size_t>(-1))
+    if (!splitFound)
         return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
-    else
-        return unique_ptr<StumpPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
+    
+    return unique_ptr<StumpPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
 };
 
 
-size_t StumpTrainer::initUsedSampleMask_(const StumpOptions& options) const
+template<typename SampleIndex>
+size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& options) const
 {
     size_t usedSampleCount;
     usedSampleMask_.resize(sampleCount_);
@@ -190,14 +196,8 @@ size_t StumpTrainer::initUsedSampleMask_(const StumpOptions& options) const
         array<size_t, 2> sampleCountByStratum{ stratum0Count_, stratum1Count_ };
 
         array<size_t, 2> usedSampleCountByStratum{
-            std::max(
-                static_cast<size_t>(1),
-                static_cast<size_t>(options.usedSampleRatio() * stratum0Count_ + 0.5)
-            ),
-            std::max(
-                static_cast<size_t>(1),
-                static_cast<size_t>(options.usedSampleRatio() * stratum1Count_ + 0.5)
-            )
+            std::max(static_cast<size_t>(1), static_cast<size_t>(options.usedSampleRatio() * stratum0Count_ + 0.5)),
+            std::max(static_cast<size_t>(1), static_cast<size_t>(options.usedSampleRatio() * stratum1Count_ + 0.5))
         };
 
         usedSampleCount = usedSampleCountByStratum[0] + usedSampleCountByStratum[1];
@@ -223,7 +223,7 @@ size_t StumpTrainer::initUsedSampleMask_(const StumpOptions& options) const
     else {
         usedSampleCount = std::max(
             static_cast<size_t>(1),
-            static_cast<size_t>(static_cast<double>(options.usedSampleRatio()) * sampleCount_ + 0.5)
+            static_cast<size_t>(options.usedSampleRatio() * sampleCount_ + 0.5)
         );
 
         fastRandomMask(
@@ -238,10 +238,10 @@ size_t StumpTrainer::initUsedSampleMask_(const StumpOptions& options) const
 }
 
 
-size_t StumpTrainer::initUsedVariables_(const StumpOptions& options) const
+template<typename SampleIndex>
+size_t StumpTrainerImpl<SampleIndex>::initUsedVariables_(const StumpOptions& options) const
 {
     size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
-
     size_t usedVariableCount = std::max(
         static_cast<size_t>(1),
         static_cast<size_t>(options.usedVariableRatio() * candidateVariableCount + 0.5)
@@ -261,7 +261,8 @@ size_t StumpTrainer::initUsedVariables_(const StumpOptions& options) const
 }
 
 
-void StumpTrainer::initSums_(const CRefXd& outData, const CRefXd& weights) const
+template<typename SampleIndex>
+void StumpTrainerImpl<SampleIndex>::initSums_(const CRefXd& outData, const CRefXd& weights) const
 {
     sumW_ = 0.0;
     sumWY_ = 0.0;
@@ -275,7 +276,8 @@ void StumpTrainer::initSums_(const CRefXd& outData, const CRefXd& weights) const
 }
 
 
-void StumpTrainer::initSortedUsedSamples_(size_t usedSampleCount, size_t j) const
+template<typename SampleIndex>
+void StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCount, size_t j) const
 {
     sortedUsedSamples_.resize(usedSampleCount);
 
@@ -286,3 +288,10 @@ void StumpTrainer::initSortedUsedSamples_(size_t usedSampleCount, size_t j) cons
         [&](size_t i) { return usedSampleMask_[i]; }
     );
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template class StumpTrainerImpl<uint8_t>;
+template class StumpTrainerImpl<uint16_t>;
+template class StumpTrainerImpl<uint32_t>;
+template class StumpTrainerImpl<uint64_t>;

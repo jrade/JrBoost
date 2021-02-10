@@ -63,7 +63,5 @@ using ArrayXf = Eigen::ArrayXf;
 #include "Tools/Assert.h"
 #include "Tools/Profile.h"
 
-using SampleIndex = uint64_t;
-
 
 

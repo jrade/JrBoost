@@ -25,6 +25,9 @@
     <ClInclude Include="TrivialPredictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>
+    <ClInclude Include="StumpTrainerImpl.h">
+      <Filter>Stump</Filter>
+    </ClInclude>
     <ClInclude Include="StumpTrainer.h">
       <Filter>Stump</Filter>
     </ClInclude>
@@ -48,7 +51,7 @@
     <ClCompile Include="LinearCombinationPredictor.cpp">
       <Filter>Predictor</Filter>
     </ClCompile>
-    <ClCompile Include="StumpTrainer.cpp">
+    <ClCompile Include="StumpTrainerImpl.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
   </ItemGroup>

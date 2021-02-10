@@ -48,8 +48,6 @@
 
 
 
-
-
 template<typename N>
 class FastBernoulliDistribution {
 public:

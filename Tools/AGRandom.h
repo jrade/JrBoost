@@ -4,7 +4,6 @@
 
 // Copyright (c) 2021 Johan Rade.
 // This code is licensed under MIT license.
-//     Added constructors that take std::random_device&&
 //     Made free functions (operator== and operator!=) inline
 
 // Copyright (c) 2018 Arvid Gerstmann.
@@ -25,11 +24,6 @@ public:
     splitmix() : m_seed(1) {}
 
     explicit splitmix(std::random_device& rd)
-    {
-        seed(rd);
-    }
-
-    explicit splitmix(std::random_device&& rd)
     {
         seed(rd);
     }
@@ -83,11 +77,6 @@ public:
         seed(rd);
     }
 
-    explicit xorshift(std::random_device&& rd)
-    {
-        seed(rd);
-    }
-
     void seed(std::random_device& rd)
     {
         m_seed = uint64_t(rd()) << 31 | uint64_t(rd());
@@ -136,11 +125,6 @@ public:
     {}
 
     explicit pcg(std::random_device& rd)
-    {
-        seed(rd);
-    }
-
-    explicit pcg(std::random_device&& rd)
     {
         seed(rd);
     }

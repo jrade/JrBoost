@@ -23,24 +23,22 @@ slow branch: 1.4%
 
 =====================================================================
 
-Ti:
-	make consistent use of SampleIndex type
-	profile with different values
-
-	profile with different indata, outdata and sample index types
-		make consistent use of SampleIndex type
-		turn all three into typedesf?
-		other sample index type can save 10%?
-
 O:
 	profile on work computer with different numbers of threads
 		how does it scale?
 
+	merge fast algorithms into StumpTrainer
+		get rid of the file FastAlgorithms.h
+
+	select the right BernoulliDist
+
+To:
 	minSampleWeight and stratifiedRandomSubmask
 		not hard to implement actually
 		this shold take care of sumW_ = 0 problem
 		add a minSampleWeight parameter and profile how many samples that fall below this
-		play around with this stuff
+
+	play around with this stuff
 
 To - S:
 	clean repo
@@ -48,18 +46,27 @@ To - S:
 
 	push to GitHub
 
+next week:
+	do some micro-optimizations
+		sums in partcular
+		ideas
+			move things into local varables
+			access arrays through raw poiners
+				how to get pointer to buffer of Eigen::CRef object?
+
 =====================================================================
 
 Pandas free Python code
-
-sampleIndex_t typedef
-	select Bernoulli implementation based on this type
 
 what type to use for out data matrix in python and in C interface??
 
 produce report
 	first a simple one
     add a train and predict function similar to train and eval
+
+review data types:
+	uint8_t for raw out data / strata?
+	float for out data and weights?
 
 -----------------------------------------------------------------------
 

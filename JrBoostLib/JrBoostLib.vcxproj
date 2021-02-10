@@ -148,6 +148,7 @@
     <ClInclude Include="StumpPredictor.h" />
     <ClInclude Include="StumpOptions.h" />
     <ClInclude Include="StumpTrainer.h" />
+    <ClInclude Include="StumpTrainerImpl.h" />
     <ClInclude Include="TrivialPredictor.h" />
   </ItemGroup>
   <ItemGroup>
@@ -162,7 +163,7 @@
     </ClCompile>
     <ClCompile Include="StumpPredictor.cpp" />
     <ClCompile Include="StumpOptions.cpp" />
-    <ClCompile Include="StumpTrainer.cpp" />
+    <ClCompile Include="StumpTrainerImpl.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
