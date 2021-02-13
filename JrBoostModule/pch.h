@@ -2,7 +2,6 @@
 
 #pragma once
 
-
 #include "../Common.h"
 
 #include <pybind11/pybind11.h>

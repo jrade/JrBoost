@@ -4,16 +4,33 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="AGRandom.h" />
     <ClInclude Include="Assert.h" />
-    <ClInclude Include="Clock.h" />
-    <ClInclude Include="ClockCycleCount.h" />
-    <ClInclude Include="FastBernoulliDistribution.h" />
-    <ClInclude Include="Profile.h" />
     <ClInclude Include="Util.h" />
-    <ClInclude Include="StaticStack.h" />
+    <ClInclude Include="Clock.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="StaticStack.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="ClockCycleCount.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="BernoulliDistribution.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="Memory.cpp" />
-    <ClCompile Include="Profile.cpp" />
+    <ClCompile Include="Memory.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Profiling">
+      <UniqueIdentifier>{89f96042-f139-4a37-b3d4-473c68e30f33}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

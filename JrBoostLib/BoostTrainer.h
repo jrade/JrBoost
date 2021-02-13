@@ -14,7 +14,6 @@ public:
     ArrayXd trainAndEval(CRefXXf testInData, CRefXs testOutData, const vector<BoostOptions>& opt) const;
 
  // deleted:
-    BoostTrainer() = delete;
     BoostTrainer(const BoostTrainer&) = delete;
     BoostTrainer& operator=(const  BoostTrainer&) = delete;
 

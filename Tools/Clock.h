@@ -2,6 +2,11 @@
 
 class Clock {
 public:
+    Clock() = default;
+    ~Clock() = default;
+    Clock(const Clock&) = default;
+    Clock& operator=(const Clock&) = default;
+
     uint64_t clockCycleCount() const { return clockCycleCount_; }
     uint64_t itemCount() const { return itemCount_; }
     uint64_t callCount() const { return callCount_; }
@@ -25,4 +30,3 @@ private:
     uint64_t itemCount_ = 0;
     uint64_t callCount_ = 0;
 };
-

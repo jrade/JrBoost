@@ -7,7 +7,7 @@
 
 void PROFILE::PUSH(CLOCK_ID id)
 {
-#pragma omp master
+    if (omp_get_thread_num() == 0)
     {
         if (++i_ % 100 == 0)
             push_(CLOCK_COUNT);
@@ -17,7 +17,7 @@ void PROFILE::PUSH(CLOCK_ID id)
 
 void PROFILE::POP(size_t itemCount)
 {
-#pragma omp master
+    if (omp_get_thread_num() == 0)
     {
         pop_(itemCount);
         if (!clockIndexStack_.empty() && clockIndexStack_.top() == CLOCK_COUNT)
@@ -27,7 +27,7 @@ void PROFILE::POP(size_t itemCount)
 
 void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 {
-#pragma omp master
+    if (omp_get_thread_num() == 0)
     {
         if (++i_ % 100 == 0) {
             switch_(itemCount, CLOCK_COUNT);

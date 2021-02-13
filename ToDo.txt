@@ -1,58 +1,62 @@
 
 
+main                      4710   2.8%
+  t-rank                  5622   3.4%    4.8
+  train boost            18821  11.3%   22.5
+    validate              7413   4.4%    9.0
+    used samples          9579   5.7%   11.5
+    used variables        4716   2.8%   14.3
+    sums                   777   0.5%    9.7
+    sorted used s.       79237  47.4%    3.8
+    best split           31760  19.0%   14.0
+  predict                 1870   1.1%
+  OMP barrier              448   0.3%
+  dyn. memory             2078   1.2%  434.9
 
+zero calibration: 68
+profiling overhead: 16.8%
+slow branch: 2.5%
 
-main                     19046   1.7%
-  t-rank                 22056   2.0%    3.9
-  train boost            79284   7.1%   21.3
-    train stump          30225   2.7%    8.2
-      used samples       45953   4.1%   12.1
-      used variables     15312   1.4%   12.5
-      sums               16161   1.5%    4.6
-      sorted used s.    300411  27.0%    3.2
-      best split        564124  50.6%   10.7
-  predict                 7152   0.6%
-  OMP barrier             1712   0.2%
-  dyn. memory            12385   1.1%  637.6
-
-zero calibration: 82
-profiling overhead: 12.0%
-slow branch: 1.4%
-
-0:10:26
+0:01:38
 
 =====================================================================
 
-do we have a regression - poor results for ER+ER-like????   <-----------------
+clean repo
+	test with CERN boson data instead
 
-OMP warnings - make sure we can run with debugger in debug mode
+push to GitHub
 
-To:
-	minSampleWeight and stratifiedRandomSubmask
-		not hard to implement actually
-		this shold take care of sumW_ = 0 problem
-		add a minSampleWeight parameter and profile how many samples that fall below this
+=====================================================================
 
-	play around with this stuff
+square root loss??
 
-To - S:
-	clean repo
-		test with CERN boson data instead
+other way of genertaing sorted list of samples
+	create used sample list
+	then sort this list
+		test with pdq-sort (https://github.com/orlp/pdqsort)
 
-	push to GitHub
+test isStratified = true and false
 
-next week:
-	do some micro-optimizations
-		sums in partcular
-		ideas
-			move things into local varables
-			access arrays through raw poiners
-				how to get pointer to buffer of Eigen::CRef object?
+weights and outdata as float instead of double?
+	profile
+
+do some micro-optimizations
+	sums in partcular
+	ideas
+		move things into local varables
+		access arrays through raw poiners
+			how to get pointer to buffer of Eigen::CRef object?
+	try __declspec(noalias)
+
+implement smarter hyperparameter optimization methods
 
 time without:
 	ASSERT
 	StumpTrainer::train data validation
 	PROFILE
+
+
+https://github.com/orlp/pdqsort
 
 =====================================================================
 

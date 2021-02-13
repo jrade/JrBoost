@@ -163,6 +163,7 @@
     </ClCompile>
     <ClCompile Include="StumpPredictor.cpp" />
     <ClCompile Include="StumpOptions.cpp" />
+    <ClCompile Include="StumpTrainer.cpp" />
     <ClCompile Include="StumpTrainerImpl.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

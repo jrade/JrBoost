@@ -67,7 +67,7 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_SAMPLES);
     ITEM_COUNT = sampleCount_;
 
-    const size_t usedSampleCount = initUsedSampleMask_(options);
+    const size_t usedSampleCount = initUsedSampleMask_(options, weights);
 
 
     // initialize used variables ...............................................
@@ -75,41 +75,29 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_VARIABLES);
 
     const size_t candidateVariableCount = initUsedVariables_(options);
-    const size_t usedVariableCount = usedVariables_.size();
 
     ITEM_COUNT = candidateVariableCount;
 
 
-    // initialize sums .........................................................
-
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::SUMS);
-    ITEM_COUNT = sampleCount_;
-
-    initSums_(outData, weights);
-
-    if (sumW_ == 0) {
-        PROFILE::POP(ITEM_COUNT);
-        cout << "Warning: sumW = 0" << endl;
-        return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
-    }
-
-
     // prepare for finding best split ..........................................
 
-    double bestScore = sumWY_ * sumWY_ / sumW_;
+    const size_t minNodeSize = options.minNodeSize();
+    size_t slowBranchCount = 0;
+
     size_t bestJ = 0;
     float bestX = 0.0f;
     double bestLeftY = 0.0;
     double bestRightY = 0.0;
     bool splitFound = false;
 
-    const size_t minNodeSize = options.minNodeSize();
-    const double tol = sumW_ * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
-    // tol = estimate of the rounding off error we can expect in rightSumW towards the end of the loop
-    const double minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
+    // the followinf variables are initialized during the first iteration below
+    bool sumsInit = false;
+    double sumW = 0.0;
+    double sumWY = 0.0;
+    double tol = 0.0;   // estimate of the rounding off error we can expect in rightSumW towards the end of the loop
+    double minNodeWeight = 0.0;
+    double bestScore = 0.0;
 
-    size_t slowBranchCount = 0;
-        
     for (size_t j : usedVariables_) {
 
         // initialize sorted used samples ......................................
@@ -120,6 +108,27 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
         initSortedUsedSamples_(usedSampleCount, j);
 
 
+        // initialize sums .........................................................
+
+        if (!sumsInit) {
+            PROFILE::SWITCH(ITEM_COUNT, PROFILE::SUMS);
+            ITEM_COUNT = sortedUsedSamples_.size();
+
+            std::tie(sumW, sumWY) = initSums_(outData, weights);
+            if (sumW == 0) {
+                PROFILE::POP(ITEM_COUNT);
+                cout << "Warning: sumW = 0" << endl;
+                return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
+            }
+
+            bestScore = sumWY * sumWY / sumW;
+            tol = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
+            minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
+
+            sumsInit = true;
+        }
+
+
         // find best split .....................................................
 
         PROFILE::SWITCH(ITEM_COUNT, PROFILE::BEST_SPLIT);
@@ -127,8 +136,8 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
 
         double leftSumW = 0.0;
         double leftSumWY = 0.0;
-        double rightSumW = sumW_;
-        double rightSumWY = sumWY_;
+        double rightSumW = sumW;
+        double rightSumWY = sumWY;
 
         const auto pBegin = cbegin(sortedUsedSamples_);
         const auto pEnd = cend(sortedUsedSamples_);
@@ -177,62 +186,137 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     }
 
     PROFILE::POP(ITEM_COUNT);
-#pragma omp master
+    if (omp_get_thread_num() == 0)
     {
+        const size_t usedVariableCount = usedVariables_.size();
         PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;
         PROFILE::SLOW_BRANCH_COUNT += slowBranchCount;
     }
 
     if (!splitFound)
-        return std::make_unique<TrivialPredictor>(variableCount_, sumWY_ / sumW_);
+        return std::make_unique<TrivialPredictor>(variableCount_, sumWY / sumW);
     
     return unique_ptr<StumpPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
 };
 
 
 template<typename SampleIndex>
-size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& options) const
+size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& options, CRefXd weights) const
 {
     size_t usedSampleCount;
     usedSampleMask_.resize(sampleCount_);
 
-    if (!options.isStratified()) {
-        usedSampleCount = static_cast<size_t>(options.usedSampleRatio() * sampleCount_ + 0.5);
-        if (usedSampleCount == 0) usedSampleCount = 1;
+    double minSampleWeight = options.minSampleWeight();
+    bool isStratified = options.isStratified();
 
-        size_t n = sampleCount_;
-        size_t k = usedSampleCount;
-        // create a random mask of length n with k ones and n - k zeros
-        for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
-            bool b = BernoulliDistribution(k, n) (rne_);
-            *p = b;
-            k -= b;
-            --n;
+
+    if (minSampleWeight == 0.0) {
+
+        if (!isStratified) {
+
+            // create a random mask of length n with k ones and n - k zeros
+            // n = total number of samples
+            // k = number of used samples
+
+            size_t n = sampleCount_;
+            size_t k = static_cast<size_t>(options.usedSampleRatio() * n + 0.5);
+            if (k == 0) k = 1;
+            usedSampleCount = k;
+
+            for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
+                bool b = BernoulliDistribution(k, n) (rne_);
+                *p = b;
+                k -= b;
+                --n;
+            }
+        }
+
+        else {
+            // create a random mask of length n = n[0] + n[1] with k = k[0] + k[1] ones and n - k zeros
+            // n[s] = total number of samples in stratum s
+            // k[s] = number of used samples in stratum s
+
+            array<size_t, 2> n{ stratum0Count_, stratum1Count_ };
+
+            array<size_t, 2> k;
+            k[0] = static_cast<size_t>(options.usedSampleRatio() * n[0] + 0.5);
+            if (k[0] == 0 && n[0] > 0) k[0] = 1;
+            k[1] = static_cast<size_t>(options.usedSampleRatio() * n[1] + 0.5);
+            if (k[1] == 0 && n[1] > 0) k[1] = 1;
+            usedSampleCount = k[0] + k[1];
+
+            const size_t* s = &strata_(0);
+            for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
+                size_t stratum = *s;
+                ++s;
+                bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne_);
+                *p = b;
+                k[stratum] -= b;
+                --n[stratum];
+            }
         }
     }
 
-    else {
-        // same as above, but done per stratum
+    else {  // minSampleWeight > 0.0
 
-        array<size_t, 2> n{ stratum0Count_, stratum1Count_ };
+        // same as above, but first we identify the smaples with weight >= sampleMinWeight
+        // these samples are stored in tmpSamples
+        // then we select among those samples
 
-        size_t usedStratum0Count = static_cast<size_t>(options.usedSampleRatio() * stratum0Count_ + 0.5);
-        if (usedStratum0Count == 0 && stratum0Count_ > 0) usedStratum0Count = 1;
-        size_t usedStratum1Count = static_cast<size_t>(options.usedSampleRatio() * stratum1Count_ + 0.5);
-        if (usedStratum1Count == 0 && stratum1Count_ > 0) usedStratum1Count = 1;
-        array<size_t, 2> k{ usedStratum0Count, usedStratum1Count };
+        if (!isStratified) {
+            tmpSamples_.resize(sampleCount_);
+            size_t n = 0;
+            auto p = begin(tmpSamples_);
+            for (size_t i = 0; i < sampleCount_; ++i) {
+                usedSampleMask_[i] = 0;
+                bool b = weights(i) >= minSampleWeight;
+                *p = static_cast<SampleIndex>(i);
+                p += b;
+                n += b;
+            }
+            tmpSamples_.resize(p - begin(tmpSamples_));
 
-        const size_t* s = &strata_(0);
-        for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
-            size_t stratum = *s;
-            ++s;
-            bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne_);
-            *p = b;
-            k[stratum] -= b;
-            --n[stratum];
+            size_t k = static_cast<size_t>(options.usedSampleRatio() * n + 0.5);
+            if (k == 0 && n > 0) k = 1;
+            usedSampleCount = k;
+
+            for (SampleIndex i : tmpSamples_) {
+                bool b = BernoulliDistribution(k, n) (rne_);
+                usedSampleMask_[i] = b;
+                k -= b;
+                --n;
+            }
         }
 
-        usedSampleCount = usedStratum0Count + usedStratum1Count;
+        else {
+            tmpSamples_.resize(sampleCount_);
+            array<size_t, 2> n = { 0, 0 };
+            auto p = begin(tmpSamples_);
+            for (size_t i = 0; i < sampleCount_; ++i) {
+                size_t stratum = strata_[i];
+                bool b = weights(i) >= minSampleWeight;
+                *p = static_cast<SampleIndex>(i);
+                p += b;
+                n[stratum] += b;
+                usedSampleMask_[i] = 0;
+            }
+            tmpSamples_.resize(p - begin(tmpSamples_));
+
+            array<size_t, 2> k;
+            k[0] = static_cast<size_t>(options.usedSampleRatio() * n[0] + 0.5);
+            if (k[0] == 0 && n[0] > 0) k[0] = 1;
+            k[1] = static_cast<size_t>(options.usedSampleRatio() * n[1] + 0.5);
+            if (k[1] == 0 && n[1] > 0) k[1] = 1;
+            usedSampleCount = k[0] + k[1];
+
+            for (size_t i : tmpSamples_) {
+                size_t stratum = strata_[i];
+                bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne_);
+                usedSampleMask_[i] = b;
+                k[stratum] -= b;
+                --n[stratum];
+            }
+        }
     }
 
     return usedSampleCount;
@@ -269,21 +353,6 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedVariables_(const StumpOptions& opt
 
 
 template<typename SampleIndex>
-void StumpTrainerImpl<SampleIndex>::initSums_(const CRefXd& outData, const CRefXd& weights) const
-{
-    sumW_ = 0.0;
-    sumWY_ = 0.0;
-    for (size_t i = 0; i < sampleCount_; ++i) {
-        double m = usedSampleMask_[i];
-        double w = weights[i];
-        double y = outData[i];
-        sumW_ += m * w;
-        sumWY_ += m * w * y;
-    }
-}
-
-
-template<typename SampleIndex>
 void StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCount, size_t j) const
 {
     sortedUsedSamples_.resize(usedSampleCount);
@@ -299,6 +368,22 @@ void StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCoun
         q0 += usedSampleMask_[i];
     }
 }
+
+
+template<typename SampleIndex>
+pair<double, double> StumpTrainerImpl<SampleIndex>::initSums_(const CRefXd& outData, const CRefXd& weights) const
+{
+    double sumW = 0.0;
+    double sumWY = 0.0;
+    for (size_t i : sortedUsedSamples_) {
+        double w = weights[i];
+        double y = outData[i];
+        sumW += w;
+        sumWY += w * y;
+    }
+    return std::make_pair(sumW, sumWY);
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 

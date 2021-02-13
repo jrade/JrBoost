@@ -54,6 +54,9 @@
     <ClCompile Include="StumpTrainerImpl.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
+    <ClCompile Include="StumpTrainer.cpp">
+      <Filter>Stump</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Precompiled Header">

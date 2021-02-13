@@ -57,6 +57,7 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
         .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
         .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
+        .def_property("minSampleWeight", &StumpOptions::minSampleWeight, &StumpOptions::setMinSampleWeight)
         .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
         .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
         .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified);

@@ -47,6 +47,7 @@ def optimizeHyperParams(inData, outData, foldCount):
                 opt.iterationCount = 1000
                 opt.base.usedSampleRatio = usr
                 opt.base.usedVariableRatio = uvr
+                opt.base.minSampleWeight = 0.001
                 optionsList.append(opt)
 
     optionsCount = len(optionsList)

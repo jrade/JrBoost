@@ -159,7 +159,7 @@
     <ClInclude Include="Assert.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="ClockCycleCount.h" />
-    <ClInclude Include="FastBernoulliDistribution.h" />
+    <ClInclude Include="BernoulliDistribution.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Profile.h" />
     <ClInclude Include="StaticStack.h" />

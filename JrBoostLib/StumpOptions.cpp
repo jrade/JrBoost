@@ -20,9 +20,10 @@ void StumpOptions::setTopVariableCount(size_t n)
     topVariableCount_ = n;
 }
 
-void StumpOptions::setIsStratified(bool b)
+void StumpOptions::setMinSampleWeight(double w)
 {
-    isStratified_ = b;
+    ASSERT(w >= 0.0);
+    minSampleWeight_ = w;
 }
 
 void StumpOptions::setMinNodeSize(size_t n)
@@ -34,6 +35,11 @@ void StumpOptions::setMinNodeSize(size_t n)
 void StumpOptions::setMinNodeWeight(double w)
 {
     minNodeWeight_ = w;
+}
+
+void StumpOptions::setIsStratified(bool b)
+{
+    isStratified_ = b;
 }
 
 double StumpOptions::cost() const
