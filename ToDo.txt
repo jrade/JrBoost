@@ -19,58 +19,52 @@ slow branch: 2.5%
 
 0:01:38
 
-=====================================================================
 
-clean repo
-	test with CERN boson data instead
+14 used samples * used variables
+4 all samples * used variables
 
-push to GitHub
+14 * us * uv + 4 * s * v
 
-=====================================================================
+(14 usr + 4
 
-square root loss??
-
-other way of genertaing sorted list of samples
-	create used sample list
-	then sort this list
-		test with pdq-sort (https://github.com/orlp/pdqsort)
-
-test isStratified = true and false
-
-weights and outdata as float instead of double?
-	profile
-
-do some micro-optimizations
-	sums in partcular
-	ideas
-		move things into local varables
-		access arrays through raw poiners
-			how to get pointer to buffer of Eigen::CRef object?
-	try __declspec(noalias)
-
-implement smarter hyperparameter optimization methods
-
-time without:
-	ASSERT
-	StumpTrainer::train data validation
-	PROFILE
-
-
-https://github.com/orlp/pdqsort
+(4 * us *v + 14 * s * v)
 
 =====================================================================
 
-Pandas free Python code
+C++:
+	array element data types
+		profile before and after
+			save profile logs
+		weights and outdata as float instead of double?
+		raw outdata and strata as uint8_t?
+			ArrayXu8
 
-what type to use for out data matrix in python and in C interface??
+	other way of generating sorted list of samples
+		create used sample list
+		then sort this list
+			test with pdq-sort (https://github.com/orlp/pdqsort)
 
-produce report
-	first a simple one
-    add a train and predict function similar to train and eval
+	do some micro-optimizations
+		sums in partcular
+		ideas
+			move things into local varables
+			access arrays through raw poiners
+				how to get pointer to buffer of Eigen::CRef object?
+		try __declspec(noalias)
 
-review data types:
-	uint8_t for raw out data / strata?
-	float for out data and weights?
+
+python:
+	clean repo
+		test with CERN boson data instead
+		push to GitHub
+
+	produce report
+		first a simple one
+		add a train and predict function similar to train and eval
+
+	Pandas free Python code
+
+	implement smarter hyperparameter optimization methods
 
 -----------------------------------------------------------------------
 
@@ -78,22 +72,26 @@ gradient boost
 	read xgb paper to check that my understanding is correct
 
 trees
-	pruning
 	allocate nodes with a memory pool
+	pruning
 
 data members of boosters should be const
 	can not iterate over const Eigen Ref object!!!!
 
 test PGO
 
+extended algorithms:
+	check if alpha boost idea works
+	first and second order boost
+	alpha boost
+	alpha-beta boost with beta loss
+
 ----------------------------------------------------------------------
 
 low prio:
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
-	allow more than two strata in StumpPredictor?
 	L2-penalty (lambda) or L1-penalty (alpha)
 	multi-group
-	follow up alpha boost idea
 
 ----------------------------------------------------------------------
 
@@ -105,8 +103,6 @@ PyBind11 issues:
 		test with the Miniconda that somes bundles with Visual Studio
 	
 Gerstmann issues:
-	add move constructors to enable code such as
-		xorshift rne((std::random_device()));
 	seed function would be useful
 	free functions (operator== and operator!=) should be inline
 		or linker will complain if you include the header in multiple translation units
@@ -131,8 +127,6 @@ Eigen issues:
 	const float* q3 = &u(0);
 
 	also reverse iterators
-
-
 
 NumPy issues:
 	inData[trainSamples, :] does not preserve Fortran (column major) order

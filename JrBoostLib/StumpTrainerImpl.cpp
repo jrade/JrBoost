@@ -53,13 +53,13 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     PROFILE::PUSH(PROFILE::VALIDATE);
     size_t ITEM_COUNT = sampleCount_;
 
-    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
-    ASSERT((outData > -numeric_limits<double>::infinity()).all());
-    ASSERT((outData < numeric_limits<double>::infinity()).all());
+    //ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
+    //ASSERT((outData > -numeric_limits<double>::infinity()).all());
+    //ASSERT((outData < numeric_limits<double>::infinity()).all());
 
-    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
-    ASSERT((weights >= 0.0).all());
-    ASSERT((weights < numeric_limits<double>::infinity()).all());
+    //ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
+    //ASSERT((weights >= 0.0).all());
+    //ASSERT((weights < numeric_limits<double>::infinity()).all());
 
  
     // initialize used sample mask .............................................
@@ -90,7 +90,7 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     double bestRightY = 0.0;
     bool splitFound = false;
 
-    // the followinf variables are initialized during the first iteration below
+    // the following variables are initialized during the first iteration below
     bool sumsInit = false;
     double sumW = 0.0;
     double sumWY = 0.0;

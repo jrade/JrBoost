@@ -21,12 +21,10 @@ private:
 };
 
 
-#ifdef NDEBUG
+
 
 #define ASSERT(A) if (!(A)) throw AssertionError(#A, __FILE__, __LINE__)
 
-#else
+//#define ASSERT(A) assert(A)
 
-#define ASSERT(A) assert(A)
-
-#endif
+//#define ASSERT(A)

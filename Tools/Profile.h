@@ -9,7 +9,7 @@ class PROFILE {
 public:
     enum CLOCK_ID {
         MAIN, T_RANK, BOOST_TRAIN,
-        VALIDATE, USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
+        STUMP_TRAIN, VALIDATE, USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
         LCP_P, OMP_BARRIER, MEMORY,
         CLOCK_COUNT
     };
@@ -40,6 +40,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "main",
     "  t-rank",
     "  train boost",
+    "  train stumps",
     "    validate",
     "    used samples",
     "    used variables",

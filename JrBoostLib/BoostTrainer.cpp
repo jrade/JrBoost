@@ -54,8 +54,8 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
-        Fy_ = F_ * outData_;
-        adjWeights_ = (-Fy_ + Fy_.minCoeff()).exp();
+        adjWeights_ = F_ * outData_;
+        adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
         unique_ptr<AbstractPredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt.base());
         basePred->predict(inData_, eta, F_);
 
@@ -64,13 +64,14 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
 
         if (opt.logStep() > 0 && i % opt.logStep() == 0) {
             cout << i << "(" << eta << ")" << endl;
-            cout << "Fy: " << Fy_.minCoeff() << " - " << Fy_.maxCoeff() << endl;
+            //cout << "Fy: " << Fy_.minCoeff() << " - " << Fy_.maxCoeff() << endl;
             cout << "w: " << adjWeights_.minCoeff() << " - " << adjWeights_.maxCoeff();
             cout << " -> " << 100.0 * (adjWeights_ != 0).cast<double>().sum() / sampleCount_ << "%" << endl;
         }
     }
 
-    return std::make_unique<LinearCombinationPredictor>(variableCount_, 2 * f0_, std::move(coeff), std::move(basePredictors));
+    return std::make_unique<LinearCombinationPredictor>(
+        variableCount_, 2 * f0_, std::move(coeff), std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -154,7 +155,7 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
                 unique_ptr<AbstractPredictor> pred = train(opt[j]);
                 predData = 0.0;
                 pred->predict(testInData, 1.0, predData);
-                scores(j) = linLoss(testOutData, predData);
+                scores(j) = std::get<2>(linLoss(testOutData, predData));
             }
             catch (const std::exception&) {
                 #pragma omp critical

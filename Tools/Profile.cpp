@@ -64,12 +64,14 @@ void PROFILE::PRINT()
         uint64_t adjustedClockCycleCount = clockCycleCount - adjustment * callCount;
 
         cout << std::setw(22) << std::left << name << std::right;
-        cout << std::setw(8) << std::fixed << std::setprecision(0) << 1e-6 * adjustedClockCycleCount;
-        cout << "  ";
-        cout << std::setw(4) << std::setprecision(1) << (100.0 * adjustedClockCycleCount) / totalAdjustedClockCycleCount << "%";
-        if (itemCount != 0) {
+        if (callCount != 0) {
+            cout << std::setw(8) << std::fixed << std::setprecision(0) << 1e-6 * adjustedClockCycleCount;
             cout << "  ";
-            cout << std::setw(5) << static_cast<double>(clockCycleCount) / itemCount;
+            cout << std::setw(4) << std::setprecision(1) << (100.0 * adjustedClockCycleCount) / totalAdjustedClockCycleCount << "%";
+            if (itemCount != 0) {
+                cout << "  ";
+                cout << std::setw(5) << static_cast<double>(clockCycleCount) / itemCount;
+            }
         }
         cout << endl;
     }

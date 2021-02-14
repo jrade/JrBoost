@@ -31,6 +31,5 @@ private:
     const double f0_;
 
     inline static thread_local ArrayXd F_;
-    inline static thread_local ArrayXd Fy_;
     inline static thread_local ArrayXd adjWeights_;
 };
