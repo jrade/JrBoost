@@ -1,61 +1,49 @@
 
+main                      4072   3.1%
+  t-rank                  4889   3.7%    4.4
+  train boost            15196  11.5%   19.5
+  train stumps
+    validate                57   0.0%    0.6
+    used samples          7560   5.7%    9.7
+    used variables        4036   3.0%   12.6
+    sums                   695   0.5%    9.4
+    sorted used s.       64107  48.4%    3.4
+    best split           28188  21.3%   13.3
+  predict                 1423   1.1%
+  OMP barrier              315   0.2%
+  dyn. memory             1910   1.4%  399.5
 
-main                      4710   2.8%
-  t-rank                  5622   3.4%    4.8
-  train boost            18821  11.3%   22.5
-    validate              7413   4.4%    9.0
-    used samples          9579   5.7%   11.5
-    used variables        4716   2.8%   14.3
-    sums                   777   0.5%    9.7
-    sorted used s.       79237  47.4%    3.8
-    best split           31760  19.0%   14.0
-  predict                 1870   1.1%
-  OMP barrier              448   0.3%
-  dyn. memory             2078   1.2%  434.9
+zero calibration: 62
+profiling overhead: 18.9%
+slow branch: 2.6%
 
-zero calibration: 68
-profiling overhead: 16.8%
-slow branch: 2.5%
+0:01:19
 
-0:01:38
+---------------------------------------------------------------------
 
+using size_t and double everywhere
+	except:
+		arrays of sampleIndices use smallest type
+		inData: float
 
-14 used samples * used variables
-4 all samples * used variables
-
-14 * us * uv + 4 * s * v
-
-(14 usr + 4
-
-(4 * us *v + 14 * s * v)
+	profile the first decision again
 
 =====================================================================
 
 C++:
-	array element data types
-		profile before and after
-			save profile logs
-		weights and outdata as float instead of double?
-		raw outdata and strata as uint8_t?
-			ArrayXu8
-
-	other way of generating sorted list of samples
-		create used sample list
-		then sort this list
-			test with pdq-sort (https://github.com/orlp/pdqsort)
-
-	do some micro-optimizations
+	do some micro-optimizations? is it even possible?
 		sums in partcular
 		ideas
 			move things into local varables
 			access arrays through raw poiners
 				how to get pointer to buffer of Eigen::CRef object?
-		try __declspec(noalias)
 
+	review zero calibration of profiling again
+		maybe manual calibration is better?
 
 python:
 	clean repo
-		test with CERN boson data instead
+		find suitable dataset on Kaggle?
 		push to GitHub
 
 	produce report
@@ -85,6 +73,19 @@ extended algorithms:
 	first and second order boost
 	alpha boost
 	alpha-beta boost with beta loss
+
+review use of integer and foating point data types
+
+stump train strategy:
+	current method has time complexity (in clock cycles)
+		3.4 * sampleCount * usedVariableCount + 13.3 * usedSampleCount * usedVariableCount
+	there is an alternative method with time complexity
+		a * usedSampleCount * log(usedSampleCount) * usedVariableCount + 13.3 * usedSampleCount * usedVariableCunt
+	create a used sample list and sort it each time
+	this might be faster when usedSampleCount is small i.e. when we do weight filtering and most weights are small
+	use pdq-sort (https://github.com/orlp/pdqsort) when sorting
+
+histogram based methods
 
 ----------------------------------------------------------------------
 

@@ -11,10 +11,12 @@ public:
         vector<double>&& c1,
         vector<unique_ptr<AbstractPredictor>>&& basePredictors
     );
+
     virtual ~LinearCombinationPredictor() = default;
 
-    virtual ArrayXd predict(CRefXXf inData) const;
-    virtual void predict(CRefXXf inData, double c, RefXd outData) const;
+
+protected:
+    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
 
 private:
     double c0_;

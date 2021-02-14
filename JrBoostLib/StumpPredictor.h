@@ -6,8 +6,9 @@
 class StumpPredictor : public AbstractPredictor {
 public:
     virtual ~StumpPredictor() = default;
-    virtual ArrayXd predict(CRefXXf inData) const;
-    virtual void predict(CRefXXf inData, double c, RefXd outData) const;
+
+protected:
+    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
 
 private:
     template<typename SampleIndex> friend class StumpTrainerImpl;

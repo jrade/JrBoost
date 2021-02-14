@@ -16,31 +16,14 @@ LinearCombinationPredictor::LinearCombinationPredictor(
     ASSERT(c1_.size() == basePredictors_.size());
 }
 
-ArrayXd LinearCombinationPredictor::predict(CRefXXf inData) const
+void LinearCombinationPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
 {
     PROFILE::PUSH(PROFILE::LCP_P);
 
-    validateInData_(inData);
-    size_t sampleCount = inData.rows();
-    ArrayXd outData{ Eigen::ArrayXd::Constant(sampleCount, c0_) };
-    size_t n = basePredictors_.size();
-    for (size_t k = 0; k < n; ++k)
-        outData += c1_[k] * basePredictors_[k]->predict(inData);
-
-    PROFILE::POP();
-
-    return outData;
-}
-
-void LinearCombinationPredictor::predict(CRefXXf inData, double c, RefXd outData) const
-{
-    PROFILE::PUSH(PROFILE::LCP_P);
-
-    validateInData_(inData);
     size_t n = basePredictors_.size();
     outData += c * c0_;
     for (size_t k = 0; k < n; ++k)
-        basePredictors_[k]->predict(inData, c * c1_[k], outData);
+        basePredictors_[k]->predictImpl_(inData, c * c1_[k], outData);
 
     PROFILE::POP();
 }

@@ -57,7 +57,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
         adjWeights_ = F_ * outData_;
         adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
         unique_ptr<AbstractPredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt.base());
-        basePred->predict(inData_, eta, F_);
+        basePred->predictImpl_(inData_, eta, F_);
 
         basePredictors[i] = std::move(basePred);
         coeff[i] = 2 * eta;
@@ -154,7 +154,7 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
                 size_t j = optIndicesSortedByCost[i];
                 unique_ptr<AbstractPredictor> pred = train(opt[j]);
                 predData = 0.0;
-                pred->predict(testInData, 1.0, predData);
+                pred->predictImpl_(testInData, 1.0, predData);
                 scores(j) = std::get<2>(linLoss(testOutData, predData));
             }
             catch (const std::exception&) {

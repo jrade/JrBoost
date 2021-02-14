@@ -14,16 +14,9 @@ public:
 
     virtual ~TrivialPredictor() = default;
 
-    virtual ArrayXd predict(CRefXXf inData) const
+protected:
+    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const
     {
-        validateInData_(inData);
-        const size_t sampleCount = inData.rows();
-        return ArrayXd::Constant(sampleCount, y_);
-    }
-
-    virtual void predict(CRefXXf inData, double c, RefXd outData) const
-    {
-        validateInData_(inData);
         outData += c * y_;
     }
 

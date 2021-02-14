@@ -150,8 +150,8 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
 
             const size_t i = nextI;
             nextI = *++p;
-            const double w = weights[i];
-            const double y = outData[i];
+            const double w = weights(i);
+            const double y = outData(i);
             leftSumW += w;
             rightSumW -= w;
             leftSumWY += w * y;
@@ -376,14 +376,13 @@ pair<double, double> StumpTrainerImpl<SampleIndex>::initSums_(const CRefXd& outD
     double sumW = 0.0;
     double sumWY = 0.0;
     for (size_t i : sortedUsedSamples_) {
-        double w = weights[i];
-        double y = outData[i];
+        double w = weights(i);
+        double y = outData(i);
         sumW += w;
         sumWY += w * y;
     }
     return std::make_pair(sumW, sumWY);
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 
