@@ -50,8 +50,8 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
 {
     // validate data ...........................................................
 
-    PROFILE::PUSH(PROFILE::VALIDATE);
-    size_t ITEM_COUNT = sampleCount_;
+    //PROFILE::PUSH(PROFILE::VALIDATE);
+    //size_t ITEM_COUNT = sampleCount_;
 
     //ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
     //ASSERT((outData > -numeric_limits<double>::infinity()).all());
@@ -63,6 +63,9 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
 
  
     // initialize used sample mask .............................................
+
+    PROFILE::PUSH(PROFILE::ZERO);
+    size_t ITEM_COUNT = 1;
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_SAMPLES);
     ITEM_COUNT = sampleCount_;

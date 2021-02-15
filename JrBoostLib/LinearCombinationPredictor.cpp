@@ -25,5 +25,6 @@ void LinearCombinationPredictor::predictImpl_(CRefXXf inData, double c, RefXd ou
     for (size_t k = 0; k < n; ++k)
         basePredictors_[k]->predictImpl_(inData, c * c1_[k], outData);
 
-    PROFILE::POP();
+    size_t sampleCount = static_cast<size_t>(inData.rows());
+    PROFILE::POP(sampleCount * n);
 }
