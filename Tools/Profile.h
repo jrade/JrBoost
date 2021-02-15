@@ -3,10 +3,11 @@
 #include "Clock.h"
 #include "StaticStack.h"
 
-#define DO_PROFILE
 
 class PROFILE {
 public:
+    inline static bool doProfile = false;
+
     enum CLOCK_ID {
         MAIN, T_RANK, BOOST_TRAIN,
         STUMP_TRAIN, /*VALIDATE,*/ USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,

@@ -5,7 +5,7 @@
     <ProjectGuid>a9878df3-e994-4b8f-87de-d958d608316e</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>iris.py</StartupFile>
+    <StartupFile>otto.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

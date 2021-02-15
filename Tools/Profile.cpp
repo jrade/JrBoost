@@ -3,10 +3,9 @@
 #include "ClockCycleCount.h"
 
 
-#ifdef DO_PROFILE
-
 void PROFILE::PUSH(CLOCK_ID id)
 {
+    if (!doProfile) return;
     if (omp_get_thread_num() != 0) return;
 
     uint64_t t = clockCycleCount();
@@ -22,6 +21,7 @@ void PROFILE::PUSH(CLOCK_ID id)
 
 void PROFILE::POP(size_t itemCount)
 {
+    if (!doProfile) return;
     if (omp_get_thread_num() != 0) return;
 
     uint64_t t = clockCycleCount();
@@ -39,6 +39,7 @@ void PROFILE::POP(size_t itemCount)
 
 void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 {
+    if (!doProfile) return;
     if (omp_get_thread_num() != 0) return;
 
     uint64_t t = clockCycleCount();
@@ -53,6 +54,8 @@ void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 
 void PROFILE::PRINT()
 {
+    if (!doProfile) return;
+
     const Clock& zeroClock = clocks_[ZERO];
     double adjustment = static_cast<double>(zeroClock.clockCycleCount()) / zeroClock.callCount();
 
@@ -102,15 +105,6 @@ void PROFILE::PRINT()
     SLOW_BRANCH_COUNT = 0;
     SPLIT_ITERATION_COUNT = 0;
 }
-
-#else
-
-void PROFILE::PUSH(CLOCK_ID) {}
-void PROFILE::POP(size_t) {}
-void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id) {}
-void PROFILE::PRINT() {}
-
-#endif
 
 //..............................................................................
 

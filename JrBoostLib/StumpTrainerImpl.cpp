@@ -6,7 +6,7 @@
 
 
 template<typename SampleIndex>
-StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, RefXs strata) :
+StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
     inData_{ inData },
     sampleCount_{ static_cast<size_t>(inData.rows()) },
     variableCount_{ static_cast<size_t>(inData.cols()) },
@@ -97,9 +97,9 @@ unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
     bool sumsInit = false;
     double sumW = 0.0;
     double sumWY = 0.0;
+    double bestScore = 0.0;
     double tol = 0.0;   // estimate of the rounding off error we can expect in rightSumW towards the end of the loop
     double minNodeWeight = 0.0;
-    double bestScore = 0.0;
 
     for (size_t j : usedVariables_) {
 
@@ -248,7 +248,7 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& op
             if (k[1] == 0 && n[1] > 0) k[1] = 1;
             usedSampleCount = k[0] + k[1];
 
-            const size_t* s = &strata_(0);
+            const size_t* s = &reinterpret_cast<const RefXs&>(strata_)(0);  // Eigen bug workaround
             for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
                 size_t stratum = *s;
                 ++s;

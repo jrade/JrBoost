@@ -26,7 +26,7 @@ template<typename SampleIndex>
 class StumpTrainerImpl : public StumpTrainerImplBase 
 {
 public:
-    StumpTrainerImpl(CRefXXf inData, RefXs strata);
+    StumpTrainerImpl(CRefXXf inData, CRefXs strata);
     virtual ~StumpTrainerImpl() = default;
 
     virtual unique_ptr<AbstractPredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
@@ -51,7 +51,7 @@ private:
     const size_t variableCount_;
     const vector<vector<SampleIndex>> sortedSamples_;
 
-    const RefXs strata_;
+    const CRefXs strata_;
     const size_t stratum0Count_;
     const size_t stratum1Count_;
 

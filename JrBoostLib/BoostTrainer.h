@@ -7,7 +7,7 @@ class StumpTrainer;
 
 class BoostTrainer {
 public:
-    BoostTrainer(CRefXXf inData, RefXs outData);
+    BoostTrainer(ArrayXXf inData, ArrayXs outData);
     ~BoostTrainer() = default;
 
     unique_ptr<AbstractPredictor> train(const BoostOptions& opt) const;
@@ -22,10 +22,10 @@ private:
     unique_ptr<AbstractPredictor> trainLogit_(const BoostOptions& opt) const;
 
 private:
-    const CRefXXf inData_;
+    const ArrayXXf inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
-    RefXs rawOutData_;                    // pesky const issue - can not iterate over const array
+    const ArrayXs rawOutData_;
     const ArrayXd outData_;
     const shared_ptr<StumpTrainer> baseTrainer_;
     const double f0_;

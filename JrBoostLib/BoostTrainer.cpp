@@ -6,15 +6,15 @@
 #include "../Tools/Util.h"
 
 
-BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
-    inData_{ inData },
-    sampleCount_{ static_cast<size_t>(inData.rows()) },
-    variableCount_{ static_cast<size_t>(inData.cols()) },
-    rawOutData_{ outData },
+BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :
+    inData_{ std::move(inData) },
+    sampleCount_{ static_cast<size_t>(inData_.rows()) },
+    variableCount_{ static_cast<size_t>(inData_.cols()) },
+    rawOutData_{ std::move(outData) },
     outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 },
     f0_{ (
-        log(static_cast<double>(outData.sum()))
-            - log(static_cast<double>((1 - outData).sum()))
+        log(static_cast<double>(rawOutData_.sum()))
+            - log(static_cast<double>((1 - rawOutData_).sum()))
         ) / 2.0 },
     baseTrainer_{ std::make_shared<StumpTrainer>(inData_, rawOutData_) }
 {
@@ -22,9 +22,9 @@ BoostTrainer::BoostTrainer(CRefXXf inData, RefXs outData) :
     ASSERT(inData_.cols() != 0);
     ASSERT(outData_.rows() == inData_.rows());
 
-    ASSERT((inData > -numeric_limits<float>::infinity()).all());
-    ASSERT((inData < numeric_limits<float>::infinity()).all());
-    ASSERT((outData < 2).all());
+    ASSERT((inData_ > -numeric_limits<float>::infinity()).all());
+    ASSERT((inData_ < numeric_limits<float>::infinity()).all());
+    ASSERT((rawOutData_ < 2).all());
 }
 
 unique_ptr<AbstractPredictor> BoostTrainer::train(const BoostOptions& opt) const

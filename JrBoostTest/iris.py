@@ -1,6 +1,3 @@
-import os
-os.environ['PATH'] += ';C:/Users/Rade/Anaconda3/Library/bin'
-
 import numpy as np
 import pandas as pd
 import util

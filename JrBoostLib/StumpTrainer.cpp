@@ -3,12 +3,12 @@
 #include "StumpTrainerImpl.h"
 #include "AbstractPredictor.h"
 
-StumpTrainer::StumpTrainer(CRefXXf inData, RefXs strata) :
+StumpTrainer::StumpTrainer(CRefXXf inData, CRefXs strata) :
     impl_(createImpl_(inData, strata))
 {
 }
 
-shared_ptr<StumpTrainerImplBase> StumpTrainer::createImpl_(CRefXXf inData, RefXs strata)
+shared_ptr<StumpTrainerImplBase> StumpTrainer::createImpl_(CRefXXf inData, CRefXs strata)
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     if (sampleCount < 0x100)

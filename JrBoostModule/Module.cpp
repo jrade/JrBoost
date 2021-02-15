@@ -15,14 +15,10 @@ PYBIND11_MODULE(jrboost, mod)
 
     mod.def("linLoss", &linLoss);
 
-    mod.def(
-        "tStatisticRank",
-        &tStatisticRank,
-        py::arg().noconvert(),
-        py::arg().noconvert(),
-        py::arg().noconvert()
-    );
-    mod.def("ompSetNumThreads", &omp_set_num_threads);
+    mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(), py::arg(), py::arg());
+
+    mod.def("setNumThreads", &omp_set_num_threads);
+    mod.def("setProfile", [](bool b) { PROFILE::doProfile = b; });
 
 
     // PROFILE submodule
@@ -43,17 +39,13 @@ PYBIND11_MODULE(jrboost, mod)
 
     py::class_<AbstractPredictor>{ mod, "Predictor" }
         .def("variableCount", &AbstractPredictor::variableCount)
-        .def(
-            "predict", 
-            static_cast<ArrayXd (AbstractPredictor::*)(CRefXXf inData) const>(&AbstractPredictor::predict),
-            py::arg().noconvert()
-        );
+        .def("predict", &AbstractPredictor::predict);
 
 
     // Stump classes
 
     py::class_<StumpOptions>{ mod, "StumpOptions" }
-    .def(py::init<>())
+        .def(py::init<>())
         .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
         .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
         .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
@@ -61,10 +53,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
         .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
         .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified);
-
-    py::class_<StumpTrainer>{ mod, "StumpTrainer" }
-        .def(py::init<RefXXf, RefXs>(), py::arg().noconvert(), py::arg().noconvert())
-        .def("train", &StumpTrainer::train);
 
 
     // Boost classes
@@ -86,7 +74,7 @@ PYBIND11_MODULE(jrboost, mod)
         .value("Logit", BoostOptions::Method::Logit);
 
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
-        .def(py::init<RefXXf, RefXs>(), py::arg().noconvert(), py::arg())
+        .def(py::init<ArrayXXf, ArrayXs>())
         .def("train", &BoostTrainer::train)
         .def("trainAndEval", &BoostTrainer::trainAndEval);
 }

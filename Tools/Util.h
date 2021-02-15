@@ -48,13 +48,26 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
 inline ArrayXs tStatisticRank(
     Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
     CRefXs outData,
-    Eigen::Ref<const Eigen::Array<int32_t, Eigen::Dynamic, 1>> samples
+    optional<CRefXs> optSamples
 )
 {
     PROFILE::PUSH(PROFILE::T_RANK);
 
-    size_t variableCount = inData.cols();
-    size_t sampleCount = samples.rows();
+    size_t variableCount = inData.cols();    
+    ASSERT(outData.rows() == inData.rows());
+
+    ArrayXs samples;
+    size_t sampleCount;
+    if (optSamples) {
+        samples = *optSamples;
+        sampleCount = samples.size();
+    }
+    else {
+        sampleCount = inData.rows();
+        samples.resize(sampleCount);
+        for (size_t i = 0; i < sampleCount; ++i)
+            samples(i) = i;
+    }
 
     size_t n[2] = { 0, 0 };
     ArrayXf mean[2];

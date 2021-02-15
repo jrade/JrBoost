@@ -7,7 +7,7 @@ class StumpTrainerImplBase;
 class StumpTrainer
 {
 public:
-    StumpTrainer(CRefXXf inData, RefXs strata);
+    StumpTrainer(CRefXXf inData, CRefXs strata);
     ~StumpTrainer() = default;
 
     unique_ptr<AbstractPredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
@@ -17,7 +17,7 @@ public:
     StumpTrainer& operator=(const StumpTrainer&) = delete;
 
 private:
-    static shared_ptr<StumpTrainerImplBase> createImpl_(CRefXXf inData, RefXs strata);
+    static shared_ptr<StumpTrainerImplBase> createImpl_(CRefXXf inData, CRefXs strata);
 
     const shared_ptr<const StumpTrainerImplBase> impl_;
 };

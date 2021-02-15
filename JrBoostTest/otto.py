@@ -1,13 +1,9 @@
-import os
-os.environ['PATH'] += ';C:/Users/Rade/Anaconda3/Library/bin'
-
 import random, time
 import numpy as np
 import pandas as pd
 import util
 import jrboost
 from jrboost import PROFILE
-
 
 
 def loadTrainData(frac = None):
@@ -23,10 +19,12 @@ def loadTrainData(frac = None):
     return trainInDataFrame, trainOutDataFrame
 
 
-def loadTestData():
+def loadTestData(frac = None):
     testDataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/test.csv'
-    testInDataFrame = pd.read_csv(testDataPath, sep = ',', index_col = 0)
-    return testInDataFrame
+    testDataFrame = pd.read_csv(testDataPath, sep = ',', index_col = 0)
+    if frac is not None:
+        testDataFrame = testDataFrame.sample(frac = frac)
+    return testDataFrame
 
 
 def formatOptions(opt):
@@ -86,13 +84,21 @@ def trainAndPredict(trainInData, trainOutData, testInData, opts):
 
 #---------------------------------------------------------
 
+tc = 4
+jrboost.setNumThreads(tc)
+jrboost.setProfile(True)
+
 trainInDataFrame, trainOutDataFrame = loadTrainData(0.01)
 trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
 labels = trainOutDataFrame.columns
 
-testInDataFrame = loadTestData()
+testInDataFrame = loadTestData(0.01)
 testInData = testInDataFrame.to_numpy(dtype = np.float32)
 testOutDataFrame = pd.DataFrame(index = testInDataFrame.index, columns = labels, dtype = np.uint64)
+
+print(f'{tc} threads')
+print(f'{trainInData.shape[0]} train samples, {testInData.shape[0]} test samples')
+print()
 
 while True:
 
