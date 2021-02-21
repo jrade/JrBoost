@@ -1,6 +1,7 @@
 import random, warnings
 import numpy as np
 import pandas as pd
+import jrboost
 
 
 def oneHotEncode(dataSeries):
@@ -82,3 +83,59 @@ def formatTime(t):
     t -= 60 * m
     s = int(t)
     return f'{h}:{m:02}:{s:02}'
+
+#-----------------------------------------------------------------------------------------------------------
+
+def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, rankFun = None):
+
+    maxVariableCount = max(opt.base.topVariableCount for opt in optionsList)
+    if rankFun is None:
+        trainInData = inData[trainSamples, :maxVariableCount]
+        testInData = inData[testSamples, :maxVariableCount]
+    else:
+        rankedVariables = rankFun(inData, outData, trainSamples)[:maxVariableCount]
+        trainInData = inData[trainSamples[:, np.newaxis], rankedVariables]
+        testInData = inData[testSamples[:, np.newaxis], rankedVariables]
+
+    trainOutData = outData[trainSamples]
+    testOutData = outData[testSamples]
+
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+    scores =  trainer.trainAndEval(testInData, testOutData, optionsList);
+    return scores
+
+
+#does not take average of several opts, fix that
+def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, rankFun = None):
+
+    maxVariableCount = opt.base.topVariableCount
+    if rankFun is None:
+        trainInData = inData[trainSamples, :maxVariableCount]
+        testInData = inData[testSamples, :maxVariableCount]
+    else:
+        rankedVariables = rankFun(inData, outData, trainSamples)[:maxVariableCount]
+        trainInData = inData[trainSamples[:, np.newaxis], rankedVariables]
+        testInData = inData[testSamples[:, np.newaxis], rankedVariables]
+
+    trainOutData = outData[trainSamples]
+    testOutData = outData[testSamples]
+
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+    predictor = trainer.train(opt);
+    predOutData = predictor.predict(testInData);
+    return predOutData
+
+# takes average of several opts
+# no support for rankFun - could be fixed
+def trainAndPredictExternal(trainInData, trainOutData, testInData, opts):
+
+    testSampleCount = testInData.shape[0]
+    testOutData = np.zeros((testSampleCount,))
+
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+    for opt in opts:
+        predictor = trainer.train(opt)
+        testOutData += predictor.predict(testInData)
+    testOutData /= len(opts)
+    return testOutData
+
