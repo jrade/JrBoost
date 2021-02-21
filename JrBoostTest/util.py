@@ -1,4 +1,4 @@
-import random, warnings
+import os, random, warnings
 import numpy as np
 import pandas as pd
 import jrboost
@@ -108,7 +108,13 @@ def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList
 #does not take average of several opts, fix that
 def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, rankFun = None):
 
-    maxVariableCount = opt.base.topVariableCount
+    opt = opt[0]
+
+    try:
+        maxVariableCount = opt.base.topVariableCount
+    except:
+        maxVariableCount = max(opt1.base.topVariableCount for opt1 in opt)
+
     if rankFun is None:
         trainInData = inData[trainSamples, :maxVariableCount]
         testInData = inData[testSamples, :maxVariableCount]
@@ -121,8 +127,18 @@ def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, ran
     testOutData = outData[testSamples]
 
     trainer = jrboost.BoostTrainer(trainInData, trainOutData)
-    predictor = trainer.train(opt);
-    predOutData = predictor.predict(testInData);
+
+    try:
+        predictor = trainer.train(opt);
+        predOutData = predictor.predict(testInData);
+    except Exception:
+        predOutDataList = []
+        for opt1 in opt:
+            predictor = trainer.train(opt1);
+            predOutData = predictor.predict(testInData);
+            predOutDataList.append(predOutData)
+        predOutData = np.median(np.array(predOutDataList), axis = 0)
+
     return predOutData
 
 # takes average of several opts
@@ -138,4 +154,17 @@ def trainAndPredictExternal(trainInData, trainOutData, testInData, opts):
         testOutData += predictor.predict(testInData)
     testOutData /= len(opts)
     return testOutData
+
+
+
+def findPath(path):
+
+    i = 0
+    while True:
+        if os.path.exists(path):
+            return path
+        if (i >= 10):
+            raise RunTimeError(f'Unable to find {path}')
+        path = '../' + path
+        i += 1
 

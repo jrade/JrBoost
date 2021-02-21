@@ -19,11 +19,13 @@ def main():
     usedOptCount = 10
 
     trainInDataFrame, trainOutDataFrame = loadTrainData(0.01)
+    trainSamples = trainInDataFrame.index
+    variables = trainInDataFrame.columns
     labels = trainOutDataFrame.columns
     testInDataFrame = loadTestData(0.01)
     testSamples = testInDataFrame.index
-    print(f'{tc} threads')
-    print(f'{trainInData.shape[0]} train samples, {testInData.shape[0]} test samples')
+    assert (testInDataFrame.columns == variables).all()
+    print(f'{len(trainSamples)} train samples, {len(testSamples)} test samples')
     print()
 
     trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
@@ -33,12 +35,11 @@ def main():
         print(f'-------------------- {i} --------------------\n')
         t = -time.time()
         PROFILE.PUSH(PROFILE.MAIN)
-        predOutDataFrame = pd.DataFrame(index = testSamples columns = labels, dtype = np.uint64)
+        predOutDataFrame = pd.DataFrame(index = testSamples, columns = labels, dtype = np.uint64)
 
         for label in labels:
             print(label)
             trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint64);
-
             opts = optimizeHyperParams(trainInData, trainOutData, foldCount)[:usedOptCount]
             predOutData = util.trainAndPredictExternal(trainInData, trainOutData, testInData, opts)
             predOutData = 1 / (1 + np.exp(-predOutData))
@@ -56,7 +57,8 @@ def main():
 #-----------------------------------------------------------------------------------------------------------------------
 
 def loadTrainData(frac = None):
-    trainDataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/train.csv'
+
+    trainDataPath = util.findPath('Data/Otto/train.csv')
     trainDataFrame = pd.read_csv(trainDataPath, sep = ',', index_col = 0)
     if frac is not None:
         trainDataFrame = trainDataFrame.sample(frac = frac)
@@ -69,10 +71,12 @@ def loadTrainData(frac = None):
 
 
 def loadTestData(frac = None):
-    testDataPath = r'C:/Users/Rade/Documents/Data Analysis/Data/Otto/test.csv'
+
+    testDataPath = util.findPath('Data/Otto/test.csv')
     testDataFrame = pd.read_csv(testDataPath, sep = ',', index_col = 0)
     if frac is not None:
         testDataFrame = testDataFrame.sample(frac = frac)
+
     return testDataFrame
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -110,4 +114,3 @@ def optimizeHyperParams(inData, outData, foldCount):
 #-----------------------------------------------------------------------------------------------------------------------
 
 main()
-
