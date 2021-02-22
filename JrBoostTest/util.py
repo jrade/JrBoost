@@ -42,51 +42,41 @@ def stratifiedRandomFolds(outData, foldCount, samples = None):
     
     return folds
 
-
-def linLoss(outData, predData):     # predData should conain logloss ratios
-
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=RuntimeWarning) 
-
-        return np.sum(
-            outData[:, np.newaxis] / (1.0 + np.exp(predData))
-            + (1 - outData[:, np.newaxis]) / (1.0 + np.exp(-predData)),
-            axis = 0
-        )
-
-
-def logLoss(outData, predData):     # predData should conain logloss ratios
+def linLoss(outData, predData):     # predData should contain logloss ratios
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
-        logOneProb = (
-            (predData >= 0) * (-np.log1p(np.exp(-predData)))
-            + (predData < 0) * (predData - np.log1p(np.exp(predData)))
-        )
+        falseNeg = np.sum(outData / (1.0 + np.exp(predData)))
+        falsePos = np.sum((1 - outData) / (1.0 + np.exp(-predData)))
+        loss = (falsePos, falseNeg, falsePos + falseNeg)
 
-        logZeroProb = (
-            (predData >= 0) * (-predData - np.log1p(np.exp(-predData)))
-            + (predData < 0) * (-np.log1p(np.exp(predData)))
-        )
+        return loss
 
-        return -np.sum(
-            outData[:, np.newaxis] * logOneProb
-            + (1 - outData[:, np.newaxis]) * logZeroProb,
-            axis = 0
-        )
 
-def formatTime(t):
-    h = int(t / 3600)
-    t -= 3600 * h;
-    m = int(t / 60)
-    t -= 60 * m
-    s = int(t)
-    return f'{h}:{m:02}:{s:02}'
+#def logLoss(outData, predData):     # predData should conain logloss ratios
 
-#-----------------------------------------------------------------------------------------------------------
+#    with warnings.catch_warnings():
+#        warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
-def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, rankFun = None):
+#        logOneProb = (
+#            (predData >= 0) * (-np.log1p(np.exp(-predData)))
+#            + (predData < 0) * (predData - np.log1p(np.exp(predData)))
+#        )
+
+#        logZeroProb = (
+#            (predData >= 0) * (-predData - np.log1p(np.exp(-predData)))
+#            + (predData < 0) * (-np.log1p(np.exp(predData)))
+#        )
+
+#        return -np.sum(
+#            outData[:, np.newaxis] * logOneProb
+#            + (1 - outData[:, np.newaxis]) * logZeroProb,
+#            axis = 0
+#        )
+
+
+def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, lossFun, rankFun = None):
 
     maxVariableCount = max(opt.base.topVariableCount for opt in optionsList)
     if rankFun is None:
@@ -101,7 +91,7 @@ def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList
     testOutData = outData[testSamples]
 
     trainer = jrboost.BoostTrainer(trainInData, trainOutData)
-    scores =  trainer.trainAndEval(testInData, testOutData, optionsList);
+    scores =  trainer.trainAndEval(testInData, testOutData, optionsList, lossFun);
     return scores
 
 
@@ -156,7 +146,6 @@ def trainAndPredictExternal(trainInData, trainOutData, testInData, opts):
     return testOutData
 
 
-
 def findPath(path):
 
     i = 0
@@ -168,3 +157,11 @@ def findPath(path):
         path = '../' + path
         i += 1
 
+
+def formatTime(t):
+    h = int(t / 3600)
+    t -= 3600 * h;
+    m = int(t / 60)
+    t -= 60 * m
+    s = int(t)
+    return f'{h}:{m:02}:{s:02}'

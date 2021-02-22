@@ -4,6 +4,7 @@
 #include "LinearCombinationPredictor.h"
 #include "StumpTrainer.h"
 #include "../Tools/Util.h"
+#include "../Tools/Loss.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :
@@ -120,7 +121,12 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const vector<BoostOptions>& opt) const
+ArrayXd BoostTrainer::trainAndEval(
+    CRefXXf testInData,
+    CRefXs testOutData,
+    const vector<BoostOptions>& opt,
+    function<tuple<double, double, double>(CRefXs, CRefXd)> lossFun
+) const
 {
     ASSERT(testInData.rows() == testOutData.rows());
     size_t testSampleCount = static_cast<size_t>(testInData.rows());
@@ -155,7 +161,7 @@ ArrayXd BoostTrainer::trainAndEval(CRefXXf testInData, CRefXs testOutData, const
                 unique_ptr<AbstractPredictor> pred = train(opt[j]);
                 predData = 0.0;
                 pred->predictImpl_(testInData, 1.0, predData);
-                scores(j) = std::get<2>(linLoss(testOutData, predData));
+                scores(j) = std::get<2>(lossFun(testOutData, predData));
             }
             catch (const std::exception&) {
                 #pragma omp critical

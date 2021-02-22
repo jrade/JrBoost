@@ -2,9 +2,9 @@
 #include "../Tools/Util.h"
 #include "../JrBoostLib/AbstractPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
-#include "../JrBoostLib/StumpTrainer.h"
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostTrainer.h"
+#include "../Tools/Loss.h"
 
 namespace py = pybind11;
 
@@ -13,23 +13,32 @@ PYBIND11_MODULE(jrboost, mod)
 {
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
-    mod.def("linLoss", &linLoss);
-
     mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(), py::arg(), py::arg());
-
     mod.def("setNumThreads", &omp_set_num_threads);
     mod.def("setProfile", [](bool b) { PROFILE::doProfile = b; });
 
 
-    // PROFILE submodule
+    // loss functions
 
-    py::module clockMod = mod.def_submodule("PROFILE");
+    mod.def("linLoss", &linLoss).attr("name") = "lin-loss";
+    mod.def("logLoss", &logLoss).attr("name") = "log-loss";
+    mod.def("sqrtLoss", &sqrtLoss).attr("name") = "sqrt-loss";
 
-    py::enum_<PROFILE::CLOCK_ID>(clockMod, "CLOCK_ID")
+    py::class_<AlphaLoss>{ mod, "AlphaLoss" }
+        .def(py::init<double>())
+        .def("__call__", &AlphaLoss::operator())
+        .def_property_readonly("name", &AlphaLoss::name);
+
+
+    // PROFILE
+
+    py::module profileMod = mod.def_submodule("PROFILE");
+
+    py::enum_<PROFILE::CLOCK_ID>(profileMod, "CLOCK_ID")
         .value("MAIN", PROFILE::MAIN)
         .export_values();
 
-    clockMod
+    profileMod
         .def("PUSH", &PROFILE::PUSH)
         .def("POP", &PROFILE::POP, py::arg() = 0)
         .def("PRINT", &PROFILE::PRINT);
@@ -76,5 +85,8 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
         .def(py::init<ArrayXXf, ArrayXs>())
         .def("train", &BoostTrainer::train)
-        .def("trainAndEval", &BoostTrainer::trainAndEval);
+        .def("trainAndEval", &BoostTrainer::trainAndEval, py::call_guard<py::gil_scoped_release>());
+        // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.
+        // These callbacks may be to Python functions that need to acquire the GIL.
+        // If we don't relasee the GIL here it will be held by the master thread and the other threads will be blocked
 }

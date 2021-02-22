@@ -11,7 +11,12 @@ public:
     ~BoostTrainer() = default;
 
     unique_ptr<AbstractPredictor> train(const BoostOptions& opt) const;
-    ArrayXd trainAndEval(CRefXXf testInData, CRefXs testOutData, const vector<BoostOptions>& opt) const;
+    ArrayXd trainAndEval(
+        CRefXXf testInData,
+        CRefXs testOutData,
+        const vector<BoostOptions>& opt,
+        function<tuple<double, double, double>(CRefXs, CRefXd)> lossFun
+    ) const;
 
  // deleted:
     BoostTrainer(const BoostTrainer&) = delete;

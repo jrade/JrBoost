@@ -1,10 +1,10 @@
 import itertools, random, sys, time
 import numpy as np
 import pandas as pd
-
-sys.path += ['../JrBoost/JrBoostTest', '../JrBoost/x64/Release']
 import util
 import jrboost
+
+PROFILE = jrboost.PROFILE
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -12,12 +12,13 @@ def main():
 
     threadCount = 4
     jrboost.setNumThreads(threadCount)
-    jrboost.setProfile(True)
+    jrboost.setProfile(False)
     print(f'{threadCount} threads\n')
 
     outerFoldCount = 20
     innerFoldCount = 5
     bestOptionCount = 5
+    lossFun = jrboost.linLoss
 
     inDataFrame, outDataSeries = loadData()
     outDataFrame = util.oneHotEncode(outDataSeries)
@@ -34,6 +35,7 @@ def main():
 
         print(f'-------------------- {i} --------------------\n')
         t = -time.time()
+        PROFILE.PUSH(PROFILE.MAIN)
         predOutDataFrame = pd.DataFrame(index = samples, columns = labels, dtype = np.float64)
 
         for label in labels:
@@ -44,7 +46,7 @@ def main():
             folds = util.stratifiedRandomFolds(outData, outerFoldCount)
             for trainSamples, testSamples in folds:
                 print('.', end = '', flush = True)
-                sortedOpts = optimizeHyperParams(inData, outData, trainSamples, innerFoldCount)
+                sortedOpts = optimizeHyperParams(inData, outData, trainSamples, innerFoldCount, lossFun)
                 bestOpts = sortedOpts[:bestOptionCount]
                 #for opt in bestOpts:
                 #    print(formatOptions(opt))
@@ -59,8 +61,10 @@ def main():
         for sample in samples:
             confusionFrame.loc[outDataSeries[sample], predOutDataSeries[sample]] += 1
 
+        PROFILE.POP()
         t += time.time()
-
+        PROFILE.PRINT()
+        print()
         print(confusionFrame)
         print()
         print(util.formatTime(t))
@@ -89,7 +93,7 @@ def formatOptions(opt):
     return f'ic = {ic}  eta = {eta}  usr = {usr:.1f}  uvr = {uvr:.1f}'
 
 
-def optimizeHyperParams(inData, outData, samples, foldCount):
+def optimizeHyperParams(inData, outData, samples, foldCount, lossFun):
 
     optionsList = []
     for eta in [0.2, 0.5, 1.0, 2.0]:
@@ -107,7 +111,7 @@ def optimizeHyperParams(inData, outData, samples, foldCount):
     loss = np.zeros((optionsCount,))
     folds = util.stratifiedRandomFolds(outData, foldCount, samples)
     for trainSamples, testSamples in folds:
-        loss += util.trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList)
+        loss += util.trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, lossFun)
             
     sortedOptionsList = [optionsList[i] for i in np.argsort(loss)]
     return sortedOptionsList

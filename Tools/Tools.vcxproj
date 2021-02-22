@@ -160,6 +160,7 @@
     <ClInclude Include="Clock.h" />
     <ClInclude Include="ClockCycleCount.h" />
     <ClInclude Include="BernoulliDistribution.h" />
+    <ClInclude Include="Loss.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Profile.h" />
     <ClInclude Include="StaticStack.h" />

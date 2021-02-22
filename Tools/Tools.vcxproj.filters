@@ -18,6 +18,7 @@
       <Filter>Profiling</Filter>
     </ClInclude>
     <ClInclude Include="BernoulliDistribution.h" />
+    <ClInclude Include="Loss.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp" />

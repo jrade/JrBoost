@@ -7,6 +7,7 @@
 #include <array>
 #include <cmath>
 #include <exception>
+#include<functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -16,6 +17,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -23,12 +25,14 @@
 using std::array;
 using std::cout;
 using std::endl;
+using std::function;
 using std::numeric_limits;
 using std::optional;
 using std::pair;
 using std::runtime_error;
 using std::shared_ptr;
 using std::string;
+using std::stringstream;
 using std::tuple;
 using std::unique_ptr;
 using std::vector;
@@ -47,6 +51,7 @@ using std::vector;
 
 using ArrayXXf = Eigen::ArrayXXf;
 using ArrayXd = Eigen::ArrayXd;
+using ArrayXf = Eigen::ArrayXf;
 using ArrayXs = Eigen::Array<size_t, Eigen::Dynamic, 1>;
 
 using RefXXf = Eigen::Ref<ArrayXXf>;
@@ -56,8 +61,6 @@ using RefXs = Eigen::Ref<ArrayXs>;
 using CRefXXf = Eigen::Ref<const ArrayXXf>;
 using CRefXd = Eigen::Ref<const ArrayXd>;
 using CRefXs = Eigen::Ref<const ArrayXs>;
-
-using ArrayXf = Eigen::ArrayXf;
 
 
 // Tools
