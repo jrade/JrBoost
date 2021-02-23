@@ -65,8 +65,8 @@ using CRefXs = Eigen::Ref<const ArrayXs>;
 
 // Tools
 
-#include "Tools/Assert.h"
-#include "Tools/Profile.h"
+#include "JrBoostLib/Assert.h"
+#include "JrBoostLib/Profile.h"
 
 
 

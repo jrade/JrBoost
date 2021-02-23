@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "../Tools/Util.h"
+#include "../JrBoostLib/TStatisticRank.h"
+#include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/AbstractPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostTrainer.h"
-#include "../Tools/Loss.h"
 
 namespace py = pybind11;
 

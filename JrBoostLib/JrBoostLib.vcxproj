@@ -141,26 +141,38 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AbstractPredictor.h" />
+    <ClInclude Include="AGRandom.h" />
+    <ClInclude Include="Assert.h" />
+    <ClInclude Include="BernoulliDistribution.h" />
     <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="BoostTrainer.h" />
+    <ClInclude Include="Clock.h" />
+    <ClInclude Include="ClockCycleCount.h" />
     <ClInclude Include="LinearCombinationPredictor.h" />
+    <ClInclude Include="Loss.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Profile.h" />
+    <ClInclude Include="SortedIndices.h" />
+    <ClInclude Include="StaticStack.h" />
     <ClInclude Include="StumpPredictor.h" />
     <ClInclude Include="StumpOptions.h" />
     <ClInclude Include="StumpTrainer.h" />
     <ClInclude Include="StumpTrainerImpl.h" />
     <ClInclude Include="TrivialPredictor.h" />
+    <ClInclude Include="TStatisticRank.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoostOptions.cpp" />
     <ClCompile Include="BoostTrainer.cpp" />
     <ClCompile Include="LinearCombinationPredictor.cpp" />
+    <ClCompile Include="Memory.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Profile.cpp" />
     <ClCompile Include="StumpPredictor.cpp" />
     <ClCompile Include="StumpOptions.cpp" />
     <ClCompile Include="StumpTrainer.cpp" />

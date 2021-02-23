@@ -3,8 +3,8 @@
 #include "BoostOptions.h"
 #include "LinearCombinationPredictor.h"
 #include "StumpTrainer.h"
-#include "../Tools/Util.h"
-#include "../Tools/Loss.h"
+#include "SortedIndices.h"
+#include "Loss.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :

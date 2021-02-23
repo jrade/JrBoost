@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>Precompiled Header</Filter>
-    </ClInclude>
     <ClInclude Include="StumpOptions.h">
       <Filter>Stump</Filter>
     </ClInclude>
@@ -31,11 +28,39 @@
     <ClInclude Include="StumpTrainer.h">
       <Filter>Stump</Filter>
     </ClInclude>
+    <ClInclude Include="StaticStack.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="ClockCycleCount.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="Clock.h">
+      <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="AGRandom.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Assert.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="BernoulliDistribution.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Loss.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="TStatisticRank.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="SortedIndices.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
-      <Filter>Precompiled Header</Filter>
-    </ClCompile>
     <ClCompile Include="StumpOptions.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
@@ -57,11 +82,15 @@
     <ClCompile Include="StumpTrainer.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
+    <ClCompile Include="Profile.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory.cpp">
+      <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Precompiled Header">
-      <UniqueIdentifier>{dbb42865-fbfd-4e86-b9db-2797caf3812d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Boost">
       <UniqueIdentifier>{218ce471-c2e9-439b-8a5e-6fad60ea77d1}</UniqueIdentifier>
     </Filter>
@@ -70,6 +99,12 @@
     </Filter>
     <Filter Include="Predictor">
       <UniqueIdentifier>{0e4adbcd-62ea-4ea3-b2ed-62fcbf83d2bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Profiling">
+      <UniqueIdentifier>{38894b7f-b7b2-4b23-af46-d84a3e8b9ad4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tools">
+      <UniqueIdentifier>{f432c030-76cd-4de4-a5bc-57c4014bf5e6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

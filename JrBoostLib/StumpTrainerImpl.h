@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Tools/AGRandom.h"
-#include "../Tools/BernoulliDistribution.h"
+#include "AGRandom.h"
+#include "BernoulliDistribution.h"
 
 class StumpOptions;
 class AbstractPredictor;
