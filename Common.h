@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define USE_LOR
+//#define USE_LOR
 
 // Standard library
 

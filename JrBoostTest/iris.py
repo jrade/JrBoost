@@ -12,7 +12,7 @@ def main():
 
     threadCount = 4
     jrboost.setNumThreads(threadCount)
-    jrboost.setProfile(False)
+    jrboost.setProfile(True)
     print(f'{threadCount} threads\n')
 
     outerFoldCount = 20

@@ -95,10 +95,7 @@ def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList
     return scores
 
 
-#does not take average of several opts, fix that
 def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, rankFun = None):
-
-    opt = opt[0]
 
     try:
         maxVariableCount = opt.base.topVariableCount
@@ -127,7 +124,7 @@ def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, ran
             predictor = trainer.train(opt1);
             predOutData = predictor.predict(testInData);
             predOutDataList.append(predOutData)
-        predOutData = np.median(np.array(predOutDataList), axis = 0)
+        predOutData = np.mean(np.array(predOutDataList), axis = 0)
 
     return predOutData
 
@@ -141,7 +138,7 @@ def trainAndPredictExternal(trainInData, trainOutData, testInData, opts):
     trainer = jrboost.BoostTrainer(trainInData, trainOutData)
     for opt in opts:
         predictor = trainer.train(opt)
-        testOutData += predictor.predict(testInData)
+        testOutData += predictor.predict(testInData)                    # FIX THIS
     testOutData /= len(opts)
     return testOutData
 

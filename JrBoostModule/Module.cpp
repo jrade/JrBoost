@@ -29,6 +29,11 @@ PYBIND11_MODULE(jrboost, mod)
         .def("__call__", &AlphaLoss::operator())
         .def_property_readonly("name", &AlphaLoss::name);
 
+    py::class_<ErrorCount>{ mod, "ErrorCount" }
+        .def(py::init<double>())
+        .def("__call__", &ErrorCount::operator())
+        .def_property_readonly("name", &ErrorCount::name);
+
 
     // PROFILE
 
@@ -42,13 +47,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def("PUSH", &PROFILE::PUSH)
         .def("POP", &PROFILE::POP, py::arg() = 0)
         .def("PRINT", &PROFILE::PRINT);
-
-
-    // Abstract predictor
-
-    py::class_<BoostPredictor>{ mod, "BoostPredictor" }
-        .def("variableCount", &BoostPredictor::variableCount)
-        .def("predict", &BoostPredictor::predict);
 
 
     // Stump classes
@@ -89,4 +87,9 @@ PYBIND11_MODULE(jrboost, mod)
         // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.
         // These callbacks may be to Python functions that need to acquire the GIL.
         // If we don't relasee the GIL here it will be held by the master thread and the other threads will be blocked
+
+
+    py::class_<BoostPredictor>{ mod, "BoostPredictor" }
+        .def("variableCount", &BoostPredictor::variableCount)
+        .def("predict", &BoostPredictor::predict);
 }
