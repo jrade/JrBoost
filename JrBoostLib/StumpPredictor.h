@@ -1,14 +1,13 @@
 #pragma once
 
-#include "AbstractPredictor.h"
+#include "SimplePredictor.h"
 
 
-class StumpPredictor : public AbstractPredictor {
+class StumpPredictor : public SimplePredictor {
 public:
     virtual ~StumpPredictor() = default;
 
-protected:
-    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
+    virtual void predict(CRefXXf inData, double c, RefXd outData) const;
 
 private:
     template<typename SampleIndex> friend class StumpTrainerImpl;

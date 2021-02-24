@@ -45,7 +45,7 @@ vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_(
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-unique_ptr<AbstractPredictor> StumpTrainerImpl<SampleIndex>::train(
+unique_ptr<SimplePredictor> StumpTrainerImpl<SampleIndex>::train(
     CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
     // validate data ...........................................................

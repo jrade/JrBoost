@@ -1,8 +1,10 @@
 #pragma once
 
-class AbstractPredictor;
+#include "SimplePredictor.h"
+
 class StumpOptions;
 class StumpTrainerImplBase;
+
 
 class StumpTrainer
 {
@@ -10,7 +12,7 @@ public:
     StumpTrainer(CRefXXf inData, CRefXs strata);
     ~StumpTrainer() = default;
 
-    unique_ptr<AbstractPredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
+    unique_ptr<SimplePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
 
 // deleted:
     StumpTrainer(const StumpTrainer&) = delete;

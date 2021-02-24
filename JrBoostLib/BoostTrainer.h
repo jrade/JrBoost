@@ -1,7 +1,8 @@
 #pragma once
 
+#include "BoostPredictor.h"
+
 class BoostOptions;
-class AbstractPredictor;
 class StumpTrainer;
 
 
@@ -10,7 +11,7 @@ public:
     BoostTrainer(ArrayXXf inData, ArrayXs outData);
     ~BoostTrainer() = default;
 
-    unique_ptr<AbstractPredictor> train(const BoostOptions& opt) const;
+    unique_ptr<BoostPredictor> train(const BoostOptions& opt) const;
     ArrayXd trainAndEval(
         CRefXXf testInData,
         CRefXs testOutData,
@@ -23,8 +24,8 @@ public:
     BoostTrainer& operator=(const  BoostTrainer&) = delete;
 
 private:
-    unique_ptr<AbstractPredictor> trainAda_(const BoostOptions& opt) const;
-    unique_ptr<AbstractPredictor> trainLogit_(const BoostOptions& opt) const;
+    unique_ptr<BoostPredictor> trainAda_(const BoostOptions& opt) const;
+    unique_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt) const;
 
 private:
     const ArrayXXf inData_;

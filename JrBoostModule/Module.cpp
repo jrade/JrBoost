@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "../JrBoostLib/TStatisticRank.h"
 #include "../JrBoostLib/Loss.h"
-#include "../JrBoostLib/AbstractPredictor.h"
+#include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/StumpOptions.h"
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostTrainer.h"
@@ -46,9 +46,9 @@ PYBIND11_MODULE(jrboost, mod)
 
     // Abstract predictor
 
-    py::class_<AbstractPredictor>{ mod, "Predictor" }
-        .def("variableCount", &AbstractPredictor::variableCount)
-        .def("predict", &AbstractPredictor::predict);
+    py::class_<BoostPredictor>{ mod, "BoostPredictor" }
+        .def("variableCount", &BoostPredictor::variableCount)
+        .def("predict", &BoostPredictor::predict);
 
 
     // Stump classes

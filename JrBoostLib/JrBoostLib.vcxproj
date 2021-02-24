@@ -140,7 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AbstractPredictor.h" />
+    <ClInclude Include="SimplePredictor.h" />
     <ClInclude Include="AGRandom.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="BernoulliDistribution.h" />
@@ -148,7 +148,7 @@
     <ClInclude Include="BoostTrainer.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="ClockCycleCount.h" />
-    <ClInclude Include="LinearCombinationPredictor.h" />
+    <ClInclude Include="BoostPredictor.h" />
     <ClInclude Include="Loss.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Profile.h" />
@@ -164,7 +164,7 @@
   <ItemGroup>
     <ClCompile Include="BoostOptions.cpp" />
     <ClCompile Include="BoostTrainer.cpp" />
-    <ClCompile Include="LinearCombinationPredictor.cpp" />
+    <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

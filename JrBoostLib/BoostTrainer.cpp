@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "BoostTrainer.h"
 #include "BoostOptions.h"
-#include "LinearCombinationPredictor.h"
 #include "StumpTrainer.h"
 #include "SortedIndices.h"
 #include "Loss.h"
@@ -28,7 +27,7 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :
     ASSERT((rawOutData_ < 2).all());
 }
 
-unique_ptr<AbstractPredictor> BoostTrainer::train(const BoostOptions& opt) const
+unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
 
@@ -42,7 +41,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::train(const BoostOptions& opt) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
+unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
 {
     const double eta = opt.eta();
     const size_t iterationCount = opt.iterationCount();
@@ -50,15 +49,15 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
     F_.resize(sampleCount_);
     F_ = f0_;
 
-    vector<unique_ptr<AbstractPredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
         adjWeights_ = F_ * outData_;
         adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
-        unique_ptr<AbstractPredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt.base());
-        basePred->predictImpl_(inData_, eta, F_);
+        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt.base());
+        basePred->predict(inData_, eta, F_);
 
         basePredictors[i] = std::move(basePred);
         coeff[i] = 2 * eta;
@@ -71,13 +70,14 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) c
         }
     }
 
-    return std::make_unique<LinearCombinationPredictor>(
-        variableCount_, 2 * f0_, std::move(coeff), std::move(basePredictors));
+    return unique_ptr<BoostPredictor>(
+        new BoostPredictor(variableCount_, 2 * f0_, std::move(coeff), std::move(basePredictors))
+    );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
+unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
 {
     const size_t sampleCount = inData_.rows();
     const size_t variableCount = inData_.cols();
@@ -85,7 +85,7 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
     ArrayXd F = ArrayXd::Constant(sampleCount, f0_);
 
     ArrayXd adjOutData, adjWeights, f;
-    vector<unique_ptr<AbstractPredictor>> basePredictors;
+    vector<unique_ptr<SimplePredictor>> basePredictors;
     vector<double> coeff;
 
     const double eta = opt.eta();
@@ -98,9 +98,9 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
 
         adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
 
-        unique_ptr<AbstractPredictor > basePredictor = baseTrainer_->train(adjOutData, adjWeights, opt.base());
+        unique_ptr<SimplePredictor > basePredictor = baseTrainer_->train(adjOutData, adjWeights, opt.base());
 
-        f = basePredictor->predict(inData_);
+        //f = basePredictor->predict(inData_);
         double c = eta / std::max(0.5, f.abs().maxCoeff());
         F += c * f;
         coeff.push_back(2 * c);
@@ -116,7 +116,9 @@ unique_ptr<AbstractPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt)
         }
     }
 
-    return std::make_unique<LinearCombinationPredictor>(variableCount, 2 * f0_, std::move(coeff), std::move(basePredictors));
+    return unique_ptr<BoostPredictor>(
+        new BoostPredictor(variableCount, 2 * f0_, std::move(coeff), std::move(basePredictors))
+    );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -129,7 +131,6 @@ ArrayXd BoostTrainer::trainAndEval(
 ) const
 {
     ASSERT(testInData.rows() == testOutData.rows());
-    size_t testSampleCount = static_cast<size_t>(testInData.rows());
     size_t optCount = opt.size();
 
     // In each iteration of the loop we build and evaluate a classifier with one set of options
@@ -152,15 +153,12 @@ ArrayXd BoostTrainer::trainAndEval(
 
     #pragma omp parallel
     {
-        ArrayXd predData(testSampleCount);
-
         #pragma omp for nowait schedule(dynamic)
         for (int i = 0; i < static_cast<int>(optCount); ++i) {
             try {
                 size_t j = optIndicesSortedByCost[i];
-                unique_ptr<AbstractPredictor> pred = train(opt[j]);
-                predData = 0.0;
-                pred->predictImpl_(testInData, 1.0, predData);
+                unique_ptr<BoostPredictor> pred = train(opt[j]);
+                ArrayXd predData = pred->predict(testInData);
                 scores(j) = std::get<2>(lossFun(testOutData, predData));
             }
             catch (const std::exception&) {

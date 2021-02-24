@@ -1,6 +1,8 @@
 #pragma once
 
 
+#define USE_LOR
+
 // Standard library
 
 #include <algorithm>
