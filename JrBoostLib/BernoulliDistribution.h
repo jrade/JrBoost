@@ -1,5 +1,6 @@
 #pragma once
 
+
 class FastBernoulliDistribution {
 public:
 	FastBernoulliDistribution(uint64_t k, uint64_t n) : 

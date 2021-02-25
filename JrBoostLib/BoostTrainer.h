@@ -1,8 +1,7 @@
 #pragma once
 
-#include "BoostPredictor.h"
-
 class BoostOptions;
+class BoostPredictor;
 class StumpTrainer;
 
 

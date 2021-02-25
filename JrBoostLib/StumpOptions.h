@@ -24,6 +24,7 @@ public:
     void setMinNodeWeight(double w);
     void setIsStratified(bool b);
 
+protected:
     double cost() const;
 
 private:

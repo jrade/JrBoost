@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "StumpTrainer.h"
 #include "StumpTrainerImpl.h"
+#include "SimplePredictor.h"
+
 
 StumpTrainer::StumpTrainer(CRefXXf inData, CRefXs strata) :
     impl_(createImpl_(inData, strata))

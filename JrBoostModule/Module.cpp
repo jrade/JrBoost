@@ -1,10 +1,9 @@
 #include "pch.h"
 #include "../JrBoostLib/TStatisticRank.h"
 #include "../JrBoostLib/Loss.h"
-#include "../JrBoostLib/BoostPredictor.h"
-#include "../JrBoostLib/StumpOptions.h"
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostTrainer.h"
+#include "../JrBoostLib/BoostPredictor.h"
 
 namespace py = pybind11;
 
@@ -49,19 +48,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def("PRINT", &PROFILE::PRINT);
 
 
-    // Stump classes
-
-    py::class_<StumpOptions>{ mod, "StumpOptions" }
-        .def(py::init<>())
-        .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
-        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
-        .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
-        .def_property("minSampleWeight", &StumpOptions::minSampleWeight, &StumpOptions::setMinSampleWeight)
-        .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
-        .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
-        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified);
-
-
     // Boost classes
 
     py::class_<BoostOptions> opt{ mod, "BoostOptions" };
@@ -70,11 +56,13 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("method", &BoostOptions::method, &BoostOptions::setMethod)
         .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
         .def_property("eta", &BoostOptions::eta, &BoostOptions::setEta)
-        .def_property("logStep", &BoostOptions::logStep, &BoostOptions::setLogStep)
-        .def_property_readonly(
-            "base",
-            static_cast<StumpOptions& (BoostOptions::*)()>(&BoostOptions::base)
-        );
+        .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
+        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
+        .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
+        .def_property("minSampleWeight", &StumpOptions::minSampleWeight, &StumpOptions::setMinSampleWeight)
+        .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
+        .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
+        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified);
 
     py::enum_<BoostOptions::Method>(opt, "Method")
         .value("Ada", BoostOptions::Method::Ada)
@@ -87,7 +75,6 @@ PYBIND11_MODULE(jrboost, mod)
         // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.
         // These callbacks may be to Python functions that need to acquire the GIL.
         // If we don't relasee the GIL here it will be held by the master thread and the other threads will be blocked
-
 
     py::class_<BoostPredictor>{ mod, "BoostPredictor" }
         .def("variableCount", &BoostPredictor::variableCount)

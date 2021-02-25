@@ -18,12 +18,7 @@ void BoostOptions::setEta(double eta)
     eta_ = eta;
 }
 
-void BoostOptions::setLogStep(size_t n)
-{
-    logStep_ = n;
-}
-
 double BoostOptions::cost() const
 {
-    return base_.cost() * iterationCount_;
+    return StumpOptions::cost() * iterationCount_;
 }

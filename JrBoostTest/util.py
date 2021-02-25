@@ -78,7 +78,7 @@ def linLoss(outData, predData):     # predData should contain logloss ratios
 
 def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, lossFun, rankFun = None):
 
-    maxVariableCount = max(opt.base.topVariableCount for opt in optionsList)
+    maxVariableCount = max(opt.topVariableCount for opt in optionsList)
     if rankFun is None:
         trainInData = inData[trainSamples, :maxVariableCount]
         testInData = inData[testSamples, :maxVariableCount]
@@ -98,9 +98,9 @@ def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList
 def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, rankFun = None):
 
     try:
-        maxVariableCount = opt.base.topVariableCount
+        maxVariableCount = opt.topVariableCount
     except:
-        maxVariableCount = max(opt1.base.topVariableCount for opt1 in opt)
+        maxVariableCount = max(opt1.topVariableCount for opt1 in opt)
 
     if rankFun is None:
         trainInData = inData[trainSamples, :maxVariableCount]

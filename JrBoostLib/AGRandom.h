@@ -1,16 +1,15 @@
-// Fast random number engines by Arvid Gerstmann
-// For more details, see https://arvid.io/2018/07/02/better-cxx-prng/
-
-
 // Copyright (c) 2021 Johan Rade.
 // This code is licensed under MIT license.
-//     Made free functions (operator== and operator!=) inline
 
 // Copyright (c) 2018 Arvid Gerstmann.
 // This code is licensed under MIT license.
 
-#ifndef AG_RANDOM_H
-#define AG_RANDOM_H
+// Fast random number engines by Arvid Gerstmann
+// For more details, see https://arvid.io/2018/07/02/better-cxx-prng/
+
+#pragma once
+
+//------------------------------------------------------------------------------
 
 class splitmix
 {
@@ -61,6 +60,8 @@ inline bool operator!=(splitmix const& lhs, splitmix const& rhs)
     return lhs.m_seed != rhs.m_seed;
 }
 
+//------------------------------------------------------------------------------
+
 class xorshift
 {
 public:
@@ -109,6 +110,8 @@ inline bool operator!=(xorshift const& lhs, xorshift const& rhs)
 {
     return lhs.m_seed != rhs.m_seed;
 }
+
+//------------------------------------------------------------------------------
 
 class pcg
 {
@@ -172,5 +175,3 @@ inline bool operator!=(pcg const& lhs, pcg const& rhs)
     return lhs.m_state != rhs.m_state
         || lhs.m_inc != rhs.m_inc;
 }
-
-#endif /* AG_RANDOM_H */

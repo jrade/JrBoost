@@ -83,8 +83,8 @@ def loadTestData(frac = None):
 
 def formatOptions(opt):
     eta = opt.eta
-    usr = opt.base.usedSampleRatio
-    uvr = opt.base.usedVariableRatio
+    usr = opt.usedSampleRatio
+    uvr = opt.usedVariableRatio
     return f'eta = {eta}  usr = {usr}  uvr = {uvr}'
 
 
@@ -97,9 +97,9 @@ def optimizeHyperParams(inData, outData, foldCount):
                 opt = jrboost.BoostOptions()
                 opt.iterationCount = 1000
                 opt.eta = eta
-                opt.base.usedSampleRatio = usr
-                opt.base.usedVariableRatio = uvr
-                opt.base.minSampleWeight = 0.001
+                opt.usedSampleRatio = usr
+                opt.usedVariableRatio = uvr
+                opt.minSampleWeight = 0.001
                 optionsList.append(opt)
 
     optionsCount = len(optionsList)

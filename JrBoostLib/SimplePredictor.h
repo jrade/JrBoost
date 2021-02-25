@@ -1,5 +1,6 @@
 #pragma once
 
+
 class SimplePredictor {
 public:
     virtual ~SimplePredictor() = default;

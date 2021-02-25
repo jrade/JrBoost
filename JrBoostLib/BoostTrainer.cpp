@@ -1,9 +1,10 @@
 #include "pch.h"
 #include "BoostTrainer.h"
 #include "BoostOptions.h"
+#include "BoostPredictor.h"
 #include "StumpTrainer.h"
+#include "SimplePredictor.h"
 #include "SortedIndices.h"
-#include "Loss.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :
@@ -43,6 +44,7 @@ unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 
 unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
 {
+    const size_t logStep = 0;
     const double eta = opt.eta();
     const size_t iterationCount = opt.iterationCount();
 
@@ -56,13 +58,13 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
 
         adjWeights_ = F_ * outData_;
         adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
-        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt.base());
+        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt);
         basePred->predict(inData_, eta, F_);
 
         basePredictors[i] = std::move(basePred);
         coeff[i] = 2 * eta;
 
-        if (opt.logStep() > 0 && i % opt.logStep() == 0) {
+        if constexpr(logStep > 0 && i % logStep == 0) {
             cout << i << "(" << eta << ")" << endl;
             //cout << "Fy: " << Fy_.minCoeff() << " - " << Fy_.maxCoeff() << endl;
             cout << "w: " << adjWeights_.minCoeff() << " - " << adjWeights_.maxCoeff();
@@ -79,6 +81,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
 
 unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
 {
+    const size_t logStep = 0;
     const size_t sampleCount = inData_.rows();
     const size_t variableCount = inData_.cols();
 
@@ -98,7 +101,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
 
         adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
 
-        unique_ptr<SimplePredictor > basePredictor = baseTrainer_->train(adjOutData, adjWeights, opt.base());
+        unique_ptr<SimplePredictor > basePredictor = baseTrainer_->train(adjOutData, adjWeights, opt);
 
         //f = basePredictor->predict(inData_);
         double c = eta / std::max(0.5, f.abs().maxCoeff());
@@ -106,7 +109,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
         coeff.push_back(2 * c);
         basePredictors.push_back(std::move(basePredictor));
 
-        if (opt.logStep() > 0 && i % opt.logStep() == 0) {
+        if constexpr(logStep > 0 && i % logStep == 0) {
             cout << i << "(" << eta << ")" << endl;
             cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
             cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();

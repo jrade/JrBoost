@@ -1,9 +1,8 @@
 #pragma once
 
-#include "SimplePredictor.h"
-
 class StumpOptions;
 class StumpTrainerImplBase;
+class SimplePredictor;
 
 
 class StumpTrainer
