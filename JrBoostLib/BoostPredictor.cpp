@@ -37,6 +37,15 @@ ArrayXd BoostPredictor::predict(CRefXXf inData) const
 #endif
 
     PROFILE::POP(sampleCount * n);
-
     return pred;
 }
+
+
+void BoostPredictor::validateInData_(CRefXXf inData) const
+{
+    const size_t variableCount = inData.cols();
+    ASSERT(variableCount == variableCount_);
+    ASSERT((inData > -numeric_limits<float>::infinity()).all());
+    ASSERT((inData < numeric_limits<float>::infinity()).all());
+}
+

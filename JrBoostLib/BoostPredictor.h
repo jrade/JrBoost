@@ -11,8 +11,8 @@ public:
     ArrayXd predict(CRefXXf inData) const;
 
 // deleted:
-    BoostPredictor(const SimplePredictor&) = delete;
-    SimplePredictor& operator=(const SimplePredictor&) = delete;
+    BoostPredictor(const BoostPredictor&) = delete;
+    BoostPredictor& operator=(const BoostPredictor&) = delete;
 
 private:
     friend class BoostTrainer;
@@ -23,6 +23,8 @@ private:
         vector<double>&& c1,
         vector<unique_ptr<SimplePredictor>>&& basePredictors
     );
+
+    void validateInData_(CRefXXf inData) const;
 
     size_t variableCount_;
     double c0_;

@@ -12,9 +12,9 @@ public:
     BoostOptions& operator=(const BoostOptions&) = default;
     ~BoostOptions() = default;
 
+    Method method() const { return method_; }
     size_t iterationCount() const { return iterationCount_; }
     double eta() const { return eta_; }
-    Method method() const { return method_; }
 
     void setMethod(Method m);
     void setIterationCount(size_t n);
@@ -25,5 +25,5 @@ public:
 private:
     Method method_{ Method::Ada };
     size_t iterationCount_{ 1000 };
-    double eta_{ 0.1 };
+    double eta_{ 0.3 };
 };

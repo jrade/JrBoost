@@ -1,11 +1,11 @@
 // Copyright (c) 2021 Johan Rade.
-// This code is licensed under MIT license.
+// This code is licensed under the MIT license.
 
 // Copyright (c) 2018 Arvid Gerstmann.
-// This code is licensed under MIT license.
+// This code is licensed under the MIT license.
 
 // Fast random number engines by Arvid Gerstmann
-// For more details, see https://arvid.io/2018/07/02/better-cxx-prng/
+// See https://arvid.io/2018/07/02/better-cxx-prng/
 
 #pragma once
 

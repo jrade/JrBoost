@@ -44,7 +44,6 @@ unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 
 unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
 {
-    const size_t logStep = 0;
     const double eta = opt.eta();
     const size_t iterationCount = opt.iterationCount();
 
@@ -55,21 +54,12 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
     vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
-
         adjWeights_ = F_ * outData_;
         adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
         unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt);
         basePred->predict(inData_, eta, F_);
-
         basePredictors[i] = std::move(basePred);
         coeff[i] = 2 * eta;
-
-        if constexpr(logStep > 0 && i % logStep == 0) {
-            cout << i << "(" << eta << ")" << endl;
-            //cout << "Fy: " << Fy_.minCoeff() << " - " << Fy_.maxCoeff() << endl;
-            cout << "w: " << adjWeights_.minCoeff() << " - " << adjWeights_.maxCoeff();
-            cout << " -> " << 100.0 * (adjWeights_ != 0).cast<double>().sum() / sampleCount_ << "%" << endl;
-        }
     }
 
     return unique_ptr<BoostPredictor>(

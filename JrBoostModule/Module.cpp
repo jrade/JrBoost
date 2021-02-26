@@ -62,7 +62,8 @@ PYBIND11_MODULE(jrboost, mod)
         .def_property("minSampleWeight", &StumpOptions::minSampleWeight, &StumpOptions::setMinSampleWeight)
         .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
         .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
-        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified);
+        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
+        .def("__copy__", [](const BoostOptions& bOpt) { return BoostOptions(bOpt); });
 
     py::enum_<BoostOptions::Method>(opt, "Method")
         .value("Ada", BoostOptions::Method::Ada)
