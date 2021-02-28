@@ -59,6 +59,9 @@
     <ClInclude Include="TrivialPredictor.h">
       <Filter>Stump</Filter>
     </ClInclude>
+    <ClInclude Include="pdqsort.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">

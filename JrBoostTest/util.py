@@ -42,57 +42,50 @@ def stratifiedRandomFolds(outData, foldCount, samples = None):
     
     return folds
 
-def linLoss(outData, predData):     # predData should contain logloss ratios
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=RuntimeWarning) 
+def trainAndEvalExternal(trainInData, trainOutData, testInData, testOutData, optionList, lossFun, rankFun = None):
 
-        falseNeg = np.sum(outData / (1.0 + np.exp(predData)))
-        falsePos = np.sum((1 - outData) / (1.0 + np.exp(-predData)))
-        loss = (falsePos, falseNeg, falsePos + falseNeg)
+    optionCount = len(optionList)
+    loss = np.zeros((optionCount,))
 
-        return loss
-
-
-#def logLoss(outData, predData):     # predData should conain logloss ratios
-
-#    with warnings.catch_warnings():
-#        warnings.filterwarnings("ignore", category=RuntimeWarning) 
-
-#        logOneProb = (
-#            (predData >= 0) * (-np.log1p(np.exp(-predData)))
-#            + (predData < 0) * (predData - np.log1p(np.exp(predData)))
-#        )
-
-#        logZeroProb = (
-#            (predData >= 0) * (-predData - np.log1p(np.exp(-predData)))
-#            + (predData < 0) * (-np.log1p(np.exp(predData)))
-#        )
-
-#        return -np.sum(
-#            outData[:, np.newaxis] * logOneProb
-#            + (1 - outData[:, np.newaxis]) * logZeroProb,
-#            axis = 0
-#        )
-
-
-def trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, lossFun, rankFun = None):
-
-    maxVariableCount = max(opt.topVariableCount for opt in optionsList)
+    maxVariableCount = max(opt.topVariableCount for opt in optionList)
     if rankFun is None:
-        trainInData = inData[trainSamples, :maxVariableCount]
-        testInData = inData[testSamples, :maxVariableCount]
+        trainInData = trainInData[:, :maxVariableCount]
+        testInData = testInData[:, :maxVariableCount]
     else:
-        rankedVariables = rankFun(inData, outData, trainSamples)[:maxVariableCount]
-        trainInData = inData[trainSamples[:, np.newaxis], rankedVariables]
-        testInData = inData[testSamples[:, np.newaxis], rankedVariables]
-
-    trainOutData = outData[trainSamples]
-    testOutData = outData[testSamples]
+        rankedVariables = rankFun(trainInData, trainOutData)[:maxVariableCount]
+        trainInData = trainInData[:, rankedVariables]
+        testInData = testInData[:, rankedVariables]
 
     trainer = jrboost.BoostTrainer(trainInData, trainOutData)
-    scores =  trainer.trainAndEval(testInData, testOutData, optionsList, lossFun);
-    return scores
+    loss =  trainer.trainAndEval(testInData, testOutData, optionList, lossFun)
+    return loss
+
+
+def trainAndEvalInternal(inData, outData, samples, foldCount, optionList, lossFun, rankFun = None):
+
+    optionCount = len(optionList)
+    loss = np.zeros((optionCount,))
+
+    folds = stratifiedRandomFolds(outData, foldCount, samples)
+    for trainSamples, testSamples in folds:
+
+        maxVariableCount = max(opt.topVariableCount for opt in optionList)
+        if rankFun is None:
+            trainInData = inData[trainSamples, :maxVariableCount]
+            testInData = inData[testSamples, :maxVariableCount]
+        else:
+            rankedVariables = rankFun(inData, outData, trainSamples)[:maxVariableCount]
+            trainInData = inData[trainSamples[:, np.newaxis], rankedVariables]
+            testInData = inData[testSamples[:, np.newaxis], rankedVariables]
+
+        trainOutData = outData[trainSamples]
+        testOutData = outData[testSamples]
+
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+        loss +=  trainer.trainAndEval(testInData, testOutData, optionList, lossFun)
+
+    return loss
 
 
 def trainAndPredictInternal(inData, outData, trainSamples, testSamples, opt, rankFun = None):
@@ -150,7 +143,7 @@ def findPath(path):
         if os.path.exists(path):
             return path
         if (i >= 10):
-            raise RunTimeError(f'Unable to find {path}')
+            raise RuntimeError(f'Unable to find {path}')
         path = '../' + path
         i += 1
 

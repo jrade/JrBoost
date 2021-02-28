@@ -1,34 +1,64 @@
 import itertools, random, sys, time
 import numpy as np
 import pandas as pd
-import util
+import util, optimize_grid, optimize_dynamic
 import jrboost
 
 PROFILE = jrboost.PROFILE
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+cvParam = {
+    'threadCount': 4,
+    'profile': False,
+
+    'optimizeFun': optimize_grid.optimize,
+    'lossFun': jrboost.negAuc, #jrboost.linLoss,
+
+    'boostParamValues': {
+        'iterationCount': [1000],
+        'eta':  [0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
+        'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        'minNodeSize': [1, 2, 3, 4, 6, 8, 10],
+        'minSampleWeight': [0.001],
+    },
+
+    'outerFoldCount': 5,
+    'innerFoldCount': 5,
+    'bestOptionCount': 1,
+    'bagSize': 1,
+
+    'populationCount': 100,
+    'survivorCount': 50,
+    'cycleCount': 10,
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 def main():
 
-    threadCount = 4
-    jrboost.setNumThreads(threadCount)
-    jrboost.setProfile(True)
-    print(f'{threadCount} threads\n')
+    print(cvParam)
+    print()
 
-    outerFoldCount = 20
-    innerFoldCount = 5
-    bestOptionCount = 5
-    lossFun = jrboost.linLoss
+    threadCount = cvParam['threadCount']
+    profile = cvParam['profile']
+    outerFoldCount = cvParam['outerFoldCount']
+    innerFoldCount = cvParam['innerFoldCount']
+    optimizeFun = cvParam['optimizeFun']
+    lossFun = cvParam['lossFun']
+
+    jrboost.setProfile(profile)
+    jrboost.setNumThreads(threadCount)
+    print(f'{threadCount} threads\n')
 
     inDataFrame, outDataSeries = loadData()
     outDataFrame = util.oneHotEncode(outDataSeries)
-
     samples = outDataFrame.index
     variables = inDataFrame.columns
     labels = outDataFrame.columns
     print(f'{len(samples)} samples, {len(variables)} variables')
-    print(f'labels: {list(labels)}')
-    print()
+    print(f'labels: {list(labels)}\n')
 
     inData = inDataFrame.to_numpy(dtype = np.float32)
     for i in itertools.count():
@@ -39,18 +69,19 @@ def main():
         predOutDataFrame = pd.DataFrame(index = samples, columns = labels, dtype = np.float64)
 
         for label in labels:
-            print(label + ' ', end = '', flush = True)
+            print(label)
             outData = outDataFrame[label].to_numpy(dtype = np.uint64)
 
             predOutData = np.empty((len(samples),))
             folds = util.stratifiedRandomFolds(outData, outerFoldCount)
             for trainSamples, testSamples in folds:
-                print('.', end = '', flush = True)
-                sortedOpts = optimizeHyperParams(inData, outData, trainSamples, innerFoldCount, lossFun)
-                bestOpts = sortedOpts[:bestOptionCount]
-                #for opt in bestOpts:
-                #    print(formatOptions(opt))
-                predOutData[testSamples] = util.trainAndPredictInternal(inData, outData, trainSamples, testSamples, bestOpts)
+                bestOptList = optimizeFun(
+                    cvParam,
+                    lambda optionList: 
+                        util.trainAndEvalInternal(inData, outData, trainSamples, innerFoldCount, optionList, lossFun)
+                )                 
+                print(formatOptions(bestOptList[0]))
+                predOutData[testSamples] = util.trainAndPredictInternal(inData, outData, trainSamples, testSamples, bestOptList)
 
             print()
             predOutDataFrame[label] = predOutData
@@ -81,38 +112,14 @@ def loadData():
 
     return inDataFrame, outDataSeries
 
-#-----------------------------------------------------------------------------------------------------------------------
 
 def formatOptions(opt):
     ic = opt.iterationCount
     eta  = opt.eta
     usr = opt.usedSampleRatio
     uvr = opt.usedVariableRatio
-    return f'ic = {ic}  eta = {eta}  usr = {usr:.1f}  uvr = {uvr:.1f}'
-
-
-def optimizeHyperParams(inData, outData, samples, foldCount, lossFun):
-
-    optionsList = []
-    for eta in [0.2, 0.5, 1.0, 2.0]:
-        for usr in [0.1, 0.3, 0.5, 0.7, 0.9]:
-            for uvr in [0.1, 0.3, 0.5, 0.7, 0.9]:
-                opt = jrboost.BoostOptions()
-                opt.iterationCount = 1000
-                opt.eta = eta
-                opt.usedSampleRatio = usr
-                opt.usedVariableRatio = uvr
-                opt.minSampleWeight = 0.001
-                optionsList.append(opt)
-
-    optionsCount = len(optionsList)
-    loss = np.zeros((optionsCount,))
-    folds = util.stratifiedRandomFolds(outData, foldCount, samples)
-    for trainSamples, testSamples in folds:
-        loss += util.trainAndEvalInternal(inData, outData, trainSamples, testSamples, optionsList, lossFun)
-            
-    sortedOptionsList = [optionsList[i] for i in np.argsort(loss)]
-    return sortedOptionsList
+    mns = opt.minNodeSize
+    return f'ic = {ic}  eta = {eta}  usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 

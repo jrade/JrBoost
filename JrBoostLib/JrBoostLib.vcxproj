@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="pdqsort.h" />
     <ClInclude Include="SimplePredictor.h" />
     <ClInclude Include="AGRandom.h" />
     <ClInclude Include="Assert.h" />

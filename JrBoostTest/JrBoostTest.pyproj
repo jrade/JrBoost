@@ -5,7 +5,7 @@
     <ProjectGuid>a9878df3-e994-4b8f-87de-d958d608316e</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>iris.py</StartupFile>
+    <StartupFile>higgs.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -36,7 +36,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="higgs.py" />
     <Compile Include="iris.py" />
+    <Compile Include="optimize_dynamic.py" />
+    <Compile Include="optimize_grid.py" />
     <Compile Include="otto.py">
       <SubType>Code</SubType>
     </Compile>

@@ -84,9 +84,31 @@ inline tuple<double, double, double> sqrtLoss(CRefXs outData, CRefXd predData)
     return alphaLoss(outData, predData, 0.5);
 }
 
+inline tuple<double, double, double> negAuc(CRefXs outData, CRefXd predData)
+{
+    size_t sampleCount = outData.rows();
+
+    vector<pair<size_t, double>> tmp(sampleCount);
+    for (size_t i = 0; i < sampleCount; ++i)
+        tmp[i] = { outData[i], predData[i] };
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
+
+    size_t a = 0;
+    size_t b = 0;
+    for (auto [y, pred] : tmp) {
+        //if (y == 0)
+        //    a += 1;
+        //else
+        //    b += a;
+        a += 1 - y;
+        b += y * a;
+    }
+    double auc = static_cast<double>(b) / (static_cast<double>(a) * static_cast<double>(sampleCount - a));
+    double nan = numeric_limits<double>::quiet_NaN();
+    return { nan, nan, -auc };
+}
 
 //----------------------------------------------------------------------------------------------------------------------
-
 
 class ErrorCount {
 public:

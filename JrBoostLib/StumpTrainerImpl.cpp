@@ -33,7 +33,7 @@ vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_(
     for (size_t j = 0; j < variableCount_; ++j) {
         for (size_t i = 0; i < sampleCount_; ++i)
             tmp[i] = { inData_(i,j), static_cast<SampleIndex>(i) };
-        std::sort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
+        pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
         sortedSamples[j].resize(sampleCount_);
         for (size_t i = 0; i < sampleCount_; ++i)
             sortedSamples[j][i] = tmp[i].second;

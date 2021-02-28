@@ -22,6 +22,7 @@ PYBIND11_MODULE(jrboost, mod)
     mod.def("linLoss", &linLoss).attr("name") = "lin-loss";
     mod.def("logLoss", &logLoss).attr("name") = "log-loss";
     mod.def("sqrtLoss", &sqrtLoss).attr("name") = "sqrt-loss";
+    mod.def("negAuc", &negAuc).attr("name") = "neg-auc";
 
     py::class_<AlphaLoss>{ mod, "AlphaLoss" }
         .def(py::init<double>())

@@ -15,7 +15,7 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
     auto r = r0;
     while (p != p1)
         *(r++) = std::make_pair(i++, f(*(p++)));
-    std::sort(
+    pdqsort_branchless(
         r0,
         r1,
         [](const auto& x, const auto& y) { return x.second < y.second; }
