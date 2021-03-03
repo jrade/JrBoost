@@ -1,8 +1,5 @@
-import copy, itertools, random, sys
+import copy, itertools, random
 import numpy as np
-
-sys.path += ['../JrBoost/JrBoostTest', '../JrBoost/x64/Release']
-import util
 import jrboost
 
 

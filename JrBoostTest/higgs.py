@@ -11,7 +11,7 @@ PROFILE = jrboost.PROFILE
 cvParam = {
     'threadCount': 4,
     'profile': True,
-    'trainFraction' : 1.0,
+    'trainFraction' : 0.001,
 
     'optimizeFun': optimize_dynamic.optimize,
     'lossFun': jrboost.negAuc,
@@ -22,7 +22,7 @@ cvParam = {
         'usedSampleRatio': [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0],
         'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'minNodeSize': [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000],
-        'minSampleWeight': [0.001],
+        'minSampleWeight': [0.000001],
     },
 
     'bestOptionCount': 10,
@@ -58,7 +58,6 @@ def main():
     trainSamples = trainInDataFrame.index
     testSamples = testInDataFrame.index
     validationSamples = validationInDataFrame.index
-    print(f'{len(trainSamples)} train samples, {len(testSamples)} test samples, {len(validationSamples)} validation samples\n')
 
     trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
     trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint64)
@@ -68,6 +67,14 @@ def main():
     validationInData = validationInDataFrame.to_numpy(dtype = np.float32)
     validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint64)
 
+    # make sure that total weight is the same for background and signal events
+    trainWeights[trainOutData == 0] /= np.sum(trainWeights[trainOutData == 0])
+    trainWeights[trainOutData == 1] /= np.sum(trainWeights[trainOutData == 1])
+    # normalize so largest weight is 1
+    trainWeights /= np.max(trainWeights)
+
+    print(f'{len(trainSamples)} train samples, {len(testSamples)} test samples, {len(validationSamples)} validation samples\n')
+
     #...............................................................................
 
     t = -time.time()
@@ -76,8 +83,8 @@ def main():
 
     bestOptList = optimizeFun(
         cvParam,
-        lambda optionList: util.trainAndEvalExternal(
-            trainInData, trainOutData, testInData, testOutData, optionList, lossFun)
+        lambda optionList: trainAndEvalHiggs(
+            trainInData, trainOutData, trainWeights, testInData, testOutData, optionList, lossFun)
     )
                                                       
     print(formatOptions(bestOptList[0]))
@@ -163,5 +170,17 @@ def formatOptions(opt):
 def formatScore(score, precision = 4):
     return '(' + ', '.join((f'{x:.{precision}f}' for x in score)) + ')'
 
+
+def trainAndEvalHiggs(
+    trainInData, trainOutData, trainWeights,
+    testInData, testOutData,
+    optionList, lossFun
+):
+    optionCount = len(optionList)
+    loss = np.zeros((optionCount,))
+
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+    loss =  trainer.trainAndEval(testInData, testOutData, optionList, lossFun)
+    return loss
 
 main()

@@ -71,7 +71,7 @@ PYBIND11_MODULE(jrboost, mod)
         .value("Logit", BoostOptions::Method::Logit);
 
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
-        .def(py::init<ArrayXXf, ArrayXs>())
+        .def(py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(), py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>())
         .def("train", &BoostTrainer::train)
         .def("trainAndEval", &BoostTrainer::trainAndEval, py::call_guard<py::gil_scoped_release>());
         // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.

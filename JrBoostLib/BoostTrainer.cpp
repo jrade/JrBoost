@@ -7,16 +7,14 @@
 #include "SortedIndices.h"
 
 
-BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :
+BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights) :
     inData_{ std::move(inData) },
     sampleCount_{ static_cast<size_t>(inData_.rows()) },
     variableCount_{ static_cast<size_t>(inData_.cols()) },
     rawOutData_{ std::move(outData) },
     outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 },
-    f0_{ (
-        log(static_cast<double>(rawOutData_.sum()))
-            - log(static_cast<double>((1 - rawOutData_).sum()))
-        ) / 2.0 },
+    weights_{ std::move(weights) },
+    f0_{ calculateF0_() },
     baseTrainer_{ std::make_shared<StumpTrainer>(inData_, rawOutData_) }
 {
     ASSERT(inData_.rows() != 0);
@@ -26,6 +24,20 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData) :
     ASSERT((inData_ > -numeric_limits<float>::infinity()).all());
     ASSERT((inData_ < numeric_limits<float>::infinity()).all());
     ASSERT((rawOutData_ < 2).all());
+}
+
+double BoostTrainer::calculateF0_() const
+{
+    if (weights_)
+        return  (
+            log((rawOutData_.cast<double>() * (*weights_)).sum())
+            - log(((1 - rawOutData_).cast<double>() * (*weights_)).sum())
+        ) / 2.0;
+    else
+        return  (
+            log(static_cast<double>(rawOutData_.sum()))
+            - log(static_cast<double>((1 - rawOutData_).sum()))
+        ) / 2.0;
 }
 
 unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
@@ -56,14 +68,16 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
     for (size_t i = 0; i < iterationCount; ++i) {
         adjWeights_ = F_ * outData_;
         adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
+        if (weights_) 
+            adjWeights_ *= (*weights_);
         unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt);
         basePred->predict(inData_, eta, F_);
         basePredictors[i] = std::move(basePred);
-        coeff[i] = 2 * eta;
+        coeff[i] = 2.0 * eta;
     }
 
     return unique_ptr<BoostPredictor>(
-        new BoostPredictor(variableCount_, 2 * f0_, std::move(coeff), std::move(basePredictors))
+        new BoostPredictor(variableCount_, 2.0 * f0_, std::move(coeff), std::move(basePredictors))
     );
 }
 
@@ -87,6 +101,8 @@ unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
 
         double FAbsMin = F.abs().minCoeff();
         adjWeights = 1.0 / ((F - FAbsMin).exp() + (-F - FAbsMin).exp()).square();
+        if (weights_)
+            adjWeights_ *= (*weights_);
         adjWeights /= adjWeights.maxCoeff();
 
         adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;

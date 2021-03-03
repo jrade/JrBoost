@@ -1,8 +1,5 @@
-import copy, sys
+import copy
 import numpy as np
-
-sys.path += ['../JrBoost/JrBoostTest', '../JrBoost/x64/Release']
-import util
 import jrboost
 
 
