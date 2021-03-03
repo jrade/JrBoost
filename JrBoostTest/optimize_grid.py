@@ -26,9 +26,12 @@ def optimize(cvParam, evalFun):
     del bestIndices[bestOptionCount:]
     bestOptionList = [optionList[i] for i in bestIndices]
 
-    if ultraBoost is not None and ultraBoost != 1:
+    if ultraBoost is not None:
         for opt in bestOptionList:
             opt.iterationCount *= ultraBoost
             opt.eta /= ultraBoost
 
-    return bagSize * bestOptionList
+    if bagSize is not None:
+        optionList *= bagSize
+
+    return optionList

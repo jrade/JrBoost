@@ -83,13 +83,13 @@ def main():
 
     bestOptList = optimizeFun(
         cvParam,
-        lambda optionList: trainAndEvalHiggs(
+        lambda optionList: trainAndEval(
             trainInData, trainOutData, trainWeights, testInData, testOutData, optionList, lossFun)
     )
                                                       
     print(formatOptions(bestOptList[0]))
 
-    predOutData = util.trainAndPredictExternal(trainInData, trainOutData, validationInData, bestOptList)
+    predOutData = trainAndPredict(trainInData, trainOutData, validationInData, bestOptList)
 
     estSignalRatio = sum(trainOutData) / len(trainOutData)
     estCutoff = np.quantile(predOutData, 1.0 - estSignalRatio)
@@ -171,7 +171,7 @@ def formatScore(score, precision = 4):
     return '(' + ', '.join((f'{x:.{precision}f}' for x in score)) + ')'
 
 
-def trainAndEvalHiggs(
+def trainAndEval(
     trainInData, trainOutData, trainWeights,
     testInData, testOutData,
     optionList, lossFun
@@ -182,5 +182,19 @@ def trainAndEvalHiggs(
     trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
     loss =  trainer.trainAndEval(testInData, testOutData, optionList, lossFun)
     return loss
+
+
+def trainAndPredict(trainInData, trainOutData, validationInData, bestOptList):
+
+    predOutDataList = []
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+    for opt in bestOptList:
+        predictor = trainer.train(opt)
+        predOutDataList.append(predictor.predict(validationInData))
+    predOutData = np.median(np.array(predOutDataList), axis = 0)
+    return predOutData
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 
 main()

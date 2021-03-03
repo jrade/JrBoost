@@ -27,7 +27,8 @@ cvParam = {
     'outerFoldCount': 5,
     'innerFoldCount': 5,
     'bestOptionCount': 1,
-    'bagSize': 1,
+    'bagSize': None,
+    'ultraBoost': None,
 
     'populationCount': 100,
     'survivorCount': 50,
@@ -58,7 +59,6 @@ def main():
     variables = inDataFrame.columns
     labels = outDataFrame.columns
     print(f'{len(samples)} samples, {len(variables)} variables')
-    print(f'labels: {list(labels)}\n')
 
     inData = inDataFrame.to_numpy(dtype = np.float32)
     for i in itertools.count():

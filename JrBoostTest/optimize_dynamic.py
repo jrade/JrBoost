@@ -33,15 +33,23 @@ def optimize(cvParam, evalFun):
 
         k += 1
         if k == cycleCount:
-            del sortedIndices[bestOptionCount:]
-            optionList = [optionList[i] for i in sortedIndices]
-            if ultraBoost is not None and ultraBoost != 1:
-                for opt in optionList:
-                    opt.iterationCount *= ultraBoost
-                    opt.eta /= ultraBoost
-            return bagSize * optionList
+            break
 
         del sortedIndices[survivorCount:]
         for values in bpValues.values():
             values[:] = [values[i] for i in sortedIndices]
             values.sort()
+
+    del sortedIndices[bestOptionCount:]
+    optionList = [optionList[i] for i in sortedIndices]
+
+    if ultraBoost is not None:
+        for opt in optionList:
+            opt.iterationCount *= ultraBoost
+            opt.eta /= ultraBoost
+
+    if bagSize is not None:
+        optionList *= bagSize
+
+    return optionList
+
