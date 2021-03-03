@@ -1,12 +1,11 @@
 #pragma once
 
 
-//#define USE_LOR
-
 // Standard library
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <exception>
 #include<functional>
@@ -25,6 +24,7 @@
 #include <vector>
 
 using std::array;
+using std::atomic;
 using std::cout;
 using std::endl;
 using std::function;

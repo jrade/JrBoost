@@ -4,12 +4,28 @@
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostTrainer.h"
 #include "../JrBoostLib/BoostPredictor.h"
+#include "../JrBoostLib/InterruptHandler.h"
 
 namespace py = pybind11;
 
 
+class PyBind11InterruptHandler : public InterruptHandler {
+public:
+    virtual void check() 
+    { 
+        py::gil_scoped_acquire acquire;
+        if (PyErr_CheckSignals() != 0)
+            throw py::error_already_set();
+    }
+};
+
+PyBind11InterruptHandler thePyBind11InterruptHandler;
+
+
 PYBIND11_MODULE(jrboost, mod)
 {
+    currentInterruptHandler = &thePyBind11InterruptHandler;
+
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
     mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(), py::arg(), py::arg());
@@ -19,15 +35,23 @@ PYBIND11_MODULE(jrboost, mod)
 
     // loss functions
 
-    mod.def("linLoss", &linLoss).attr("name") = "lin-loss";
-    mod.def("logLoss", &logLoss).attr("name") = "log-loss";
-    mod.def("sqrtLoss", &sqrtLoss).attr("name") = "sqrt-loss";
+    mod.def("linLoss_lor", &linLoss_lor).attr("name") = "lin-loss";
+    mod.def("linLoss_p", &linLoss_p).attr("name") = "lin-loss";
+    mod.def("logLoss_lor", &logLoss_lor).attr("name") = "log-loss";
+    mod.def("logLoss_p", &logLoss_p).attr("name") = "log-loss";
+    mod.def("sqrtLoss_lor", &sqrtLoss_lor).attr("name") = "sqrt-loss";
+    mod.def("sqrtLoss_p", &sqrtLoss_p).attr("name") = "sqrt-loss";
     mod.def("negAuc", &negAuc).attr("name") = "neg-auc";
 
-    py::class_<AlphaLoss>{ mod, "AlphaLoss" }
+    py::class_<AlphaLoss_lor>{ mod, "AlphaLoss_lor" }
         .def(py::init<double>())
-        .def("__call__", &AlphaLoss::operator())
-        .def_property_readonly("name", &AlphaLoss::name);
+        .def("__call__", &AlphaLoss_lor::operator())
+        .def_property_readonly("name", &AlphaLoss_lor::name);
+
+    py::class_<AlphaLoss_p>{ mod, "AlphaLoss_p" }
+        .def(py::init<double>())
+        .def("__call__", &AlphaLoss_p::operator())
+        .def_property_readonly("name", &AlphaLoss_p::name);
 
     py::class_<ErrorCount>{ mod, "ErrorCount" }
         .def(py::init<double>())

@@ -11,10 +11,10 @@ PROFILE = jrboost.PROFILE
 cvParam = {
     'threadCount': 4,
     'profile': False,
-    'dataFraction': 0.001,
+    'dataFraction': 0.01,
 
     'optimizeFun': optimize_dynamic.optimize,
-    'lossFun': jrboost.logLoss,
+    'lossFun': jrboost.logLoss_lor,
     'innerFoldCount': 5,
 
     'boostParamValues': {
@@ -37,7 +37,6 @@ cvParam = {
 #-----------------------------------------------------------------------------------------------------------------------
 
 def main():
-
 
     print(cvParam)
     print()
@@ -74,17 +73,16 @@ def main():
         predOutDataFrame = pd.DataFrame(index = testSamples, columns = labels, dtype = np.uint64)
 
         for label in labels:
-            print(label)
             trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint64);
 
             bestOptList = optimizeFun(
                 cvParam,
                 lambda optionList: 
-                    util.trainAndEvalInternal(trainInData, trainOutData, None, innerFoldCount, optionList, lossFun)
+                    trainAndEval(trainInData, trainOutData, innerFoldCount, optionList, lossFun)
             )                 
 
             print(f'{label}: {formatOptions(bestOptList[0])}')
-            predOutData = util.trainAndPredictExternal(trainInData, trainOutData, testInData, bestOptList)
+            predOutData = trainAndPredict(trainInData, trainOutData, testInData, bestOptList)
             predOutDataFrame[label] = predOutData
 
         PROFILE.POP()
@@ -94,6 +92,7 @@ def main():
         print()
         print()
 
+        predOuDataFrame = util.lorToProb(predOutDataFrame)
         predOutDataFrame.to_csv('result.csv', sep = ',')
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -118,8 +117,36 @@ def loadTestData(frac = None):
     testDataFrame = pd.read_csv(testDataPath, sep = ',', index_col = 0)
     if frac is not None:
         testDataFrame = testDataFrame.sample(frac = frac)
-
     return testDataFrame
+
+
+def trainAndEval(inData, outData, foldCount, optionList, lossFun):
+
+    optionCount = len(optionList)
+    loss = np.zeros((optionCount,))
+    folds = util.stratifiedRandomFolds(outData, foldCount)
+    for trainSamples, testSamples in folds:
+
+        trainInData = inData[trainSamples, :]
+        testInData = inData[testSamples, :]
+        trainOutData = outData[trainSamples]
+        testOutData = outData[testSamples]
+
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+        loss += trainer.trainAndEval(testInData, testOutData, optionList, lossFun)
+
+    return loss
+
+
+def trainAndPredict(trainInData, trainOutData, testInData, bestOptList):
+
+    predOutDataList = []
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+    for opt in bestOptList:
+        predictor = trainer.train(opt)
+        predOutDataList.append(predictor.predict(testInData))
+    predOutData = np.median(np.array(predOutDataList), axis = 0)
+    return predOutData
 
 
 def formatOptions(opt):

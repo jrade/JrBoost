@@ -5,6 +5,7 @@
 #include "StumpTrainer.h"
 #include "SimplePredictor.h"
 #include "SortedIndices.h"
+#include "InterruptHandler.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights) :
@@ -159,26 +160,42 @@ ArrayXd BoostTrainer::trainAndEval(
 
     ArrayXd scores(optCount);
     std::exception_ptr ep;
+    atomic<bool> exceptionThrown = false;
 
     #pragma omp parallel
     {
+        int threadId = omp_get_thread_num();
+
         #pragma omp for nowait schedule(dynamic)
         for (int i = 0; i < static_cast<int>(optCount); ++i) {
+
+            if (exceptionThrown) continue;
+
             try {
+                if (threadId == 0 && currentInterruptHandler != nullptr)
+                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
+
                 size_t j = optIndicesSortedByCost[i];
                 unique_ptr<BoostPredictor> pred = train(opt[j]);
                 ArrayXd predData = pred->predict(testInData);
                 scores(j) = std::get<2>(lossFun(testOutData, predData));
             }
+
             catch (const std::exception&) {
                 #pragma omp critical
-                if (!ep) ep = std::current_exception();
+                if (!exceptionThrown) {
+                    ep = std::current_exception();
+                    exceptionThrown = true;
+                }
             }
+
         } // don't wait here ...
         PROFILE::PUSH(PROFILE::OMP_BARRIER);
+
     } // ... but here so we can measure the wait time
     PROFILE::POP();
 
-    if (ep) std::rethrow_exception(ep);
+    if (exceptionThrown) std::rethrow_exception(ep);
+
     return scores;
 }

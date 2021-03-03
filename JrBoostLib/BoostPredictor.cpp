@@ -31,11 +31,6 @@ ArrayXd BoostPredictor::predict(CRefXXf inData) const
     size_t n = basePredictors_.size();
     for (size_t k = 0; k < n; ++k)
         basePredictors_[k]->predict(inData, c1_[k], pred);
-
-#ifndef USE_LOR
-    pred = 1.0 / (1.0 + (-pred).exp());
-#endif
-
     PROFILE::POP(sampleCount * n);
     return pred;
 }

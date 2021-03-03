@@ -1,43 +1,39 @@
 #pragma once
 
 
-inline tuple<double, double, double> errorCount(CRefXs outData, CRefXd predData, double p)
+inline tuple<double, double, double> errorCount(CRefXs outData, CRefXd predData, double threshold)
 {
-#ifdef USE_LOR
-    double cutoff = std::log(p) - std::log(1.0 - p);
-#else
-    double cutoff = p;
-#endif
-    double falsePos = static_cast<double>(((1 - outData) * (predData >= cutoff).cast<size_t>()).sum());
-    double falseNeg = static_cast<double>((outData * (predData < cutoff).cast<size_t>()).sum());
+    double falsePos = static_cast<double>(((1 - outData) * (predData >= threshold).cast<size_t>()).sum());
+    double falseNeg = static_cast<double>((outData * (predData < threshold).cast<size_t>()).sum());
     return tuple{ falsePos, falseNeg, falsePos + falseNeg };
 }
 
 
-inline tuple<double, double, double> linLoss(CRefXs outData, CRefXd predData)
+inline tuple<double, double, double> linLoss_lor(CRefXs outData, CRefXd predData)
 {
-#ifdef USE_LOR
     double falsePos = ((1 - outData).cast<double>() / (1.0 + (-predData).exp())).sum();
     double falseNeg = (outData.cast<double>() / (1.0 + predData.exp())).sum();
-#else
-    double falsePos = ((1 - outData).cast<double>() * predData).sum();
-    double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
-#endif
     return std::make_tuple(falsePos, falseNeg, falsePos + falseNeg);
 }
 
 
-inline tuple<double, double, double> logLoss(CRefXs outData, CRefXd predData)
+inline tuple<double, double, double> linLoss_p(CRefXs outData, CRefXd predData)
 {
-#ifdef USE_LOR
+    double falsePos = ((1 - outData).cast<double>() * predData).sum();
+    double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
+    return std::make_tuple(falsePos, falseNeg, falsePos + falseNeg);
+}
 
+
+inline tuple<double, double, double> logLoss_lor(CRefXs outData, CRefXd predData)
+{
     double falsePos = -(
         (1 - outData).cast<double>()
         * (predData >= 0.0).select(
             -predData - (-predData).exp().log1p()
             , -(predData).exp().log1p()
         )
-    ).sum();
+        ).sum();
 
     // The two expressions  -predData - (-predData).exp().log1p()  and  -(predData).exp().log1p()
     // are mathematically equivalent but the first is numerically accurate for large positive predData
@@ -48,41 +44,55 @@ inline tuple<double, double, double> logLoss(CRefXs outData, CRefXd predData)
             -(-predData).exp().log1p()
             , predData - (predData).exp().log1p()
         )
-    ).sum();
+        ).sum();
 
-#else
+    return std::make_tuple(falsePos, falseNeg, falsePos + falseNeg);
+}
+
+
+inline tuple<double, double, double> logLoss_p(CRefXs outData, CRefXd predData)
+{
     constexpr double epsilon = std::numeric_limits<double>::min();
     double falsePos = -((1 - outData).cast<double>() * (1.0 - predData + epsilon).log()).sum();
     double falseNeg = -(outData.cast<double>() * (predData + epsilon).log()).sum();
-#endif
     return std::make_tuple(falsePos, falseNeg, falsePos + falseNeg);
 }
 
 
-inline tuple<double, double, double> alphaLoss(CRefXs outData, CRefXd predData, double alpha)
+inline tuple<double, double, double> alphaLoss_lor(CRefXs outData, CRefXd predData, double alpha)
 {
-#ifdef USE_LOR
 
     double falsePos = ((1 - outData).cast<double>()
         * (1.0 - (1.0 / (1.0 + predData.exp())).pow(alpha))
-    ).sum() / alpha;
+        ).sum() / alpha;
 
     double falseNeg = (outData.cast<double>()
         * (1.0 - (1.0 / (1.0 + (-predData).exp())).pow(alpha))
-    ).sum() / alpha;
+        ).sum() / alpha;
 
-#else
+    return std::make_tuple(falsePos, falseNeg, falsePos + falseNeg);
+}
+
+inline tuple<double, double, double> alphaLoss_p(CRefXs outData, CRefXd predData, double alpha)
+{
     double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(alpha))).sum() / alpha;
     double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(alpha))).sum() / alpha;
-#endif
     return std::make_tuple(falsePos, falseNeg, falsePos + falseNeg);
 }
 
 
-inline tuple<double, double, double> sqrtLoss(CRefXs outData, CRefXd predData)
+inline tuple<double, double, double> sqrtLoss_lor(CRefXs outData, CRefXd predData)
 {
-    return alphaLoss(outData, predData, 0.5);
+    return alphaLoss_lor(outData, predData, 0.5);
 }
+
+
+inline tuple<double, double, double> sqrtLoss_p(CRefXs outData, CRefXd predData)
+{
+    return alphaLoss_p(outData, predData, 0.5);
+}
+
+
 
 inline tuple<double, double, double> negAuc(CRefXs outData, CRefXd predData)
 {
@@ -112,32 +122,53 @@ inline tuple<double, double, double> negAuc(CRefXs outData, CRefXd predData)
 
 class ErrorCount {
 public:
-    ErrorCount(double p) : p_(p) {}
+    ErrorCount(double threshold) : threshold_(threshold) {}
 
     tuple<double, double, double> operator()(CRefXs outData, CRefXd predData) const
     {
-        return errorCount(outData, predData, p_);
+        return errorCount(outData, predData, threshold_);
     }
 
     string name() const
     {
         stringstream ss;
-        ss << "err-count(" << p_ << ")";
+        ss << "err-count(" << threshold_ << ")";
         return ss.str();
     }
 
 private:
-    const double p_;
+    const double threshold_;
 };
 
 
-class AlphaLoss {
+class AlphaLoss_lor {
 public:
-    AlphaLoss(double alpha) : alpha_(alpha) {}
+    AlphaLoss_lor(double alpha) : alpha_(alpha) {}
 
     tuple<double, double, double> operator()(CRefXs outData, CRefXd predData) const
     {
-        return alphaLoss(outData, predData, alpha_);
+        return alphaLoss_lor(outData, predData, alpha_);
+    }
+
+    string name() const
+    {
+        stringstream ss;
+        ss << "alpha-loss(" << alpha_ << ")";
+        return ss.str();
+    }
+
+private:
+    const double alpha_;
+};
+
+
+class AlphaLoss_p {
+public:
+    AlphaLoss_p(double alpha) : alpha_(alpha) {}
+
+    tuple<double, double, double> operator()(CRefXs outData, CRefXd predData) const
+    {
+        return alphaLoss_p(outData, predData, alpha_);
     }
 
     string name() const
