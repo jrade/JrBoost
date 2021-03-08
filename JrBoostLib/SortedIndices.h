@@ -1,5 +1,6 @@
 #pragma once
 
+#include "pdqsort.h"
 
 template<typename T, typename U, typename F>
 inline void sortedIndices(T p0, T p1, U q0, F f)
@@ -15,11 +16,19 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
     auto r = r0;
     while (p != p1)
         *(r++) = std::make_pair(i++, f(*(p++)));
-    pdqsort_branchless(
-        r0,
-        r1,
-        [](const auto& x, const auto& y) { return x.second < y.second; }
-    );
+
+    if constexpr (std::is_arithmetic<R>::value)
+        pdqsort_branchless(
+            r0,
+            r1,
+            [](const auto& x, const auto& y) { return x.second < y.second; }
+        );
+    else
+        pdqsort(
+            r0,
+            r1,
+            [](const auto& x, const auto& y) { return x.second < y.second; }
+        );
 
     r = r0;
     auto q = q0;

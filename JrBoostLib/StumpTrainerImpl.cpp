@@ -3,6 +3,7 @@
 #include "StumpOptions.h"
 #include "StumpPredictor.h"
 #include "TrivialPredictor.h"
+#include "pdqsort.h"
 
 
 template<typename SampleIndex>

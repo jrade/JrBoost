@@ -5,17 +5,14 @@ import jrboost
 
 def optimize(cvParam, evalFun):
 
+    cycleCount = cvParam['cycleCount']
     populationCount = cvParam['populationCount']
     survivorCount = cvParam['survivorCount']
-    cycleCount = cvParam['cycleCount']
+    bpValues = cvParam['boostParamValues']
 
-    bestOptionCount = cvParam['bestOptionCount']
-    ultraBoost = cvParam.get('ultraBoost', None)
-    bagSize = cvParam['bagSize']
-
-    bpValues = copy.deepcopy(cvParam['boostParamValues'])
-
-    for k in itertools.count():
+    bpValues = copy.deepcopy(bpValues)
+    k = 0
+    while True:
 
         for values in bpValues.values():
             valueCount = len(values)
@@ -40,6 +37,12 @@ def optimize(cvParam, evalFun):
             values[:] = [values[i] for i in sortedIndices]
             values.sort()
 
+    # finalize
+
+    bestOptionCount = cvParam['bestOptionCount']
+    ultraBoost = cvParam.get('ultraBoost', None)
+    bagSize = cvParam.get('bagSize', None)
+
     del sortedIndices[bestOptionCount:]
     optionList = [optionList[i] for i in sortedIndices]
 
@@ -52,4 +55,3 @@ def optimize(cvParam, evalFun):
         optionList *= bagSize
 
     return optionList
-

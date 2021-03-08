@@ -16,7 +16,7 @@ public:
         CRefXXf testInData,
         CRefXs testOutData,
         const vector<BoostOptions>& opt,
-        function<tuple<double, double, double>(CRefXs, CRefXd)> lossFun
+        function<Array3d(CRefXs, CRefXd)> lossFun
     ) const;
 
  // deleted:

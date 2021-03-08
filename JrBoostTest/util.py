@@ -8,7 +8,17 @@ import jrboost
 def lorToP(a):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        return 1.0 / (1.0 + np.exp(-a))
+        return 1.0 / (1.0 + np.exp(np.negative(a)))
+
+
+# remove the m smallest and m largest elements and compute the mean of the rest
+def trimmedMean(a, m, axis = -1):
+    n =  np.shape(a)[axis]
+    assert n > 2 * m
+    a = np.sort(a, axis = axis)
+    a = np.take(a, range(m, n - m), axis = axis)
+    a = np.mean(a, axis = axis)
+    return a
 
 
 def oneHotEncode(dataSeries):
@@ -74,15 +84,11 @@ def stratifiedRandomSplit(outData, ratio, samples = None):
 
 
 def findPath(path):
-
-    i = 0
-    while True:
+    for i in range(10):
         if os.path.exists(path):
-            return path
-        if (i >= 10):
-            raise RuntimeError(f'Unable to find {path}')
+            return path            
         path = '../' + path
-        i += 1
+    raise RuntimeError(f'Unable to find {path}')
 
 
 def formatTime(t):

@@ -137,7 +137,7 @@ ArrayXd BoostTrainer::trainAndEval(
     CRefXXf testInData,
     CRefXs testOutData,
     const vector<BoostOptions>& opt,
-    function<tuple<double, double, double>(CRefXs, CRefXd)> lossFun
+    function<Array3d(CRefXs, CRefXd)> lossFun
 ) const
 {
     ASSERT(testInData.rows() == testOutData.rows());
@@ -178,7 +178,7 @@ ArrayXd BoostTrainer::trainAndEval(
                 size_t j = optIndicesSortedByCost[i];
                 unique_ptr<BoostPredictor> pred = train(opt[j]);
                 ArrayXd predData = pred->predict(testInData);
-                scores(j) = std::get<2>(lossFun(testOutData, predData));
+                scores(j) = lossFun(testOutData, predData)(2);
             }
 
             catch (const std::exception&) {

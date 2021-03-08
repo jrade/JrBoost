@@ -50,6 +50,7 @@ inline ArrayXs tStatisticRank(
     }
 
     ArrayXf t2 = (mean[1] - mean[0]).square() / (SS[0] + SS[1] + numeric_limits<float>::min());
+    // t2 = square of the t-statistic
 
     ArrayXs ind(variableCount);
     sortedIndices(

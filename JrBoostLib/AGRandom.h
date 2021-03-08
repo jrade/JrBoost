@@ -1,15 +1,15 @@
-// Copyright (c) 2021 Johan Rade.
-// This code is licensed under the MIT license.
+/*
+    Fast random number engines by Arvid Gerstmann
+    See https://arvid.io/2018/07/02/better-cxx-prng/
 
-// Copyright (c) 2018 Arvid Gerstmann.
-// This code is licensed under the MIT license.
+    Bug fix by Johan Råde: added inline to operator== and operator!=
+*/
 
-// Fast random number engines by Arvid Gerstmann
-// See https://arvid.io/2018/07/02/better-cxx-prng/
 
-#pragma once
-
-//------------------------------------------------------------------------------
+/* Copyright (c) 2018 Arvid Gerstmann. */
+/* This code is licensed under MIT license. */
+#ifndef AG_RANDOM_H
+#define AG_RANDOM_H
 
 class splitmix
 {
@@ -21,7 +21,6 @@ public:
     friend bool operator!=(splitmix const&, splitmix const&);
 
     splitmix() : m_seed(1) {}
-
     explicit splitmix(std::random_device& rd)
     {
         seed(rd);
@@ -54,13 +53,10 @@ inline bool operator==(splitmix const& lhs, splitmix const& rhs)
 {
     return lhs.m_seed == rhs.m_seed;
 }
-
 inline bool operator!=(splitmix const& lhs, splitmix const& rhs)
 {
     return lhs.m_seed != rhs.m_seed;
 }
-
-//------------------------------------------------------------------------------
 
 class xorshift
 {
@@ -72,7 +68,6 @@ public:
     friend bool operator!=(xorshift const&, xorshift const&);
 
     xorshift() : m_seed(0xc1f651c67c62c6e0ull) {}
-
     explicit xorshift(std::random_device& rd)
     {
         seed(rd);
@@ -111,8 +106,6 @@ inline bool operator!=(xorshift const& lhs, xorshift const& rhs)
     return lhs.m_seed != rhs.m_seed;
 }
 
-//------------------------------------------------------------------------------
-
 class pcg
 {
 public:
@@ -126,7 +119,6 @@ public:
         : m_state(0x853c49e6748fea9bULL)
         , m_inc(0xda3e39cb94b95bdbULL)
     {}
-
     explicit pcg(std::random_device& rd)
     {
         seed(rd);
@@ -169,9 +161,10 @@ inline bool operator==(pcg const& lhs, pcg const& rhs)
     return lhs.m_state == rhs.m_state
         && lhs.m_inc == rhs.m_inc;
 }
-
 inline bool operator!=(pcg const& lhs, pcg const& rhs)
 {
     return lhs.m_state != rhs.m_state
         || lhs.m_inc != rhs.m_inc;
 }
+
+#endif /* AG_RANDOM_H */

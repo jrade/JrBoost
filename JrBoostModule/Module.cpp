@@ -35,13 +35,20 @@ PYBIND11_MODULE(jrboost, mod)
 
     // loss functions
 
-    mod.def("linLoss_lor", &linLoss_lor).attr("name") = "lin-loss";
-    mod.def("linLoss_p", &linLoss_p).attr("name") = "lin-loss";
-    mod.def("logLoss_lor", &logLoss_lor).attr("name") = "log-loss";
-    mod.def("logLoss_p", &logLoss_p).attr("name") = "log-loss";
-    mod.def("sqrtLoss_lor", &sqrtLoss_lor).attr("name") = "sqrt-loss";
-    mod.def("sqrtLoss_p", &sqrtLoss_p).attr("name") = "sqrt-loss";
-    mod.def("negAuc", &negAuc).attr("name") = "neg-auc";
+    mod.def("errorCount_lor", &errorCount_lor);
+    mod.def("errorCount_p", &errorCount_p);
+    mod.def("linLoss_lor", &linLoss_lor);
+    mod.def("linLoss_p", &linLoss_p);
+    mod.def("logLoss_lor", &logLoss_lor);
+    mod.def("logLoss_p", &logLoss_p);
+    mod.def("sqrtLoss_lor", &sqrtLoss_lor);
+    mod.def("sqrtLoss_p", &sqrtLoss_p);
+    mod.def("negAuc", &negAuc);
+
+    py::class_<ErrorCount>{ mod, "ErrorCount" }
+        .def(py::init<double>())
+        .def("__call__", &ErrorCount::operator())
+        .def_property_readonly("name", &ErrorCount::name);
 
     py::class_<AlphaLoss_lor>{ mod, "AlphaLoss_lor" }
         .def(py::init<double>())
@@ -52,11 +59,6 @@ PYBIND11_MODULE(jrboost, mod)
         .def(py::init<double>())
         .def("__call__", &AlphaLoss_p::operator())
         .def_property_readonly("name", &AlphaLoss_p::name);
-
-    py::class_<ErrorCount>{ mod, "ErrorCount" }
-        .def(py::init<double>())
-        .def("__call__", &ErrorCount::operator())
-        .def_property_readonly("name", &ErrorCount::name);
 
 
     // PROFILE
