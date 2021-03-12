@@ -1,3 +1,7 @@
+//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Distributed under the MIT license.
+//  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
+
 #pragma once
 
 #include "pdqsort.h"
@@ -163,7 +167,7 @@ public:
     string name() const
     {
         stringstream ss;
-        ss << "alpha-loss(" << alpha_ << ")";
+        ss << "alpha(" << alpha_ << ")";
         return ss.str();
     }
 
@@ -184,7 +188,7 @@ public:
     string name() const
     {
         stringstream ss;
-        ss << "alpha-loss(" << alpha_ << ")";
+        ss << "alpha(" << alpha_ << ")";
         return ss.str();
     }
 

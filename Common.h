@@ -1,3 +1,7 @@
+//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Distributed under the MIT license.
+//  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
+
 #pragma once
 
 
@@ -8,7 +12,7 @@
 #include <atomic>
 #include <cmath>
 #include <exception>
-#include<functional>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <limits>
@@ -19,7 +23,6 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
-#include <thread>
 #include <vector>
 
 using std::array;

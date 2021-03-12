@@ -1,3 +1,7 @@
+#  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+#  Distributed under the MIT license.
+#  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
+
 import os, random, warnings
 import numpy as np
 import pandas as pd
@@ -32,8 +36,8 @@ def oneHotEncode(dataSeries):
     columns = pd.Index(labels, name = dataSeries.name)
     dataFrame = pd.DataFrame(index = samples, columns = columns, data = 0)
     for sample in dataSeries.index:
-        for label in dataSeries[sample].split(';'):
-            dataFrame.loc[sample, label] = 1
+        label = dataSeries[sample]
+        dataFrame.loc[sample, label] = 1
 
     return dataFrame
 

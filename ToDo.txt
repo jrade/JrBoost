@@ -1,3 +1,51 @@
+General code improvements:
+
+	interface cleanups:
+		ordering and hashing of options objects
+		define a converter from dict -> BoostParameters
+		rename BoostOptions -> BoostParameters
+		more flexible loss function implementation
+			return several named values (instead of 3 unnnamed values as now)
+
+	optimizations:
+		optimize case when all samples are used (usedSampleRation = 1.0, minSampleWeight = 0.0)
+		profile Higgs and otto with float versus double outData and weights - decide which to use
+		Schraudolph (see below)
+		use Clang?
+			https://docs.microsoft.com/en-us/cpp/build/clang-support-msbuild?view=msvc-160
+
+	test:
+		test util.stratifiedRandomSplit
+		write some tests for the loss functions
+			feed random data into them and check that lor version on lor data and p version and p data give same thing
+			check limit behaviour of alpa loss as alpha -> 0 or 1
+
+Higgs:
+	run with LOR and median
+	plot the result
+	draw a line in the plot that marks the estimated cutoff
+	should we use a 0 cutoff?
+	implement the AMS loss function
+	run with CV - ignore the test datasets
+
+Higgs:
+	AUC as optimization target
+		better cv + AUC implementation?
+	percentage threshold
+
+Otto:
+	run an explorative round with full dataset
+		usedSampleRatio = [0.01, 0.02, .... 1]
+		minNodeSize = [1,2,5,10, 20, , .... 10000]
+	test alpha loss with some alpha around 0.1?
+
+	fit hyperparams jointly or separately for the different labels?
+	try again with linloss, logloss and auc
+
+
+	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
+
+==================================================================
 
 main                      1404   1.2%
   t-rank                  4436   3.9%    4.0
@@ -18,35 +66,16 @@ slow branch: 2.5%
 
 0:01:10
 
----------------------------------------------------------------------
+==================================================================
 
 using size_t and double everywhere
 	except:
 		arrays of sampleIndices use smallest type
 		inData: float
 
-	profile the first decision again
+	profile the first decision again with a larger dataset (Higgs for instance)
 
 =====================================================================
-
-Higgs dataset
-	how to get AUC into the framework
-		try simplified AUC
-			do a branch free implementation
-
-=====================================================================
-
-start clenaup work uisng Iris
-	
-then push to GitHub
-
-=====================================================================
-
-produce report
-	first a simple one
-	add a train and predict function similar to train and eval
-
-implement smarter hyperparameter optimization methods
 
 better understanding of boosting:
 	log high sample weight ratio
@@ -55,13 +84,13 @@ better understanding of boosting:
 
 -----------------------------------------------------------------------
 
-Higgs:
-	AUC as optimization target
-	percentage threshold
+python package organization
 
 trees
-	allocate nodes with a memory pool
-	pruning
+	allocate nodes with memory pool
+	also pruning
+
+histogram based stumps (would speed up Otto a lot)
 
 gradient boost
 	read xgb paper and Friedman to check that my understanding is correct
@@ -74,7 +103,13 @@ extended algorithms:
 	alpha boost
 	alpha-beta boost with beta loss
 
-review use of integer and foating point data types
+review use of integer and floating point data types
+
+Schraudolpf exp
+	https://bduvenhage.me/performance/machine_learning/2019/06/04/fast-exp.html
+	N. Schraudolph, “A Fast, Compact Approximation of the Exponential Function”, Neural Computation 11, 853–862 (1999)
+	implement using NSIMD: https://store.agenium-scale.com/en/
+	https://github.com/agenium-scale/nsimd
 
 stump train strategy:
 	current method has time complexity (in clock cycles)
@@ -85,8 +120,6 @@ stump train strategy:
 	this might be faster when usedSampleCount is small i.e. when we do weight filtering and most weights are small
 	use pdq-sort (https://github.com/orlp/pdqsort) when sorting
 
-histogram based methods
-
 Kaggle Higgs dataset:
 	maybe put together three things:
 		winning contribution
@@ -95,21 +128,22 @@ Kaggle Higgs dataset:
 		winning submission is written in lisp!!
 			https://github.com/melisgl/higgsml
 
+BART??
+
 ----------------------------------------------------------------------
 
 low prio:
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 	L2-penalty (lambda) or L1-penalty (alpha)
 	multi-group
+	validation of indata to predict?
 
 ----------------------------------------------------------------------
 
 PyBind11 issues:
 	how translate custom C++ exceptions to standard Python exceptions
-	no way of specifying noocnvert for property setters
-	investigate abstract factory crash (JrBooster Crash)
-		is the problem return values that are derived objects passed with unique_ptr to base class?
-		test with the Miniconda that somes bundles with Visual Studio
+	no way of specifying noconvert for property setters
+	how to set function attributes
 	
 Gerstmann issues:
 	seed function would be useful
@@ -141,7 +175,39 @@ NumPy issues:
 	inData[trainSamples, :] does not preserve Fortran (column major) order
 		how to get fortran ordered slices of fortran ordered arrays?
 
+Pandas issues:
+	if you set dtype when calling read_csv(), this is applied to the index column as well 
+
 ------------------------------------------------------------------------
 
 take a look at std::span, std::view, std::mdview, ranges etc in C++20
+
+======================================================================================
+
+Notes:
+
+/O2 =  /Og /Oi /Ot /Oy /Ob2 /GF /Gy
+
+/GL /O2 and /Ot make a big difference
+
+/arch:AVX is faster than /arch:SSE and /arch:SSE2
+/arch:AVX2 is not faster than /arch:AVX
+the sppedup comes from BoostTrainer::trainAda_() (possibly the exp() call)
+
+/fp:strict, /fp:pecise, /fp:fast: no clear difference, but there is no reason not to choose /fp:fast
+
+splitmix is the fastest rng
+
+FastBernoulliDistribution: uint64_t is much faster than double
+  turning the class into a function does not increase speed
+
+other MSVS 2019 settings:
+    Tools > Options > Python > Conda: ..../conda.exe
+    compiler flag:  /permissive-
+    Run-time Library = Multi-threaded DLL (/MD) (for all configurations!)
+    mixed debugging
+
+numpy arrays are by default row major ("C storage order")
+Eigen arrays are by default column major ("Fortran storage order")
+
 
