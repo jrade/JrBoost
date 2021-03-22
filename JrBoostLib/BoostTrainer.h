@@ -28,9 +28,9 @@ public:
     BoostTrainer& operator=(const  BoostTrainer&) = delete;
 
 private:
-    double calculateF0_() const;
-    unique_ptr<BoostPredictor> trainAda_(const BoostOptions& opt) const;
-    unique_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt) const;
+    double calculateLor0_() const;
+    unique_ptr<BoostPredictor> trainAda_(BoostOptions opt) const;
+    unique_ptr<BoostPredictor> trainAlpha_(BoostOptions opt) const;
 
 private:
     const ArrayXXf inData_;
@@ -40,8 +40,5 @@ private:
     const ArrayXd outData_;
     const optional<ArrayXd> weights_;
     const shared_ptr<StumpTrainer> baseTrainer_;
-    const double f0_;
-
-    inline static thread_local ArrayXd F_;
-    inline static thread_local ArrayXd adjWeights_;
+    const double lor0_;
 };

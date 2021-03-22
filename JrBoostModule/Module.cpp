@@ -84,21 +84,26 @@ PYBIND11_MODULE(jrboost, mod)
     py::class_<BoostOptions> opt{ mod, "BoostOptions" };
 
     opt.def(py::init<>())
+        .def_readonly_static("Ada", &BoostOptions::Ada)
+        .def_readonly_static("Alpha", &BoostOptions::Alpha)
         .def_property("method", &BoostOptions::method, &BoostOptions::setMethod)
+        .def_property("alpha", &BoostOptions::alpha, &BoostOptions::setAlpha)
         .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
         .def_property("eta", &BoostOptions::eta, &BoostOptions::setEta)
-        .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
-        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
-        .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
-        .def_property("minSampleWeight", &StumpOptions::minSampleWeight, &StumpOptions::setMinSampleWeight)
-        .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
-        .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
-        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
+        .def_property("usedSampleRatio", &BoostOptions::usedSampleRatio, &BoostOptions::setUsedSampleRatio)
+        .def_property("usedVariableRatio", &BoostOptions::usedVariableRatio, &BoostOptions::setUsedVariableRatio)
+        .def_property("topVariableCount", &BoostOptions::topVariableCount, &BoostOptions::setTopVariableCount)
+        .def_property("minAbsSampleWeight", &BoostOptions::minAbsSampleWeight, &BoostOptions::setMinAbsSampleWeight)
+        .def_property("minRelSampleWeight", &BoostOptions::minRelSampleWeight, &BoostOptions::setMinRelSampleWeight)
+        .def_property("minNodeSize", &BoostOptions::minNodeSize, &BoostOptions::setMinNodeSize)
+        .def_property("minNodeWeight", &BoostOptions::minNodeWeight, &BoostOptions::setMinNodeWeight)
+        .def_property("isStratified", &BoostOptions::isStratified, &BoostOptions::setIsStratified)
         .def("__copy__", [](const BoostOptions& bOpt) { return BoostOptions(bOpt); });
 
-    py::enum_<BoostOptions::Method>(opt, "Method")
-        .value("Ada", BoostOptions::Method::Ada)
-        .value("Logit", BoostOptions::Method::Logit);
+    //py::enum_<BoostOptions::Method>(opt, "Method")
+    //    .value("Ada", BoostOptions::Method::Ada)
+    //    .value("Logit", BoostOptions::Method::Logit)
+    //    .value("Alpha", BoostOptions::Method::Alpha);
 
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
         .def(py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(), py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>())

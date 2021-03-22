@@ -125,7 +125,7 @@ unique_ptr<SimplePredictor> StumpTrainerImpl<SampleIndex>::train(
             std::tie(sumW, sumWY) = initSums_(outData, weights);
             if (sumW == 0) {
                 PROFILE::POP(ITEM_COUNT);
-                cout << "Warning: sumW = 0" << endl;
+                // cout << "Warning: sumW = 0" << endl;
                 return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
             }
 

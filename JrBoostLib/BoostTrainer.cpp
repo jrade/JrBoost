@@ -19,7 +19,7 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     rawOutData_{ std::move(outData) },
     outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 },
     weights_{ std::move(weights) },
-    f0_{ calculateF0_() },
+    lor0_{ calculateLor0_() },
     baseTrainer_{ std::make_shared<StumpTrainer>(inData_, rawOutData_) }
 {
     ASSERT(inData_.rows() != 0);
@@ -31,25 +31,35 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     ASSERT((rawOutData_ < 2).all());
 }
 
-double BoostTrainer::calculateF0_() const
+double BoostTrainer::calculateLor0_() const
 {
     if (weights_)
         return  (
             log((rawOutData_.cast<double>() * (*weights_)).sum())
             - log(((1 - rawOutData_).cast<double>() * (*weights_)).sum())
-        ) / 2.0;
+        );
     else
         return  (
             log(static_cast<double>(rawOutData_.sum()))
             - log(static_cast<double>((1 - rawOutData_).sum()))
-        ) / 2.0;
+        );
 }
 
 unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
 
-    auto pred = opt.method() == BoostOptions::Method::Ada ? trainAda_(opt) : trainLogit_(opt);
+    unique_ptr<BoostPredictor> pred;
+    switch (opt.method()) {
+    case BoostOptions::Ada:
+        pred = trainAda_(opt);
+        break;
+    case BoostOptions::Alpha:
+        pred = trainAlpha_(opt);
+        break;
+    default:
+        ASSERT(false);
+    }
 
     const size_t ITEM_COUNT = sampleCount_ *  opt.iterationCount();
     PROFILE::POP(ITEM_COUNT);
@@ -59,79 +69,97 @@ unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
+unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
 {
-    const double eta = opt.eta();
     const size_t iterationCount = opt.iterationCount();
+    const double eta = opt.eta();
+    const double minAbsSampleWeight = opt.minAbsSampleWeight();
+    const double minRelSampleWeight = opt.minRelSampleWeight();
 
-    F_.resize(sampleCount_);
-    F_ = f0_;
+    ArrayXd F = ArrayXd::Constant(sampleCount_, lor0_ / 2.0);
+    ArrayXd adjWeights(sampleCount_);
 
     vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
-        adjWeights_ = F_ * outData_;
-        adjWeights_ = (adjWeights_.minCoeff() - adjWeights_).exp();
+        adjWeights = -F * outData_;
+        const double a = adjWeights.maxCoeff();
+        adjWeights = (adjWeights - a).exp();
         if (weights_) 
-            adjWeights_ *= (*weights_);
-        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights_, opt);
-        basePred->predict(inData_, eta, F_);
+            adjWeights *= (*weights_);
+
+        double minSampleWeight = 0.0;
+        if (minAbsSampleWeight > 0.0)
+            minSampleWeight = exp(-a) * minAbsSampleWeight;
+        if (minRelSampleWeight > 0.0)
+            minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
+        opt.setMinSampleWeight(minSampleWeight);
+
+        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
+        basePred->predict(inData_, eta, F);
         basePredictors[i] = std::move(basePred);
         coeff[i] = 2.0 * eta;
     }
 
     return unique_ptr<BoostPredictor>(
-        new BoostPredictor(variableCount_, 2.0 * f0_, std::move(coeff), std::move(basePredictors))
+        new BoostPredictor(variableCount_, lor0_, std::move(coeff), std::move(basePredictors))
     );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
+unique_ptr<BoostPredictor> BoostTrainer::trainAlpha_(BoostOptions opt) const
 {
-    const size_t logStep = 0;
-    const size_t sampleCount = inData_.rows();
-    const size_t variableCount = inData_.cols();
-
-    ArrayXd F = ArrayXd::Constant(sampleCount, f0_);
-
-    ArrayXd adjOutData, adjWeights, f;
-    vector<unique_ptr<SimplePredictor>> basePredictors;
-    vector<double> coeff;
-
+    const double alpha = opt.alpha();
+    const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
-    const size_t n = opt.iterationCount();
-    for (size_t i = 0; i < n; ++i) {
+    const double minAbsSampleWeight = opt.minAbsSampleWeight();
+    const double minRelSampleWeight = opt.minRelSampleWeight();
 
-        double FAbsMin = F.abs().minCoeff();
-        adjWeights = 1.0 / ((F - FAbsMin).exp() + (-F - FAbsMin).exp()).square();
+    ArrayXd F = ArrayXd::Constant(sampleCount_, lor0_ / (alpha + 1.0));
+    ArrayXd adjOutData(sampleCount_);
+    ArrayXd adjWeights(sampleCount_);
+
+    vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
+    vector<double> coeff(iterationCount);
+
+    ArrayXd tmp00(sampleCount_);
+    ArrayXd tmp0(sampleCount_);
+    ArrayXd tmpAlpha(sampleCount_);
+    ArrayXd tmp1(sampleCount_);
+
+    for (size_t i = 0; i < iterationCount; ++i) {
+
+        tmp00 = -F * outData_;
+        const double a = tmp00.maxCoeff();
+        tmp00 = (tmp00 - a).exp();      // normalized exp(-F * outData_)
+
+        tmp0 = exp(a) * tmp00;          // exp(-F * outData_)
+        tmpAlpha = tmp0 + alpha;
+        tmp1 = tmp0 + 1.0;
+
+        adjOutData = outData_ * tmp1 / tmpAlpha;
+        adjWeights = tmp00 * tmp1.pow(alpha - 2.0) * tmpAlpha;
+
         if (weights_)
-            adjWeights_ *= (*weights_);
-        adjWeights /= adjWeights.maxCoeff();
+            adjWeights *= (*weights_);
 
-        adjOutData = outData_ * (1.0 + (-2.0 * outData_ * F).exp()) / 2.0;
+        double minSampleWeight = 0.0;
+        if (minAbsSampleWeight > 0.0)
+            minSampleWeight = exp(-a) * minAbsSampleWeight;
+        if (minRelSampleWeight > 0.0)
+            minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
+        opt.setMinSampleWeight(minSampleWeight);
 
-        unique_ptr<SimplePredictor > basePredictor = baseTrainer_->train(adjOutData, adjWeights, opt);
-
-        //f = basePredictor->predict(inData_);
-        double c = eta / std::max(0.5, f.abs().maxCoeff());
-        F += c * f;
-        coeff.push_back(2 * c);
-        basePredictors.push_back(std::move(basePredictor));
-
-        if constexpr(logStep > 0 && i % logStep == 0) {
-            cout << i << "(" << eta << ")" << endl;
-            cout << "Fy: " << (outData_ * F).minCoeff() << " - " << (outData_ * F).maxCoeff() << endl;
-            cout << "w: " << adjWeights.minCoeff() << " - " << adjWeights.maxCoeff();
-            cout << " -> " << 100.0 * (adjWeights != 0.0).cast<double>().sum() / sampleCount << "%" << endl;
-            cout << "y*y: " << (outData_ * adjOutData).minCoeff() << " - " << (outData_ * adjOutData).maxCoeff() << endl;
-            cout << "fy: " << (f * outData_).minCoeff() << " - " << (f * outData_).maxCoeff() << endl << endl;
-        }
+        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
+        basePred->predict(inData_, eta, F);
+        basePredictors[i] = std::move(basePred);
+        coeff[i] = (1.0 + alpha) * eta;
     }
 
     return unique_ptr<BoostPredictor>(
-        new BoostPredictor(variableCount, 2 * f0_, std::move(coeff), std::move(basePredictors))
+        new BoostPredictor(variableCount_, lor0_, std::move(coeff), std::move(basePredictors))
     );
 }
 

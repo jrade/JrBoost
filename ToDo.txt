@@ -1,17 +1,28 @@
-General code improvements:
 
-	interface cleanups:
-		ordering and hashing of options objects
-		define a converter from dict -> BoostParameters
-		rename BoostOptions -> BoostParameters
-		more flexible loss function implementation
-			return several named values (instead of 3 unnnamed values as now)
+add a fastEXp option to the parameters
+	train wrt to this
 
+reenable checks of outData and weights in StumpTrainerImpl??
+reenable sumW = 0 warning?
+
+alpha and logit boost
+	double check the calculations behind alpha boost again
+		w* = w * phi'',  y* = -phi' / phi''
+	write some notes about alpha boost
+	get logit boost to work as well
+
+General:
+	restore sumW = 0 warning in StumpTrainerImpl
+	
 	optimizations:
+		boosting code is slow for alpha and logit boost:
+			rewrite uisng simd (OpenMP or intrinsics)?
+			does schraudolph hurt accuracy?
+			https://github.com/jhjourdan/SIMD-math-prims
+
 		optimize case when all samples are used (usedSampleRation = 1.0, minSampleWeight = 0.0)
 		profile Higgs and otto with float versus double outData and weights - decide which to use
-		Schraudolph (see below)
-		use Clang?
+		test with Clang?
 			https://docs.microsoft.com/en-us/cpp/build/clang-support-msbuild?view=msvc-160
 
 	test:
@@ -98,18 +109,11 @@ gradient boost
 test PGO
 
 extended algorithms:
-	check if alpha boost idea works
+	check if the alpha boost idea works
 	first and second order boost
-	alpha boost
 	alpha-beta boost with beta loss
 
 review use of integer and floating point data types
-
-Schraudolpf exp
-	https://bduvenhage.me/performance/machine_learning/2019/06/04/fast-exp.html
-	N. Schraudolph, “A Fast, Compact Approximation of the Exponential Function”, Neural Computation 11, 853–862 (1999)
-	implement using NSIMD: https://store.agenium-scale.com/en/
-	https://github.com/agenium-scale/nsimd
 
 stump train strategy:
 	current method has time complexity (in clock cycles)

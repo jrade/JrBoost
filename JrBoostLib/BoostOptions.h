@@ -9,25 +9,35 @@
 
 class BoostOptions : public StumpOptions {
 public:
-    enum class Method { Ada, Logit };
+    static const int Ada = 0;
+    static const int Alpha = 1;
 
     BoostOptions() = default;
     BoostOptions(const BoostOptions&) = default;
     BoostOptions& operator=(const BoostOptions&) = default;
     ~BoostOptions() = default;
 
-    Method method() const { return method_; }
+    int method() const { return method_; }
+    double alpha() const { return alpha_; }
     size_t iterationCount() const { return iterationCount_; }
     double eta() const { return eta_; }
+    double minAbsSampleWeight() const { return minAbsSampleWeight_; }
+    double minRelSampleWeight() const { return minRelSampleWeight_; }
 
-    void setMethod(Method m);
+    void setMethod(int m);
+    void setAlpha(double alpha);
     void setIterationCount(size_t n);
     void setEta(double eta);
+    void setMinAbsSampleWeight(double w);
+    void setMinRelSampleWeight(double w);
 
     double cost() const;
 
 private:
-    Method method_{ Method::Ada };
+    int method_{ Ada };
+    double alpha_{ 0.5 };
     size_t iterationCount_{ 1000 };
     double eta_{ 0.3 };
+    double minAbsSampleWeight_{ 0.0 };
+    double minRelSampleWeight_{ 0.0 };
 };
