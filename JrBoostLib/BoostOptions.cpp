@@ -41,6 +41,11 @@ void BoostOptions::setMinRelSampleWeight(double w)
     minRelSampleWeight_ = w;
 }
 
+void BoostOptions::setFastExp(bool b)
+{
+    fastExp_ = b;
+}
+
 double BoostOptions::cost() const
 {
     return StumpOptions::cost() * iterationCount_;

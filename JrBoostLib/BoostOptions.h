@@ -23,6 +23,7 @@ public:
     double eta() const { return eta_; }
     double minAbsSampleWeight() const { return minAbsSampleWeight_; }
     double minRelSampleWeight() const { return minRelSampleWeight_; }
+    bool fastExp() const { return fastExp_; }
 
     void setMethod(int m);
     void setAlpha(double alpha);
@@ -30,6 +31,7 @@ public:
     void setEta(double eta);
     void setMinAbsSampleWeight(double w);
     void setMinRelSampleWeight(double w);
+    void setFastExp(bool b);
 
     double cost() const;
 
@@ -40,4 +42,5 @@ private:
     double eta_{ 0.3 };
     double minAbsSampleWeight_{ 0.0 };
     double minRelSampleWeight_{ 0.0 };
+    bool fastExp_{ false };
 };

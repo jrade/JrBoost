@@ -1,6 +1,16 @@
 
-add a fastEXp option to the parameters
-	train wrt to this
+add fast track to alpha boost
+
+send a mail to Nic Schraudolph and ask about the fastPow
+
+need underflow checks?
+	do a bit of logging
+		log every record, including iteration count
+	
+SIMD implementation of fastExp etc?
+	read https://info.ornl.gov/sites/publications/files/Pub69214.pdf
+
+-----------------------------------------------------------------------------
 
 reenable checks of outData and weights in StumpTrainerImpl??
 reenable sumW = 0 warning?
@@ -19,6 +29,7 @@ General:
 			rewrite uisng simd (OpenMP or intrinsics)?
 			does schraudolph hurt accuracy?
 			https://github.com/jhjourdan/SIMD-math-prims
+			http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
 
 		optimize case when all samples are used (usedSampleRation = 1.0, minSampleWeight = 0.0)
 		profile Higgs and otto with float versus double outData and weights - decide which to use

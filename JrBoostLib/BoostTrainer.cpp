@@ -75,6 +75,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
     const double eta = opt.eta();
     const double minAbsSampleWeight = opt.minAbsSampleWeight();
     const double minRelSampleWeight = opt.minRelSampleWeight();
+    const bool fastExp = opt.fastExp();
 
     ArrayXd F = ArrayXd::Constant(sampleCount_, lor0_ / 2.0);
     ArrayXd adjWeights(sampleCount_);
@@ -85,7 +86,15 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
     for (size_t i = 0; i < iterationCount; ++i) {
         adjWeights = -F * outData_;
         const double a = adjWeights.maxCoeff();
-        adjWeights = (adjWeights - a).exp();
+
+        if (fastExp) {
+            constexpr double c1 = (1ll << 52) / 0.6931471805599453;
+            constexpr double c2 = (1ll << 52) * (1023 - 0.04367744890362246);
+            reinterpret_cast<ArrayXs&>(adjWeights) = (c1 * adjWeights + (c2 - c1 * a)).cast<uint64_t>();
+        }
+        else
+            adjWeights = (adjWeights - a).exp();
+
         if (weights_) 
             adjWeights *= (*weights_);
 
@@ -116,6 +125,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAlpha_(BoostOptions opt) const
     const double eta = opt.eta();
     const double minAbsSampleWeight = opt.minAbsSampleWeight();
     const double minRelSampleWeight = opt.minRelSampleWeight();
+    const bool fastExp = opt.fastExp();
 
     ArrayXd F = ArrayXd::Constant(sampleCount_, lor0_ / (alpha + 1.0));
     ArrayXd adjOutData(sampleCount_);
@@ -128,19 +138,43 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAlpha_(BoostOptions opt) const
     ArrayXd tmp0(sampleCount_);
     ArrayXd tmpAlpha(sampleCount_);
     ArrayXd tmp1(sampleCount_);
+    ArrayXd tmp2(sampleCount_);
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
         tmp00 = -F * outData_;
         const double a = tmp00.maxCoeff();
-        tmp00 = (tmp00 - a).exp();      // normalized exp(-F * outData_)
+        tmp00 -= a;
 
-        tmp0 = exp(a) * tmp00;          // exp(-F * outData_)
-        tmpAlpha = tmp0 + alpha;
-        tmp1 = tmp0 + 1.0;
+        if (fastExp) {
 
-        adjOutData = outData_ * tmp1 / tmpAlpha;
-        adjWeights = tmp00 * tmp1.pow(alpha - 2.0) * tmpAlpha;
+            constexpr double c1 = (1ll << 52) / 0.6931471805599453;
+            constexpr double c2 = (1ll << 52) * (1023 - 0.04367744890362246);
+
+            // tmp00 approximately = tmp00.exp()
+            reinterpret_cast<ArrayXs&>(tmp00) = (c1 * tmp00 + c2).cast<uint64_t>();
+
+            tmp0 = exp(a) * tmp00;          // exp(-F * outData_)
+            tmpAlpha = tmp0 + alpha;
+            tmp1 = tmp0 + 1.0;
+
+            // tmp2 approximately = tmp1.pow(alpha)
+            reinterpret_cast<ArrayXs&>(tmp2)
+                = (alpha * reinterpret_cast<ArrayXs&>(tmp1).cast<double>() + (1.0 - alpha) * c2).cast<uint64_t>();
+
+            adjOutData = outData_ * tmp1 / tmpAlpha;
+            adjWeights = tmp00 * (tmp2 / tmp1.square()) * tmpAlpha;
+        }
+        else {
+            tmp00 = tmp00.exp();      // normalized exp(-F * outData_)
+
+            tmp0 = exp(a) * tmp00;          // exp(-F * outData_)
+            tmpAlpha = tmp0 + alpha;
+            tmp1 = tmp0 + 1.0;
+
+            adjOutData = outData_ * tmp1 / tmpAlpha;
+            adjWeights = tmp00 * tmp1.pow(alpha - 2.0) * tmpAlpha;
+        }
 
         if (weights_)
             adjWeights *= (*weights_);
