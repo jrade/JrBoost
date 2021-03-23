@@ -24,8 +24,8 @@ StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
     ASSERT(inData.cols() != 0);
     ASSERT(static_cast<size_t>(strata.rows()) == sampleCount_);
 
-    ASSERT((inData > -numeric_limits<float>::infinity()).all());
-    ASSERT((inData < numeric_limits<float>::infinity()).all());
+    //ASSERT((inData > -numeric_limits<float>::infinity()).all());
+    //ASSERT((inData < numeric_limits<float>::infinity()).all());
     ASSERT((strata < 2).all());
 }
 
@@ -55,22 +55,23 @@ unique_ptr<SimplePredictor> StumpTrainerImpl<SampleIndex>::train(
 {
     // validate data ...........................................................
 
-    //PROFILE::PUSH(PROFILE::VALIDATE);
-    //size_t ITEM_COUNT = sampleCount_;
+    PROFILE::PUSH(PROFILE::VALIDATE);
+    size_t ITEM_COUNT = sampleCount_;
 
-    //ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
-    //ASSERT((outData > -numeric_limits<double>::infinity()).all());
-    //ASSERT((outData < numeric_limits<double>::infinity()).all());
+    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
+    ASSERT((outData > -numeric_limits<double>::infinity()).all());
+    ASSERT((outData < numeric_limits<double>::infinity()).all());
 
-    //ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
-    //ASSERT((weights >= 0.0).all());
-    //ASSERT((weights < numeric_limits<double>::infinity()).all());
+    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
+    ASSERT((weights >= 0.0).all());
+    ASSERT((weights < numeric_limits<double>::infinity()).all());
 
  
     // initialize used sample mask .............................................
 
-    PROFILE::PUSH(PROFILE::ZERO);
-    size_t ITEM_COUNT = 1;
+    PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
+    //PROFILE::PUSH(PROFILE::ZERO);
+    ITEM_COUNT = 1;
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_SAMPLES);
     ITEM_COUNT = sampleCount_;
@@ -125,7 +126,7 @@ unique_ptr<SimplePredictor> StumpTrainerImpl<SampleIndex>::train(
             std::tie(sumW, sumWY) = initSums_(outData, weights);
             if (sumW == 0) {
                 PROFILE::POP(ITEM_COUNT);
-                // cout << "Warning: sumW = 0" << endl;
+                //cout << "Warning: sumW = 0" << endl;
                 return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
             }
 

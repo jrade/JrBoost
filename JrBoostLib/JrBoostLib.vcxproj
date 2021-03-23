@@ -140,6 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="FastMath.h" />
     <ClInclude Include="InterruptHandler.h" />
     <ClInclude Include="pdqsort.h" />
     <ClInclude Include="SimplePredictor.h" />
@@ -165,7 +166,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoostOptions.cpp" />
-    <ClCompile Include="BoostTrainer.cpp" />
+    <ClCompile Include="BoostTrainer.cpp">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="pch.cpp">

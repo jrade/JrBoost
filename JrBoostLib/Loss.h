@@ -75,36 +75,28 @@ inline Array3d logLoss_p(CRefXs outData, CRefXd predData)
 }
 
 
-inline Array3d alphaLoss_lor(CRefXs outData, CRefXd predData, double alpha)
+inline Array3d gammaLoss_lor(CRefXs outData, CRefXd predData, double gamma)
 {
+    if (gamma == 0.0) return logLoss_lor(outData, predData);
+
     double falsePos = ((1 - outData).cast<double>()
-        * (1.0 - (1.0 / (1.0 + predData.exp())).pow(alpha))
-        ).sum() / alpha;
+        * (1.0 - (1.0 / (1.0 + predData.exp())).pow(gamma))
+        ).sum() / gamma;
 
     double falseNeg = (outData.cast<double>()
-        * (1.0 - (1.0 / (1.0 + (-predData).exp())).pow(alpha))
-        ).sum() / alpha;
+        * (1.0 - (1.0 / (1.0 + (-predData).exp())).pow(gamma))
+        ).sum() / gamma;
 
     return { falsePos, falseNeg, falsePos + falseNeg };
 }
 
-inline Array3d alphaLoss_p(CRefXs outData, CRefXd predData, double alpha)
+inline Array3d gammaLoss_p(CRefXs outData, CRefXd predData, double gamma)
 {
-    double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(alpha))).sum() / alpha;
-    double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(alpha))).sum() / alpha;
+    if (gamma == 0.0) return logLoss_p(outData, predData);
+
+    double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
+    double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
     return { falsePos, falseNeg, falsePos + falseNeg };
-}
-
-
-inline Array3d sqrtLoss_lor(CRefXs outData, CRefXd predData)
-{
-    return alphaLoss_lor(outData, predData, 0.5);
-}
-
-
-inline Array3d sqrtLoss_p(CRefXs outData, CRefXd predData)
-{
-    return alphaLoss_p(outData, predData, 0.5);
 }
 
 
@@ -155,43 +147,43 @@ private:
 };
 
 
-class AlphaLoss_lor {
+class GammaLoss_lor {
 public:
-    AlphaLoss_lor(double alpha) : alpha_(alpha) {}
+    GammaLoss_lor(double gamma) : gamma_(gamma) {}
 
     Array3d operator()(CRefXs outData, CRefXd predData) const
     {
-        return alphaLoss_lor(outData, predData, alpha_);
+        return gammaLoss_lor(outData, predData, gamma_);
     }
 
     string name() const
     {
         stringstream ss;
-        ss << "alpha(" << alpha_ << ")";
+        ss << "gamma(" << gamma_ << ")";
         return ss.str();
     }
 
 private:
-    const double alpha_;
+    const double gamma_;
 };
 
 
-class AlphaLoss_p {
+class GammaLoss_p {
 public:
-    AlphaLoss_p(double alpha) : alpha_(alpha) {}
+    GammaLoss_p(double gamma) : gamma_(gamma) {}
 
     Array3d operator()(CRefXs outData, CRefXd predData) const
     {
-        return alphaLoss_p(outData, predData, alpha_);
+        return gammaLoss_p(outData, predData, gamma_);
     }
 
     string name() const
     {
         stringstream ss;
-        ss << "alpha(" << alpha_ << ")";
+        ss << "gamma(" << gamma_ << ")";
         return ss.str();
     }
 
 private:
-    const double alpha_;
+    const double gamma_;
 };

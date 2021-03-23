@@ -45,8 +45,6 @@ PYBIND11_MODULE(jrboost, mod)
     mod.def("linLoss_p", &linLoss_p);
     mod.def("logLoss_lor", &logLoss_lor);
     mod.def("logLoss_p", &logLoss_p);
-    mod.def("sqrtLoss_lor", &sqrtLoss_lor);
-    mod.def("sqrtLoss_p", &sqrtLoss_p);
     mod.def("negAuc", &negAuc);
 
     py::class_<ErrorCount>{ mod, "ErrorCount" }
@@ -54,15 +52,15 @@ PYBIND11_MODULE(jrboost, mod)
         .def("__call__", &ErrorCount::operator())
         .def_property_readonly("name", &ErrorCount::name);
 
-    py::class_<AlphaLoss_lor>{ mod, "AlphaLoss_lor" }
+    py::class_<GammaLoss_lor>{ mod, "GammaLoss_lor" }
         .def(py::init<double>())
-        .def("__call__", &AlphaLoss_lor::operator())
-        .def_property_readonly("name", &AlphaLoss_lor::name);
+        .def("__call__", &GammaLoss_lor::operator())
+        .def_property_readonly("name", &GammaLoss_lor::name);
 
-    py::class_<AlphaLoss_p>{ mod, "AlphaLoss_p" }
+    py::class_<GammaLoss_p>{ mod, "GammaLoss_p" }
         .def(py::init<double>())
-        .def("__call__", &AlphaLoss_p::operator())
-        .def_property_readonly("name", &AlphaLoss_p::name);
+        .def("__call__", &GammaLoss_p::operator())
+        .def_property_readonly("name", &GammaLoss_p::name);
 
 
     // PROFILE

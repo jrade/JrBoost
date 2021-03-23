@@ -8,8 +8,9 @@
 #include "BoostPredictor.h"
 #include "StumpTrainer.h"
 #include "SimplePredictor.h"
-#include "SortedIndices.h"
+#include "FastMath.h"
 #include "InterruptHandler.h"
+#include "SortedIndices.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights) :
@@ -35,13 +36,13 @@ double BoostTrainer::calculateLor0_() const
 {
     if (weights_)
         return  (
-            log((rawOutData_.cast<double>() * (*weights_)).sum())
-            - log(((1 - rawOutData_).cast<double>() * (*weights_)).sum())
+            std::log((rawOutData_.cast<double>() * (*weights_)).sum())
+            - std::log(((1 - rawOutData_).cast<double>() * (*weights_)).sum())
         );
     else
         return  (
-            log(static_cast<double>(rawOutData_.sum()))
-            - log(static_cast<double>((1 - rawOutData_).sum()))
+            std::log(static_cast<double>(rawOutData_.sum()))
+            - std::log(static_cast<double>((1 - rawOutData_).sum()))
         );
 }
 
@@ -67,40 +68,107 @@ unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
     return pred;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
 unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
 {
+    const size_t sampleCount = sampleCount_;
+
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
     const double minAbsSampleWeight = opt.minAbsSampleWeight();
     const double minRelSampleWeight = opt.minRelSampleWeight();
-    const bool fastExp = opt.fastExp();
+    const bool useFastExp = opt.fastExp();
 
-    ArrayXd F = ArrayXd::Constant(sampleCount_, lor0_ / 2.0);
-    ArrayXd adjWeights(sampleCount_);
+    ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / 2.0);
+    ArrayXd adjWeights(sampleCount);
 
     vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
-        adjWeights = -F * outData_;
-        const double a = adjWeights.maxCoeff();
 
-        if (fastExp) {
-            constexpr double c1 = (1ll << 52) / 0.6931471805599453;
-            constexpr double c2 = (1ll << 52) * (1023 - 0.04367744890362246);
-            reinterpret_cast<ArrayXs&>(adjWeights) = (c1 * adjWeights + (c2 - c1 * a)).cast<uint64_t>();
+        if (useFastExp) {
+
+            // 1. Eigen
+            /*{
+                adjWeights = fastExp(-F * outData_);
+            }*/
+
+            // 2. Scalar loop (not vectorized with MSVS 2019)
+            {
+                const double* pF = &F(0);
+                const double* pOutData = &outData_(0);
+                double* pAdjWeights = &adjWeights(0);
+
+                for (size_t j = 0; j < sampleCount; ++j)
+                    pAdjWeights[j] = fastExp(-pF[j] * pOutData[j]);
+            }
+            
+
+            // 3. SIMD loop
+            /*{
+                size_t j = 0;
+
+                for (; j <= sampleCount - 8; j += 8)
+                {
+                    vcl::Vec8d vF, vOutData;
+                    vF.load(&F(j));
+                    vOutData.load(&outData_(j));
+                    vcl::Vec8d vAdjWeight = fastExp(-vF * vOutData);
+                    vAdjWeight.store(&adjWeights(j));
+                }
+
+                int k = static_cast<int>(sampleCount - j);
+                vcl::Vec8d vF, vOutData;
+                vF.load_partial(k, &F(j));
+                vOutData.load_partial(k, &outData_(j));
+                vcl::Vec8d vAdjWeight = fastExp(-vF * vOutData);
+                vAdjWeight.store_partial(k, &adjWeights(j));
+            }*/
         }
-        else
-            adjWeights = (adjWeights - a).exp();
 
-        if (weights_) 
+        else {
+
+            // 1. Eigen
+            /*{
+                adjWeights = (-F * outData_).exp();
+            }*/
+
+            // 2. Scalar loop (vectorized with MSVS 2019)
+            {
+                const double* pF = &F(0);
+                const double* pOutData = &outData_(0);
+                double* pAdjWeights = &adjWeights(0);
+
+                for (size_t j = 0; j < sampleCount; ++j)
+                    pAdjWeights[j] = std::exp(-pF[j] * pOutData[j]);
+            }            
+
+            // 3. SIMD loop
+            /*{
+                size_t j = 0;
+
+                for (; j <= sampleCount - 8; j += 8)
+                {
+                    vcl::Vec8d vF, vOutData;
+                    vF.load(&F(j));
+                    vOutData.load(&outData_(j));
+                    vcl::Vec8d vAdjWeight = vcl::exp(-vF * vOutData);
+                    vAdjWeight.store(&adjWeights(j));
+                }
+
+                int k = static_cast<int>(sampleCount - j);
+                vcl::Vec8d vF, vOutData;
+                vF.load_partial(k, &F(j));
+                vOutData.load_partial(k, &outData_(j));
+                vcl::Vec8d vAdjWeight = vcl::exp(-vF * vOutData);
+                vAdjWeight.store_partial(k, &adjWeights(j));
+            }*/
+        }
+
+        if (weights_)
             adjWeights *= (*weights_);
 
-        double minSampleWeight = 0.0;
-        if (minAbsSampleWeight > 0.0)
-            minSampleWeight = exp(-a) * minAbsSampleWeight;
+        double minSampleWeight = minAbsSampleWeight;
         if (minRelSampleWeight > 0.0)
             minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
         opt.setMinSampleWeight(minSampleWeight);
@@ -120,68 +188,129 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
 
 unique_ptr<BoostPredictor> BoostTrainer::trainAlpha_(BoostOptions opt) const
 {
+    const size_t sampleCount = sampleCount_;
+
     const double alpha = opt.alpha();
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
     const double minAbsSampleWeight = opt.minAbsSampleWeight();
     const double minRelSampleWeight = opt.minRelSampleWeight();
-    const bool fastExp = opt.fastExp();
+    const bool useFastExp = opt.fastExp();
 
-    ArrayXd F = ArrayXd::Constant(sampleCount_, lor0_ / (alpha + 1.0));
-    ArrayXd adjOutData(sampleCount_);
-    ArrayXd adjWeights(sampleCount_);
+    ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / (alpha + 1.0));
+    ArrayXd adjOutData(sampleCount);
+    ArrayXd adjWeights(sampleCount);
 
     vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
-    ArrayXd tmp00(sampleCount_);
-    ArrayXd tmp0(sampleCount_);
-    ArrayXd tmpAlpha(sampleCount_);
-    ArrayXd tmp1(sampleCount_);
-    ArrayXd tmp2(sampleCount_);
-
     for (size_t i = 0; i < iterationCount; ++i) {
 
-        tmp00 = -F * outData_;
-        const double a = tmp00.maxCoeff();
-        tmp00 -= a;
+        if(useFastExp) {
 
-        if (fastExp) {
+            // 1. Eigen    [37]
+            /*{
+                ArrayXd x = fastExp(-F * outData_);                   
+                adjOutData = outData_ * (x + 1.0) / (alpha * x + 1.0);
+                adjWeights = x * (alpha * x + 1.0) * fastPow(x + 1.0, alpha - 2.0);
+            }*/
 
-            constexpr double c1 = (1ll << 52) / 0.6931471805599453;
-            constexpr double c2 = (1ll << 52) * (1023 - 0.04367744890362246);
+            // 2. Scalar loop (not vectorized by VS 2019)   [34]
+            {
+                const double* pF = &F(0);
+                const double* pOutData = &outData_(0);
+                double* pAdjOutData = &adjOutData(0);
+                double* pAdjWeights = &adjWeights(0);
 
-            // tmp00 approximately = tmp00.exp()
-            reinterpret_cast<ArrayXs&>(tmp00) = (c1 * tmp00 + c2).cast<uint64_t>();
+                for (size_t j = 0; j < sampleCount; ++j) {
+                    double x = fastExp(-pF[j] * pOutData[j]);
+                    pAdjOutData[j] = pOutData[j] * (x + 1.0) / (alpha * x + 1.0);
+                    pAdjWeights[j] = x * (alpha * x + 1.0) * fastPow(x + 1.0, alpha - 2.0);
+                }
+            }
+            
+            // 3. SIMD loop    [29]
+            /*{
+                size_t j = 0;
 
-            tmp0 = exp(a) * tmp00;          // exp(-F * outData_)
-            tmpAlpha = tmp0 + alpha;
-            tmp1 = tmp0 + 1.0;
+                for (; j <= sampleCount - 4; j += 4)
+                {
+                    vcl::Vec4d vF, vOutData;
+                    vF.load(&F(j));
+                    vOutData.load(&outData_(j));
+                    vcl::Vec4d x = fastExp(-vOutData * vF);
+                    vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (alpha * x + 1.0);
+                    vcl::Vec4d vAdjWeights = x * (alpha * x + 1.0) * fastPow(x + 1.0, alpha - 2.0);
+                    vAdjOutData.store(&adjOutData(j));
+                    vAdjWeights.store(&adjWeights(j));
+                }
 
-            // tmp2 approximately = tmp1.pow(alpha)
-            reinterpret_cast<ArrayXs&>(tmp2)
-                = (alpha * reinterpret_cast<ArrayXs&>(tmp1).cast<double>() + (1.0 - alpha) * c2).cast<uint64_t>();
-
-            adjOutData = outData_ * tmp1 / tmpAlpha;
-            adjWeights = tmp00 * (tmp2 / tmp1.square()) * tmpAlpha;
+                int k = static_cast<int>(sampleCount - j);
+                vcl::Vec4d vF, vOutData;
+                vF.load_partial(k, &F(j));
+                vOutData.load_partial(k, &outData_(j));
+                vcl::Vec4d x = fastExp(-vOutData * vF);
+                vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (alpha * x + 1.0);
+                vcl::Vec4d vAdjWeights = x * (alpha * x + 1.0) * fastPow(x + 1.0, alpha - 2.0);
+                vAdjOutData.store_partial(k, &adjOutData(j));
+                vAdjWeights.store_partial(k, &adjWeights(j));
+            }*/
         }
+
         else {
-            tmp00 = tmp00.exp();      // normalized exp(-F * outData_)
 
-            tmp0 = exp(a) * tmp00;          // exp(-F * outData_)
-            tmpAlpha = tmp0 + alpha;
-            tmp1 = tmp0 + 1.0;
+            // 1. Eigen    [150]
+            /*{
+                ArrayXd x = (-F * outData_).exp();
+                adjOutData = outData_ * (x + 1.0) / (alpha * x + 1.0);
+                adjWeights = x * (alpha * x + 1.0) * (x + 1.0).pow(alpha - 2.0);
+            }*/
+ 
+            // 2. Scalar loop (vectorized by VS 2019)      [89]
+            {
+                const double* pF = &F(0);
+                const double* pOutData = &outData_(0);
+                double* pAdjOutData = &adjOutData(0);
+                double* pAdjWeights = &adjWeights(0);
 
-            adjOutData = outData_ * tmp1 / tmpAlpha;
-            adjWeights = tmp00 * tmp1.pow(alpha - 2.0) * tmpAlpha;
+                for (size_t j = 0; j < sampleCount; ++j) {
+                    double x = std::exp(-pF[j] * pOutData[j]);
+                    pAdjOutData[j] = pOutData[j] * (x + 1.0) / (alpha * x + 1.0);
+                    pAdjWeights[j] = x * (alpha * x + 1.0) * std::pow(x + 1.0, alpha - 2.0);
+                }
+            }
+
+            // 3. SIMD loop        [113]
+            /*{
+                size_t j = 0;
+
+                for (; j <= sampleCount - 4; j += 4) {
+                    vcl::Vec4d vF, vOutData;
+                    vF.load(&F(j));
+                    vOutData.load(&outData_(j));
+                    vcl::Vec4d x = vcl::exp(-vOutData * vF);
+                    vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (alpha * x + 1.0);
+                    vcl::Vec4d vAdjWeights = x * (alpha * x + 1.0) * vcl::pow(x + 1.0, alpha - 2.0);
+                    vAdjOutData.store(&adjOutData(j));
+                    vAdjWeights.store(&adjWeights(j));
+                }
+
+                int k = static_cast<int>(sampleCount - j);
+                vcl::Vec4d vF, vOutData;
+                vF.load_partial(k, &F(j));
+                vOutData.load_partial(k, &outData_(j));
+                vcl::Vec4d x = vcl::exp(-vOutData * vF);
+                vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (alpha * x + 1.0);
+                vcl::Vec4d vAdjWeights = x * (alpha * x + 1.0) * vcl::pow(x + 1.0, alpha - 2.0);
+                vAdjOutData.store_partial(k, &adjOutData(j));
+                vAdjWeights.store_partial(k, &adjWeights(j));
+            }*/
         }
 
         if (weights_)
             adjWeights *= (*weights_);
 
-        double minSampleWeight = 0.0;
-        if (minAbsSampleWeight > 0.0)
-            minSampleWeight = exp(-a) * minAbsSampleWeight;
+        double minSampleWeight = minAbsSampleWeight;
         if (minRelSampleWeight > 0.0)
             minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
         opt.setMinSampleWeight(minSampleWeight);

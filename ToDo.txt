@@ -1,40 +1,61 @@
+Play around with alpha-boost
 
-add fast track to alpha boost
+implement logit boost
+	is it stable or do we need to handle overflow
+	is alpha boost stabel for very small alpha?
+	log Fy
 
-send a mail to Nic Schraudolph and ask about the fastPow
+write some notes about alpha boost
 
-need underflow checks?
-	do a bit of logging
-		log every record, including iteration count
-	
-SIMD implementation of fastExp etc?
-	read https://info.ornl.gov/sites/publications/files/Pub69214.pdf
+need to move on with
+	trees
+	histogram based stumps (would speed up Otto a lot)
+	gradient boost
+	BART
 
------------------------------------------------------------------------------
+.............................................................................................
 
-reenable checks of outData and weights in StumpTrainerImpl??
-reenable sumW = 0 warning?
+speed optimization:
+	test the accuracy of:
+		exact math
+		fast math
+		improved fast math with smarter (x + 1) ^ (alpha-2)
 
-alpha and logit boost
-	double check the calculations behind alpha boost again
-		w* = w * phi'',  y* = -phi' / phi''
-	write some notes about alpha boost
-	get logit boost to work as well
-
-General:
-	restore sumW = 0 warning in StumpTrainerImpl
-	
-	optimizations:
-		boosting code is slow for alpha and logit boost:
-			rewrite uisng simd (OpenMP or intrinsics)?
-			does schraudolph hurt accuracy?
+	if fast math is not good enough:
+		there are alternatives to the Schraudolph fast exp:
 			https://github.com/jhjourdan/SIMD-math-prims
+		maybe easier to write code does not mess around with lots of casts
+		also:
 			http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
+			http://www.spfrnd.de/posts/2018-03-10-fast-exponential.html
+		then there is a fast(?) exp in Agners library
 
+	get rather poor performance from VCL
+		test libsimdpp instead?
+			https://p12tic.github.io/libsimdpp/v2.1/libsimdpp/w/index.html
+		use SIMD intrinsics
+		compile with Clang/GCC?
+
+	contact Agner Fog:
+		report typo, manual p. 34 top row 
+		a block size macro would be useful when testing alignment
+		mention fast exp
+
+		1. test with clang instead - seems it might do a better job of vectorizing?
+				https://docs.microsoft.com/en-us/cpp/build/clang-support-msbuild?view=msvc-160
+
+		2. update the Gist with fastLog and fastPow
+	
+		3. plot min and max rel error of fastPow as a function of alpha
+			let x range over 2 ** -n to 2 **n; seems yhe exact form of curve depends a little on on
+			send a nail to Nic with the results
+
+========================================================================
+	
+General:
+	optimizations:
 		optimize case when all samples are used (usedSampleRation = 1.0, minSampleWeight = 0.0)
 		profile Higgs and otto with float versus double outData and weights - decide which to use
-		test with Clang?
-			https://docs.microsoft.com/en-us/cpp/build/clang-support-msbuild?view=msvc-160
 
 	test:
 		test util.stratifiedRandomSplit
@@ -67,36 +88,6 @@ Otto:
 
 	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
 
-==================================================================
-
-main                      1404   1.2%
-  t-rank                  4436   3.9%    4.0
-  train boost            13200  11.7%   15.8
-  train stumps
-    used samples          6897   6.1%    8.3
-    used variables        3613   3.2%   10.0
-    sums                   498   0.4%    4.1
-    sorted used s.       56794  50.1%    2.5
-    best split           23609  20.8%    7.3
-  predict                 1245   1.1%    6.0
-  OMP barrier              250   0.2%
-  dyn. memory             1358   1.2%  192.5
-
-zero calibration: 65.2
-profiling overhead: 24.0%
-slow branch: 2.5%
-
-0:01:10
-
-==================================================================
-
-using size_t and double everywhere
-	except:
-		arrays of sampleIndices use smallest type
-		inData: float
-
-	profile the first decision again with a larger dataset (Higgs for instance)
-
 =====================================================================
 
 better understanding of boosting:
@@ -120,7 +111,6 @@ gradient boost
 test PGO
 
 extended algorithms:
-	check if the alpha boost idea works
 	first and second order boost
 	alpha-beta boost with beta loss
 
@@ -153,7 +143,7 @@ low prio:
 	multi-group
 	validation of indata to predict?
 
-----------------------------------------------------------------------
+======================================================================================
 
 PyBind11 issues:
 	how translate custom C++ exceptions to standard Python exceptions

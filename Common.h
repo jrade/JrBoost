@@ -68,6 +68,23 @@ using CRefXs = Eigen::Ref<const ArrayXs>;
 using Array3d = Eigen::Array3d;
 
 
+// Vector Class Library (by Agner Fog)
+
+#define VCL_NAMESPACE vcl
+
+#ifdef _MSC_VER
+#   pragma warning( push )
+#   pragma warning( disable : 4702 )
+#endif
+
+#include "vcl/vectorclass.h"
+#include "vcl/vectormath_exp.h"
+
+#ifdef _MSC_VER
+#   pragma warning( pop )
+#endif
+
+
 // Tools
 
 #include "JrBoostLib/Assert.h"

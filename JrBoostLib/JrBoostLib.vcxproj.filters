@@ -65,6 +65,9 @@
     <ClInclude Include="InterruptHandler.h">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="FastMath.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">
