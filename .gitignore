@@ -4,3 +4,4 @@ Debug
 Release
 *.vcxproj.user
 __pycache__
+*.pyd

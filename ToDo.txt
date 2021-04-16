@@ -1,11 +1,21 @@
-Play around with alpha-boost
+rename Python/test
 
-implement logit boost
-	is it stable or do we need to handle overflow
-	is alpha boost stabel for very small alpha?
-	log Fy
+get rid of vector class library
+	too complex and may be bad with a better compiler
+
+try clang/llvm compiler plugin
+
+test accuracy of fast math
+	1. improved fast math with smarter (x + 1) ^ (alpha-2)
+	2. update the Gist with fastLog and fastPow
+	3. plot min and max rel error of fastPow as a function of alpha
+		let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
+		send a mail to Nic with the results
+
+get Higgs, Otto and Iris to run again
 
 write some notes about alpha boost
+	just some brief comments in the code?
 
 need to move on with
 	trees
@@ -13,42 +23,7 @@ need to move on with
 	gradient boost
 	BART
 
-.............................................................................................
-
-speed optimization:
-	test the accuracy of:
-		exact math
-		fast math
-		improved fast math with smarter (x + 1) ^ (alpha-2)
-
-	if fast math is not good enough:
-		there are alternatives to the Schraudolph fast exp:
-			https://github.com/jhjourdan/SIMD-math-prims
-		maybe easier to write code does not mess around with lots of casts
-		also:
-			http://www.machinedlearnings.com/2011/06/fast-approximate-logarithm-exponential.html
-			http://www.spfrnd.de/posts/2018-03-10-fast-exponential.html
-		then there is a fast(?) exp in Agners library
-
-	get rather poor performance from VCL
-		test libsimdpp instead?
-			https://p12tic.github.io/libsimdpp/v2.1/libsimdpp/w/index.html
-		use SIMD intrinsics
-		compile with Clang/GCC?
-
-	contact Agner Fog:
-		report typo, manual p. 34 top row 
-		a block size macro would be useful when testing alignment
-		mention fast exp
-
-		1. test with clang instead - seems it might do a better job of vectorizing?
-				https://docs.microsoft.com/en-us/cpp/build/clang-support-msbuild?view=msvc-160
-
-		2. update the Gist with fastLog and fastPow
-	
-		3. plot min and max rel error of fastPow as a function of alpha
-			let x range over 2 ** -n to 2 **n; seems yhe exact form of curve depends a little on on
-			send a nail to Nic with the results
+Use int64_t throughout the code instead of size_t?
 
 ========================================================================
 	
@@ -96,8 +71,6 @@ better understanding of boosting:
 	how does boosted trees behave if we only use trivial predictors?
 
 -----------------------------------------------------------------------
-
-python package organization
 
 trees
 	allocate nodes with memory pool

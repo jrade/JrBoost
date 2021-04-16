@@ -24,8 +24,8 @@ StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
     ASSERT(inData.cols() != 0);
     ASSERT(static_cast<size_t>(strata.rows()) == sampleCount_);
 
-    //ASSERT((inData > -numeric_limits<float>::infinity()).all());
-    //ASSERT((inData < numeric_limits<float>::infinity()).all());
+    ASSERT((inData > -numeric_limits<float>::infinity()).all());
+    ASSERT((inData < numeric_limits<float>::infinity()).all());
     ASSERT((strata < 2).all());
 }
 

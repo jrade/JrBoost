@@ -100,7 +100,7 @@ inline Array3d gammaLoss_p(CRefXs outData, CRefXd predData, double gamma)
 }
 
 
-inline Array3d negAuc(CRefXs outData, CRefXd predData)
+inline Array3d auc(CRefXs outData, CRefXd predData)
 {
     size_t sampleCount = outData.rows();
 
@@ -121,7 +121,13 @@ inline Array3d negAuc(CRefXs outData, CRefXd predData)
     }
     double auc = static_cast<double>(b) / (static_cast<double>(a) * static_cast<double>(sampleCount - a));
     const double nan = numeric_limits<double>::quiet_NaN();
-    return { nan, nan, -auc };
+    return { nan, nan, auc };
+}
+
+
+inline Array3d negAuc(CRefXs outData, CRefXd predData)
+{
+    return -auc(outData, predData);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
