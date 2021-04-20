@@ -4,9 +4,6 @@
     <ClInclude Include="StumpOptions.h">
       <Filter>Stump</Filter>
     </ClInclude>
-    <ClInclude Include="StumpPredictor.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
     <ClInclude Include="BoostOptions.h">
       <Filter>Boost</Filter>
     </ClInclude>
@@ -50,9 +47,6 @@
     <ClInclude Include="SortedIndices.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="BoostPredictor.h">
-      <Filter>Boost</Filter>
-    </ClInclude>
     <ClInclude Include="pdqsort.h">
       <Filter>Tools</Filter>
     </ClInclude>
@@ -74,12 +68,15 @@
     <ClInclude Include="EnsemblePredictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>
+    <ClInclude Include="BoostPredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="StumpPredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">
-      <Filter>Stump</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpPredictor.cpp">
       <Filter>Stump</Filter>
     </ClCompile>
     <ClCompile Include="BoostOptions.cpp">
@@ -102,7 +99,10 @@
     </ClCompile>
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="BoostPredictor.cpp">
-      <Filter>Boost</Filter>
+      <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpPredictor.cpp">
+      <Filter>Predictor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

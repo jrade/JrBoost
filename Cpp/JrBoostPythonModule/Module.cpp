@@ -3,13 +3,13 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
-#include "../JrBoostLib/TStatisticRank.h"
-#include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/BoostOptions.h"
-#include "../JrBoostLib/BoostTrainer.h"
 #include "../JrBoostLib/BoostPredictor.h"
+#include "../JrBoostLib/BoostTrainer.h"
 #include "../JrBoostLib/EnsemblePredictor.h"
 #include "../JrBoostLib/InterruptHandler.h"
+#include "../JrBoostLib/Loss.h"
+#include "../JrBoostLib/TStatisticRank.h"
 
 namespace py = pybind11;
 

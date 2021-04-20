@@ -2,20 +2,12 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-__all__ = ['lorToP', 'oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit',
-           'optimizeDynamic', 'optimizeGrid']
+__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'optimizeDynamic', 'optimizeGrid']
 
 import copy, random, warnings
 import numpy as np
 import pandas as pd
 import jrboost
-
-
-# convert log odds ratio to probability
-def lorToP(a):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        return 1.0 / (1.0 + np.exp(np.negative(a)))
 
 
 def oneHotEncode(dataSeries, separator = None):

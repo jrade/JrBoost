@@ -18,11 +18,11 @@ public:
 
     virtual ~TrivialPredictor() = default;
 
-    virtual void predict(CRefXXf inData, double c, RefXd outData) const
+private:
+    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const
     {
         outData += c * y_;
     }
 
-private:
     double y_;
 };

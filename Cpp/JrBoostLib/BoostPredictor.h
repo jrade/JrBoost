@@ -14,7 +14,6 @@ public:
     virtual ~BoostPredictor();
 
     size_t variableCount() const { return variableCount_; }
-    virtual ArrayXd predict(CRefXXf inData) const;
 
 private:
     friend class BoostTrainer;
@@ -25,6 +24,8 @@ private:
         vector<double>&& c1,
         vector<unique_ptr<BasePredictor>>&& basePredictors
     );
+
+    virtual ArrayXd predictImpl_(CRefXXf inData) const;
 
     size_t variableCount_;
     double c0_;

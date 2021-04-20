@@ -11,12 +11,12 @@ class StumpPredictor : public BasePredictor {
 public:
     virtual ~StumpPredictor() = default;
 
-    virtual void predict(CRefXXf inData, double c, RefXd outData) const;
-
 private:
     template<typename SampleIndex> friend class StumpTrainerImpl;
 
     StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY);
+
+    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
 
     size_t j_;
     float x_;

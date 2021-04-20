@@ -10,7 +10,15 @@ public:
     virtual ~Predictor() = default;
 
     virtual size_t variableCount() const = 0;
-    virtual ArrayXd predict(CRefXXf inData) const = 0;
+
+    ArrayXd predict(CRefXXf inData) const
+    {
+        PROFILE::PUSH(PROFILE::BOOST_PREDICT);
+        ArrayXd pred = predictImpl_(inData);
+        size_t sampleCount = inData.rows();
+        PROFILE::POP(sampleCount);
+        return pred;
+    }
 
 protected:
     Predictor() = default;
@@ -21,7 +29,12 @@ protected:
         //ASSERT((inData > -numeric_limits<float>::infinity()).all());
         //ASSERT((inData < numeric_limits<float>::infinity()).all());
     }
-    
+
+private:
+    friend class EnsemblePredictor;
+
+    virtual ArrayXd predictImpl_(CRefXXf inData) const = 0;
+
 // deleted:
     Predictor(const Predictor&) = delete;
     Predictor& operator=(const Predictor&) = delete;

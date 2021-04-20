@@ -25,7 +25,7 @@ BoostPredictor::BoostPredictor(
 }
 
 
-ArrayXd BoostPredictor::predict(CRefXXf inData) const
+ArrayXd BoostPredictor::predictImpl_(CRefXXf inData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
 
