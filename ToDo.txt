@@ -1,9 +1,15 @@
-rename Python/test
+save my handwritten notes about alpha boost
+
+https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+
+save and load classifier
+	binary format
+		byte 1 classifier type
+		byte 2 version mumber of the format
 
 get rid of vector class library
 	too complex and may be bad with a better compiler
-
-try clang/llvm compiler plugin
+	select one implementation each of exact and fast implementations
 
 test accuracy of fast math
 	1. improved fast math with smarter (x + 1) ^ (alpha-2)
@@ -11,6 +17,8 @@ test accuracy of fast math
 	3. plot min and max rel error of fastPow as a function of alpha
 		let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
 		send a mail to Nic with the results
+
+try clang/llvm compiler plugin
 
 get Higgs, Otto and Iris to run again
 
@@ -22,8 +30,6 @@ need to move on with
 	histogram based stumps (would speed up Otto a lot)
 	gradient boost
 	BART
-
-Use int64_t throughout the code instead of size_t?
 
 ========================================================================
 	
@@ -88,6 +94,7 @@ extended algorithms:
 	alpha-beta boost with beta loss
 
 review use of integer and floating point data types
+	use int64_t as default integer type?
 
 stump train strategy:
 	current method has time complexity (in clock cycles)

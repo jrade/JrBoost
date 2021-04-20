@@ -5,7 +5,6 @@
 __all__ = ['lorToP', 'oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit',
            'optimizeDynamic', 'optimizeGrid']
 
-
 import copy, random, warnings
 import numpy as np
 import pandas as pd
@@ -179,5 +178,3 @@ def optimizeGrid(cvParam, evalFun):
         optionList *= bagSize
 
     return optionList
-
-

@@ -37,8 +37,10 @@ PYBIND11_MODULE(_jrboostext, mod)
         .value("Down", TestDirection::Down)
         .value("Any", TestDirection::Any);
 
-    mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(),
-        py::arg(), py::arg(), py::arg("direction") = TestDirection::Any);
+    mod.def("tStatisticRank", &tStatisticRank,
+        py::arg(), py::arg(), py::arg(), py::arg("direction") = TestDirection::Any);
+    //mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(),
+    //    py::arg(), py::arg(), py::arg("direction") = TestDirection::Any);
     mod.def("setNumThreads", &omp_set_num_threads);
     mod.def("setProfile", [](bool b) { PROFILE::doProfile = b; });
 
