@@ -1,4 +1,4 @@
-save my handwritten notes about alpha boost
+save my handwritten notes about regularized logit boost
 
 https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
@@ -12,9 +12,9 @@ get rid of vector class library
 	select one implementation each of exact and fast implementations
 
 test accuracy of fast math
-	1. improved fast math with smarter (x + 1) ^ (alpha-2)
+	1. improved fast math with smarter (x + 1) ^ (gamma-2)
 	2. update the Gist with fastLog and fastPow
-	3. plot min and max rel error of fastPow as a function of alpha
+	3. plot min and max rel error of fastPow as a function of gamma
 		let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
 		send a mail to Nic with the results
 
@@ -22,7 +22,7 @@ try clang/llvm compiler plugin
 
 get Higgs, Otto and Iris to run again
 
-write some notes about alpha boost
+write some notes about regularized logit boost
 	just some brief comments in the code?
 
 need to move on with
@@ -42,7 +42,7 @@ General:
 		test util.stratifiedRandomSplit
 		write some tests for the loss functions
 			feed random data into them and check that lor version on lor data and p version and p data give same thing
-			check limit behaviour of alpa loss as alpha -> 0 or 1
+			check limit behaviour of regularized log loss as gamma -> 0 or 1
 
 Higgs:
 	run with LOR and median
@@ -61,7 +61,7 @@ Otto:
 	run an explorative round with full dataset
 		usedSampleRatio = [0.01, 0.02, .... 1]
 		minNodeSize = [1,2,5,10, 20, , .... 10000]
-	test alpha loss with some alpha around 0.1?
+	test regularized log loss with some gamma around 0.1?
 
 	fit hyperparams jointly or separately for the different labels?
 	try again with linloss, logloss and auc

@@ -30,7 +30,7 @@ public:
 private:
     double calculateLor0_() const;
     unique_ptr<BoostPredictor> trainAda_(BoostOptions opt) const;
-    unique_ptr<BoostPredictor> trainAlpha_(BoostOptions opt) const;
+    unique_ptr<BoostPredictor> trainLogit_(BoostOptions opt) const;
 
 private:
     const ArrayXXf inData_;

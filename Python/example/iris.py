@@ -20,8 +20,8 @@ cvParam = {
     'lossFun': jrboost.negAuc,
 
     'boostParamValues': {
-        'method': [jrboost.BoostOptions.Alpha],
-        'alpha': [0.5],
+        'method': [jrboost.BoostOptions.Logit],
+        'gamma': [0.5],
         'iterationCount': [1000],
         'eta':  [0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],

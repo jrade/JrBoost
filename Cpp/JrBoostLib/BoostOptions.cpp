@@ -8,14 +8,14 @@
 
 void BoostOptions::setMethod(int m)
 {
-    ASSERT(m == Ada || m == Alpha);
+    ASSERT(m == Ada || m == Logit);
     method_ = m;
 }
 
-void BoostOptions::setAlpha(double alpha)
+void BoostOptions::setGamma(double gamma)
 {
-    ASSERT(0.0 <= alpha && alpha <= 1.0);
-    alpha_ = alpha;
+    ASSERT(0.0 <= gamma && gamma <= 1.0);
+    gamma_ = gamma;
 }
 
 void BoostOptions::setIterationCount(size_t n)

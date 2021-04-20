@@ -32,7 +32,6 @@ inline Array3d linLoss_lor(CRefXs outData, CRefXd predData)
     return { falsePos, falseNeg, falsePos + falseNeg };
 }
 
-
 inline Array3d linLoss_p(CRefXs outData, CRefXd predData)
 {
     double falsePos = ((1 - outData).cast<double>() * predData).sum();
@@ -41,43 +40,9 @@ inline Array3d linLoss_p(CRefXs outData, CRefXd predData)
 }
 
 
-inline Array3d logLoss_lor(CRefXs outData, CRefXd predData)
+inline Array3d logLoss_lor(CRefXs outData, CRefXd predData, double gamma)
 {
-    double falsePos = -(
-        (1 - outData).cast<double>()
-        * (predData >= 0.0).select(
-            -predData - (-predData).exp().log1p()
-            , -(predData).exp().log1p()
-        )
-    ).sum();
-
-    // The two expressions  -predData - (-predData).exp().log1p()  and  -(predData).exp().log1p()
-    // are mathematically equivalent but the first is numerically accurate for large positive predData
-    // and the second for large negative predData
-
-    double falseNeg = -(outData.cast<double>()
-        * (predData >= 0.0).select(
-            -(-predData).exp().log1p()
-            , predData - (predData).exp().log1p()
-        )
-    ).sum();
-
-    return { falsePos, falseNeg, falsePos + falseNeg };
-}
-
-
-inline Array3d logLoss_p(CRefXs outData, CRefXd predData)
-{
-    constexpr double epsilon = std::numeric_limits<double>::min();
-    double falsePos = -((1 - outData).cast<double>() * (1.0 - predData + epsilon).log()).sum();
-    double falseNeg = -(outData.cast<double>() * (predData + epsilon).log()).sum();
-    return { falsePos, falseNeg, falsePos + falseNeg };
-}
-
-
-inline Array3d gammaLoss_lor(CRefXs outData, CRefXd predData, double gamma)
-{
-    if (gamma == 0.0) return logLoss_lor(outData, predData);
+    ASSERT(gamma > 0.0);
 
     double falsePos = ((1 - outData).cast<double>()
         * (1.0 - (1.0 / (1.0 + predData.exp())).pow(gamma))
@@ -90,9 +55,9 @@ inline Array3d gammaLoss_lor(CRefXs outData, CRefXd predData, double gamma)
     return { falsePos, falseNeg, falsePos + falseNeg };
 }
 
-inline Array3d gammaLoss_p(CRefXs outData, CRefXd predData, double gamma)
+inline Array3d logLoss_p(CRefXs outData, CRefXd predData, double gamma)
 {
-    if (gamma == 0.0) return logLoss_p(outData, predData);
+    ASSERT(gamma > 0.0);
 
     double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
@@ -153,13 +118,16 @@ private:
 };
 
 
-class GammaLoss_lor {
+class LogLoss_lor {
 public:
-    GammaLoss_lor(double gamma) : gamma_(gamma) {}
+    LogLoss_lor(double gamma) : gamma_(gamma)
+    {
+        ASSERT(gamma > 0.0);
+    }
 
     Array3d operator()(CRefXs outData, CRefXd predData) const
     {
-        return gammaLoss_lor(outData, predData, gamma_);
+        return logLoss_lor(outData, predData, gamma_);
     }
 
     string name() const
@@ -174,13 +142,16 @@ private:
 };
 
 
-class GammaLoss_p {
+class LogLoss_p {
 public:
-    GammaLoss_p(double gamma) : gamma_(gamma) {}
+    LogLoss_p(double gamma) : gamma_(gamma)
+    {
+        ASSERT(gamma > 0.0);
+    }
 
     Array3d operator()(CRefXs outData, CRefXd predData) const
     {
-        return gammaLoss_p(outData, predData, gamma_);
+        return logLoss_p(outData, predData, gamma_);
     }
 
     string name() const

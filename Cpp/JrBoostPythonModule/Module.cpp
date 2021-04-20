@@ -61,15 +61,15 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("__call__", &ErrorCount::operator())
         .def_property_readonly("name", &ErrorCount::name);
 
-    py::class_<GammaLoss_lor>{ mod, "GammaLoss_lor" }
+    py::class_<LogLoss_lor>{ mod, "LogLoss_lor" }
         .def(py::init<double>())
-        .def("__call__", &GammaLoss_lor::operator())
-        .def_property_readonly("name", &GammaLoss_lor::name);
+        .def("__call__", &LogLoss_lor::operator())
+        .def_property_readonly("name", &LogLoss_lor::name);
 
-    py::class_<GammaLoss_p>{ mod, "GammaLoss_p" }
+    py::class_<LogLoss_p>{ mod, "LogLoss_p" }
         .def(py::init<double>())
-        .def("__call__", &GammaLoss_p::operator())
-        .def_property_readonly("name", &GammaLoss_p::name);
+        .def("__call__", &LogLoss_p::operator())
+        .def_property_readonly("name", &LogLoss_p::name);
 
 
     // PROFILE
@@ -93,10 +93,10 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def(py::init<>())
 
         .def_readonly_static("Ada", &BoostOptions::Ada)
-        .def_readonly_static("Alpha", &BoostOptions::Alpha)
+        .def_readonly_static("Logit", &BoostOptions::Logit)
 
         .def_property("method", &BoostOptions::method, &BoostOptions::setMethod)
-        .def_property("alpha", &BoostOptions::alpha, &BoostOptions::setAlpha)
+        .def_property("gamma", &BoostOptions::gamma, &BoostOptions::setGamma)
         .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
         .def_property("eta", &BoostOptions::eta, &BoostOptions::setEta)
         .def_property("minAbsSampleWeight", &BoostOptions::minAbsSampleWeight, &BoostOptions::setMinAbsSampleWeight)
