@@ -87,83 +87,14 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
     for (size_t i = 0; i < iterationCount; ++i) {
 
         if (useFastExp) {
-
-            // 1. Eigen
-            /*{
-                adjWeights = fastExp(-F * outData_);
-            }*/
-
-            // 2. Scalar loop (not vectorized with MSVS 2019)
-            {
-                const double* pF = &F(0);
-                const double* pOutData = &outData_(0);
-                double* pAdjWeights = &adjWeights(0);
-
-                for (size_t j = 0; j < sampleCount; ++j)
-                    pAdjWeights[j] = fastExp(-pF[j] * pOutData[j]);
-            }
-            
-
-            // 3. SIMD loop
-            /*{
-                size_t j = 0;
-
-                for (; j <= sampleCount - 8; j += 8)
-                {
-                    vcl::Vec8d vF, vOutData;
-                    vF.load(&F(j));
-                    vOutData.load(&outData_(j));
-                    vcl::Vec8d vAdjWeight = fastExp(-vF * vOutData);
-                    vAdjWeight.store(&adjWeights(j));
-                }
-
-                int k = static_cast<int>(sampleCount - j);
-                vcl::Vec8d vF, vOutData;
-                vF.load_partial(k, &F(j));
-                vOutData.load_partial(k, &outData_(j));
-                vcl::Vec8d vAdjWeight = fastExp(-vF * vOutData);
-                vAdjWeight.store_partial(k, &adjWeights(j));
-            }*/
+            const double* pF = &F(0);
+            const double* pOutData = &outData_(0);
+            double* pAdjWeights = &adjWeights(0);
+            for (size_t j = 0; j < sampleCount; ++j)           // not vectorized by MSVS 2019
+                pAdjWeights[j] = fastExp(-pF[j] * pOutData[j]);
         }
-
-        else {
-
-            // 1. Eigen
-            /*{
-                adjWeights = (-F * outData_).exp();
-            }*/
-
-            // 2. Scalar loop (vectorized with MSVS 2019)
-            {
-                const double* pF = &F(0);
-                const double* pOutData = &outData_(0);
-                double* pAdjWeights = &adjWeights(0);
-
-                for (size_t j = 0; j < sampleCount; ++j)
-                    pAdjWeights[j] = std::exp(-pF[j] * pOutData[j]);
-            }            
-
-            // 3. SIMD loop
-            /*{
-                size_t j = 0;
-
-                for (; j <= sampleCount - 8; j += 8)
-                {
-                    vcl::Vec8d vF, vOutData;
-                    vF.load(&F(j));
-                    vOutData.load(&outData_(j));
-                    vcl::Vec8d vAdjWeight = vcl::exp(-vF * vOutData);
-                    vAdjWeight.store(&adjWeights(j));
-                }
-
-                int k = static_cast<int>(sampleCount - j);
-                vcl::Vec8d vF, vOutData;
-                vF.load_partial(k, &F(j));
-                vOutData.load_partial(k, &outData_(j));
-                vcl::Vec8d vAdjWeight = vcl::exp(-vF * vOutData);
-                vAdjWeight.store_partial(k, &adjWeights(j));
-            }*/
-        }
+        else
+            adjWeights = (-F * outData_).exp();
 
         if (weights_)
             adjWeights *= (*weights_);
@@ -208,103 +139,38 @@ unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
 
         if(useFastExp) {
 
-            // 1. Eigen    [37]
-            /*{
-                ArrayXd x = fastExp(-F * outData_);                   
-                adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
-                adjWeights = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
-            }*/
+            //ArrayXd x = fastExp(-F * outData_);                   
+            //adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
+            //adjWeights = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
 
-            // 2. Scalar loop (not vectorized by VS 2019)   [34]
-            {
-                const double* pF = &F(0);
-                const double* pOutData = &outData_(0);
-                double* pAdjOutData = &adjOutData(0);
-                double* pAdjWeights = &adjWeights(0);
+            const double* pF = &F(0);
+            const double* pOutData = &outData_(0);
+            double* pAdjOutData = &adjOutData(0);
+            double* pAdjWeights = &adjWeights(0);
 
-                for (size_t j = 0; j < sampleCount; ++j) {
-                    double x = fastExp(-pF[j] * pOutData[j]);
-                    pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
-                    pAdjWeights[j] = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
-                }
+            for (size_t j = 0; j < sampleCount; ++j) {      // not vectorized by MSVS 2019
+                double x = fastExp(-pF[j] * pOutData[j]);
+                pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
+                pAdjWeights[j] = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
             }
-            
-            // 3. SIMD loop    [29]
-            /*{
-                size_t j = 0;
-
-                for (; j <= sampleCount - 4; j += 4)
-                {
-                    vcl::Vec4d vF, vOutData;
-                    vF.load(&F(j));
-                    vOutData.load(&outData_(j));
-                    vcl::Vec4d x = fastExp(-vOutData * vF);
-                    vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (gamma * x + 1.0);
-                    vcl::Vec4d vAdjWeights = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
-                    vAdjOutData.store(&adjOutData(j));
-                    vAdjWeights.store(&adjWeights(j));
-                }
-
-                int k = static_cast<int>(sampleCount - j);
-                vcl::Vec4d vF, vOutData;
-                vF.load_partial(k, &F(j));
-                vOutData.load_partial(k, &outData_(j));
-                vcl::Vec4d x = fastExp(-vOutData * vF);
-                vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (gamma * x + 1.0);
-                vcl::Vec4d vAdjWeights = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
-                vAdjOutData.store_partial(k, &adjOutData(j));
-                vAdjWeights.store_partial(k, &adjWeights(j));
-            }*/
         }
 
         else {
 
-            // 1. Eigen    [150]
-            /*{
-                ArrayXd x = (-F * outData_).exp();
-                adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
-                adjWeights = x * (gamma * x + 1.0) * (x + 1.0).pow(gamma - 2.0);
-            }*/
+            //ArrayXd x = (-F * outData_).exp();
+            //adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
+            //adjWeights = x * (gamma * x + 1.0) * (x + 1.0).pow(gamma - 2.0);
  
-            // 2. Scalar loop (vectorized by VS 2019)      [89]
-            {
-                const double* pF = &F(0);
-                const double* pOutData = &outData_(0);
-                double* pAdjOutData = &adjOutData(0);
-                double* pAdjWeights = &adjWeights(0);
+            const double* pF = &F(0);
+            const double* pOutData = &outData_(0);
+            double* pAdjOutData = &adjOutData(0);
+            double* pAdjWeights = &adjWeights(0);
 
-                for (size_t j = 0; j < sampleCount; ++j) {
-                    double x = std::exp(-pF[j] * pOutData[j]);
-                    pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
-                    pAdjWeights[j] = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
-                }
+            for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
+                double x = std::exp(-pF[j] * pOutData[j]);
+                pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
+                pAdjWeights[j] = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
             }
-
-            // 3. SIMD loop        [113]
-            /*{
-                size_t j = 0;
-
-                for (; j <= sampleCount - 4; j += 4) {
-                    vcl::Vec4d vF, vOutData;
-                    vF.load(&F(j));
-                    vOutData.load(&outData_(j));
-                    vcl::Vec4d x = vcl::exp(-vOutData * vF);
-                    vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (gamma * x + 1.0);
-                    vcl::Vec4d vAdjWeights = x * (gamma * x + 1.0) * vcl::pow(x + 1.0, gamma - 2.0);
-                    vAdjOutData.store(&adjOutData(j));
-                    vAdjWeights.store(&adjWeights(j));
-                }
-
-                int k = static_cast<int>(sampleCount - j);
-                vcl::Vec4d vF, vOutData;
-                vF.load_partial(k, &F(j));
-                vOutData.load_partial(k, &outData_(j));
-                vcl::Vec4d x = vcl::exp(-vOutData * vF);
-                vcl::Vec4d vAdjOutData = vOutData * (x + 1.0) / (gamma * x + 1.0);
-                vcl::Vec4d vAdjWeights = x * (gamma * x + 1.0) * vcl::pow(x + 1.0, gamma - 2.0);
-                vAdjOutData.store_partial(k, &adjOutData(j));
-                vAdjWeights.store_partial(k, &adjWeights(j));
-            }*/
         }
 
         if (weights_)

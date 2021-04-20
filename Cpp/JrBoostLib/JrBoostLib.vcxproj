@@ -107,10 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoostOptions.cpp" />
-    <ClCompile Include="BoostTrainer.cpp">
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
+    <ClCompile Include="BoostTrainer.cpp" />
     <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="pch.cpp">

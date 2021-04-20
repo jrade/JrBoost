@@ -1,4 +1,4 @@
-save my handwritten notes about regularized logit boost
+documentation of regularized logit boost
 
 https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
@@ -6,10 +6,6 @@ save and load classifier
 	binary format
 		byte 1 classifier type
 		byte 2 version mumber of the format
-
-get rid of vector class library
-	too complex and may be bad with a better compiler
-	select one implementation each of exact and fast implementations
 
 test accuracy of fast math
 	1. improved fast math with smarter (x + 1) ^ (gamma-2)
@@ -21,9 +17,6 @@ test accuracy of fast math
 try clang/llvm compiler plugin
 
 get Higgs, Otto and Iris to run again
-
-write some notes about regularized logit boost
-	just some brief comments in the code?
 
 need to move on with
 	trees
@@ -65,7 +58,6 @@ Otto:
 
 	fit hyperparams jointly or separately for the different labels?
 	try again with linloss, logloss and auc
-
 
 	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
 

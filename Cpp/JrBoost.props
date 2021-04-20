@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <LibraryPath>$(PYTHON_DIR)\libs;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(EIGEN_DIR);$(PYTHON_DIR)\include;$(PYBIND11_DIR)\include;$(VCL_DIR);$(IncludePath)</IncludePath>
+    <IncludePath>$(EIGEN_DIR);$(PYTHON_DIR)\include;$(PYBIND11_DIR)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
