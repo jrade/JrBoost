@@ -8,6 +8,7 @@
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostTrainer.h"
 #include "../JrBoostLib/BoostPredictor.h"
+#include "../JrBoostLib/EnsemblePredictor.h"
 #include "../JrBoostLib/InterruptHandler.h"
 
 namespace py = pybind11;
@@ -47,12 +48,9 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     // loss functions
 
-    mod.def("errorCount_lor", &errorCount_lor);
-    mod.def("errorCount_p", &errorCount_p);
-    mod.def("linLoss_lor", &linLoss_lor);
-    mod.def("linLoss_p", &linLoss_p);
-    mod.def("logLoss_lor", &logLoss_lor);
-    mod.def("logLoss_p", &logLoss_p);
+    mod.def("errorCount", &errorCount, py::arg(), py::arg(), py::arg("threshold") = 0.5);
+    mod.def("linLoss", &linLoss);
+    mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.1);
     mod.def("auc", &auc);
     mod.def("negAuc", &negAuc);
 
@@ -61,15 +59,10 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("__call__", &ErrorCount::operator())
         .def_property_readonly("name", &ErrorCount::name);
 
-    py::class_<LogLoss_lor>{ mod, "LogLoss_lor" }
+    py::class_<LogLoss>{ mod, "LogLoss" }
         .def(py::init<double>())
-        .def("__call__", &LogLoss_lor::operator())
-        .def_property_readonly("name", &LogLoss_lor::name);
-
-    py::class_<LogLoss_p>{ mod, "LogLoss_p" }
-        .def(py::init<double>())
-        .def("__call__", &LogLoss_p::operator())
-        .def_property_readonly("name", &LogLoss_p::name);
+        .def("__call__", &LogLoss::operator())
+        .def_property_readonly("name", &LogLoss::name);
 
 
     // PROFILE
@@ -84,6 +77,16 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("PUSH", &PROFILE::PUSH)
         .def("POP", &PROFILE::POP, py::arg() = 0)
         .def("PRINT", &PROFILE::PRINT);
+
+
+    // Predictor
+
+    py::class_<Predictor, shared_ptr<Predictor>>{ mod, "Predictor" }
+        .def("variableCount", &Predictor::variableCount)
+        .def("predict", &Predictor::predict);
+
+    py::class_<EnsemblePredictor, shared_ptr<EnsemblePredictor>, Predictor>{ mod, "EnsemblePredictor" }
+        .def(py::init<const vector<shared_ptr<Predictor>>&>());
 
 
     // Boost classes
@@ -121,7 +124,5 @@ PYBIND11_MODULE(_jrboostext, mod)
         // These callbacks may be to Python functions that need to acquire the GIL.
         // If we don't relasee the GIL here it will be held by the master thread and the other threads will be blocked
 
-    py::class_<BoostPredictor>{ mod, "BoostPredictor" }
-        .def("variableCount", &BoostPredictor::variableCount)
-        .def("predict", &BoostPredictor::predict);
+    py::class_<BoostPredictor, shared_ptr<BoostPredictor>, Predictor>{ mod, "BoostPredictor" };
 }

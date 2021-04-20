@@ -9,13 +9,13 @@
 #include "BernoulliDistribution.h"
 
 class StumpOptions;
-class SimplePredictor;
+class BasePredictor;
 
 
 class StumpTrainerImplBase {
 public:
     virtual ~StumpTrainerImplBase() = default;
-    virtual unique_ptr<SimplePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const = 0;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const = 0;
 
 protected:
     StumpTrainerImplBase() = default;
@@ -34,7 +34,7 @@ public:
     StumpTrainerImpl(CRefXXf inData, CRefXs strata);
     virtual ~StumpTrainerImpl() = default;
 
-    virtual unique_ptr<SimplePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
 
 private:
     using RandomNumberEngine_ = splitmix;

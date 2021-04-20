@@ -53,12 +53,6 @@
     <ClInclude Include="BoostPredictor.h">
       <Filter>Boost</Filter>
     </ClInclude>
-    <ClInclude Include="SimplePredictor.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
-    <ClInclude Include="TrivialPredictor.h">
-      <Filter>Stump</Filter>
-    </ClInclude>
     <ClInclude Include="pdqsort.h">
       <Filter>Tools</Filter>
     </ClInclude>
@@ -67,6 +61,18 @@
     </ClInclude>
     <ClInclude Include="FastMath.h">
       <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="TrivialPredictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="Predictor.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="EnsemblePredictor.h">
+      <Filter>Predictor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +117,9 @@
     </Filter>
     <Filter Include="Tools">
       <UniqueIdentifier>{f432c030-76cd-4de4-a5bc-57c4014bf5e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Predictor">
+      <UniqueIdentifier>{9affb562-15ae-49f3-856a-b1e15900e016}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

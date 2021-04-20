@@ -14,7 +14,7 @@ public:
     BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights);
     ~BoostTrainer() = default;
 
-    unique_ptr<BoostPredictor> train(const BoostOptions& opt) const;
+    shared_ptr<BoostPredictor> train(const BoostOptions& opt) const;
 
     ArrayXd trainAndEval(
         CRefXXf testInData,
@@ -29,8 +29,8 @@ public:
 
 private:
     double calculateLor0_() const;
-    unique_ptr<BoostPredictor> trainAda_(BoostOptions opt) const;
-    unique_ptr<BoostPredictor> trainLogit_(BoostOptions opt) const;
+    shared_ptr<BoostPredictor> trainAda_(BoostOptions opt) const;
+    shared_ptr<BoostPredictor> trainLogit_(BoostOptions opt) const;
 
 private:
     const ArrayXXf inData_;

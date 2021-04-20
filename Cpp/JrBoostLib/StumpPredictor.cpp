@@ -7,7 +7,7 @@
 
 
 StumpPredictor::StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY) :
-    SimplePredictor{ variableCount },
+    BasePredictor{ variableCount },
     j_{ j },
     x_{ x },
     leftY_{ leftY },

@@ -5,18 +5,18 @@
 #pragma once
 
 
-class SimplePredictor {
+class BasePredictor {
 public:
-    virtual ~SimplePredictor() = default;
+    virtual ~BasePredictor() = default;
     size_t variableCount() const { return variableCount_; }
     virtual void predict(CRefXXf inData, double c, RefXd outData) const = 0;
 
 protected:
-    SimplePredictor(size_t variableCount) : variableCount_(variableCount) {}
+    BasePredictor(size_t variableCount) : variableCount_(variableCount) {}
 
 // deleted:
-    SimplePredictor(const SimplePredictor&) = delete;
-    SimplePredictor& operator=(const SimplePredictor&) = delete;
+    BasePredictor(const BasePredictor&) = delete;
+    BasePredictor& operator=(const BasePredictor&) = delete;
 
 private:
     size_t variableCount_;

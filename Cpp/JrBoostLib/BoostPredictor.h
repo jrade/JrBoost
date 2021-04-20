@@ -4,19 +4,17 @@
 
 #pragma once
 
-class SimplePredictor;
+#include "Predictor.h"
+
+class BasePredictor;
 
 
-class BoostPredictor {
+class BoostPredictor : public Predictor {
 public:
     virtual ~BoostPredictor();
 
     size_t variableCount() const { return variableCount_; }
-    ArrayXd predict(CRefXXf inData) const;
-
-// deleted:
-    BoostPredictor(const BoostPredictor&) = delete;
-    BoostPredictor& operator=(const BoostPredictor&) = delete;
+    virtual ArrayXd predict(CRefXXf inData) const;
 
 private:
     friend class BoostTrainer;
@@ -25,13 +23,11 @@ private:
         size_t variableCount,
         double c0,
         vector<double>&& c1,
-        vector<unique_ptr<SimplePredictor>>&& basePredictors
+        vector<unique_ptr<BasePredictor>>&& basePredictors
     );
-
-    void validateInData_(CRefXXf inData) const;
 
     size_t variableCount_;
     double c0_;
     vector<double> c1_;
-    vector<unique_ptr<SimplePredictor>> basePredictors_;
+    vector<unique_ptr<BasePredictor>> basePredictors_;
 };

@@ -81,10 +81,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="EnsemblePredictor.h" />
     <ClInclude Include="FastMath.h" />
     <ClInclude Include="InterruptHandler.h" />
     <ClInclude Include="pdqsort.h" />
-    <ClInclude Include="SimplePredictor.h" />
+    <ClInclude Include="BasePredictor.h" />
     <ClInclude Include="AGRandom.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="BernoulliDistribution.h" />
@@ -95,6 +96,7 @@
     <ClInclude Include="BoostPredictor.h" />
     <ClInclude Include="Loss.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Predictor.h" />
     <ClInclude Include="Profile.h" />
     <ClInclude Include="SortedIndices.h" />
     <ClInclude Include="StaticStack.h" />

@@ -7,7 +7,7 @@
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
 #include "StumpTrainer.h"
-#include "SimplePredictor.h"
+#include "BasePredictor.h"
 #include "FastMath.h"
 #include "InterruptHandler.h"
 #include "SortedIndices.h"
@@ -46,11 +46,11 @@ double BoostTrainer::calculateLor0_() const
         );
 }
 
-unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
+shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
 
-    unique_ptr<BoostPredictor> pred;
+    shared_ptr<BoostPredictor> pred;
     switch (opt.method()) {
     case BoostOptions::Ada:
         pred = trainAda_(opt);
@@ -68,7 +68,7 @@ unique_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
     return pred;
 }
 
-unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
+shared_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
 {
     const size_t sampleCount = sampleCount_;
 
@@ -81,7 +81,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
     ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / 2.0);
     ArrayXd adjWeights(sampleCount);
 
-    vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
@@ -104,20 +104,20 @@ unique_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
             minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
         opt.setMinSampleWeight(minSampleWeight);
 
-        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
+        unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = std::move(basePred);
         coeff[i] = 2.0 * eta;
     }
 
-    return unique_ptr<BoostPredictor>(
+    return shared_ptr<BoostPredictor>(
         new BoostPredictor(variableCount_, lor0_, std::move(coeff), std::move(basePredictors))
     );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
+shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
 {
     const size_t sampleCount = sampleCount_;
 
@@ -132,7 +132,7 @@ unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
     ArrayXd adjOutData(sampleCount);
     ArrayXd adjWeights(sampleCount);
 
-    vector<unique_ptr<SimplePredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
     vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
@@ -181,13 +181,13 @@ unique_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
             minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
         opt.setMinSampleWeight(minSampleWeight);
 
-        unique_ptr<SimplePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
+        unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = std::move(basePred);
         coeff[i] = (1.0 + gamma) * eta;
     }
 
-    return unique_ptr<BoostPredictor>(
+    return shared_ptr<BoostPredictor>(
         new BoostPredictor(variableCount_, lor0_, std::move(coeff), std::move(basePredictors))
     );
 }
@@ -237,7 +237,7 @@ ArrayXd BoostTrainer::trainAndEval(
                     currentInterruptHandler->check();  // throws if there is a keyboard interrupt
 
                 size_t j = optIndicesSortedByCost[i];
-                unique_ptr<BoostPredictor> pred = train(opt[j]);
+                shared_ptr<BoostPredictor> pred = train(opt[j]);
                 ArrayXd predData = pred->predict(testInData);
                 scores(j) = lossFun(testOutData, predData)(2);
             }

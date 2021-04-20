@@ -7,58 +7,23 @@
 #include "pdqsort.h"
 
 
-inline Array3d errorCount_(CRefXs outData, CRefXd predData, double threshold)
+inline Array3d errorCount(CRefXs outData, CRefXd predData, double threshold = 0.5)
 {
     double falsePos = static_cast<double>(((1 - outData) * (predData >= threshold).cast<size_t>()).sum());
     double falseNeg = static_cast<double>((outData * (predData < threshold).cast<size_t>()).sum());
     return { falsePos, falseNeg, falsePos + falseNeg };
 }
 
-inline Array3d errorCount_lor(CRefXs outData, CRefXd predData)
-{
-    return errorCount_(outData, predData, 0.0);
-}
-
-inline Array3d errorCount_p(CRefXs outData, CRefXd predData)
-{
-    return errorCount_(outData, predData, 0.5);
-}
-
-
-inline Array3d linLoss_lor(CRefXs outData, CRefXd predData)
-{
-    double falsePos = ((1 - outData).cast<double>() / (1.0 + (-predData).exp())).sum();
-    double falseNeg = (outData.cast<double>() / (1.0 + predData.exp())).sum();
-    return { falsePos, falseNeg, falsePos + falseNeg };
-}
-
-inline Array3d linLoss_p(CRefXs outData, CRefXd predData)
+inline Array3d linLoss(CRefXs outData, CRefXd predData)
 {
     double falsePos = ((1 - outData).cast<double>() * predData).sum();
     double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
     return { falsePos, falseNeg, falsePos + falseNeg };
 }
 
-
-inline Array3d logLoss_lor(CRefXs outData, CRefXd predData, double gamma)
+inline Array3d logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
 {
     ASSERT(gamma > 0.0);
-
-    double falsePos = ((1 - outData).cast<double>()
-        * (1.0 - (1.0 / (1.0 + predData.exp())).pow(gamma))
-        ).sum() / gamma;
-
-    double falseNeg = (outData.cast<double>()
-        * (1.0 - (1.0 / (1.0 + (-predData).exp())).pow(gamma))
-        ).sum() / gamma;
-
-    return { falsePos, falseNeg, falsePos + falseNeg };
-}
-
-inline Array3d logLoss_p(CRefXs outData, CRefXd predData, double gamma)
-{
-    ASSERT(gamma > 0.0);
-
     double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
     return { falsePos, falseNeg, falsePos + falseNeg };
@@ -103,7 +68,7 @@ public:
 
     Array3d operator()(CRefXs outData, CRefXd predData) const
     {
-        return errorCount_(outData, predData, threshold_);
+        return errorCount(outData, predData, threshold_);
     }
 
     string name() const
@@ -118,46 +83,22 @@ private:
 };
 
 
-class LogLoss_lor {
+class LogLoss {
 public:
-    LogLoss_lor(double gamma) : gamma_(gamma)
+    LogLoss(double gamma) : gamma_(gamma)
     {
         ASSERT(gamma > 0.0);
     }
 
     Array3d operator()(CRefXs outData, CRefXd predData) const
     {
-        return logLoss_lor(outData, predData, gamma_);
+        return logLoss(outData, predData, gamma_);
     }
 
     string name() const
     {
         stringstream ss;
-        ss << "gamma(" << gamma_ << ")";
-        return ss.str();
-    }
-
-private:
-    const double gamma_;
-};
-
-
-class LogLoss_p {
-public:
-    LogLoss_p(double gamma) : gamma_(gamma)
-    {
-        ASSERT(gamma > 0.0);
-    }
-
-    Array3d operator()(CRefXs outData, CRefXd predData) const
-    {
-        return logLoss_p(outData, predData, gamma_);
-    }
-
-    string name() const
-    {
-        stringstream ss;
-        ss << "gamma(" << gamma_ << ")";
+        ss << "log-loss(" << gamma_ << ")";
         return ss.str();
     }
 

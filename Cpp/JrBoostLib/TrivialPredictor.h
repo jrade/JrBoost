@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "SimplePredictor.h"
+#include "BasePredictor.h"
 
 
-class TrivialPredictor : public SimplePredictor {
+class TrivialPredictor : public BasePredictor {
 public:
     TrivialPredictor(size_t variableCount, double y) : 
-        SimplePredictor(variableCount),
+        BasePredictor(variableCount),
         y_(y)
     {
         ASSERT(std::isfinite(y));

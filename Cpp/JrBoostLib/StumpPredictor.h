@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "SimplePredictor.h"
+#include "BasePredictor.h"
 
 
-class StumpPredictor : public SimplePredictor {
+class StumpPredictor : public BasePredictor {
 public:
     virtual ~StumpPredictor() = default;
 
