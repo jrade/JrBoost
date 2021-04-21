@@ -20,13 +20,13 @@ StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
     stratum0Count_{ (strata == 0).cast<size_t>().sum() },
     stratum1Count_{ (strata == 1).cast<size_t>().sum() }
 {
-    ASSERT(inData.rows() != 0);
-    ASSERT(inData.cols() != 0);
+    ASSERT(sampleCount_ != 0);
+    ASSERT(variableCount_ != 0);
     ASSERT(static_cast<size_t>(strata.rows()) == sampleCount_);
 
-    ASSERT((inData > -numeric_limits<float>::infinity()).all());
-    ASSERT((inData < numeric_limits<float>::infinity()).all());
-    ASSERT((strata < 2).all());
+    //ASSERT((inData > -numeric_limits<float>::infinity()).all());
+    //ASSERT((inData < numeric_limits<float>::infinity()).all());
+    //ASSERT((strata < 2).all());
 }
 
 
@@ -66,12 +66,14 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     ASSERT((weights >= 0.0).all());
     ASSERT((weights < numeric_limits<double>::infinity()).all());
 
- 
-    // initialize used sample mask .............................................
+
+    // zero calibration of the profiling .......................................
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
-    //PROFILE::PUSH(PROFILE::ZERO);
     ITEM_COUNT = 1;
+
+
+    // initialize used sample mask .............................................
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_SAMPLES);
     ITEM_COUNT = sampleCount_;

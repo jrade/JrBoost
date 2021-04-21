@@ -16,7 +16,7 @@
     <ProjectGuid>{6aff45f6-cda5-4746-b867-2618feae16b4}</ProjectGuid>
     <RootNamespace>CppTest</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <ProjectName>JrBoostPythonModule</ProjectName>
+    <ProjectName>PythonModule</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

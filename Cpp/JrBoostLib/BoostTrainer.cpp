@@ -23,13 +23,20 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     lor0_{ calculateLor0_() },
     baseTrainer_{ std::make_shared<StumpTrainer>(inData_, rawOutData_) }
 {
-    ASSERT(inData_.rows() != 0);
-    ASSERT(inData_.cols() != 0);
-    ASSERT(outData_.rows() == inData_.rows());
+    ASSERT(sampleCount_ != 0);
+    ASSERT(variableCount_ != 0);
 
     ASSERT((inData_ > -numeric_limits<float>::infinity()).all());
     ASSERT((inData_ < numeric_limits<float>::infinity()).all());
+
+    ASSERT(static_cast<size_t>(rawOutData_.rows()) == sampleCount_);
     ASSERT((rawOutData_ < 2).all());
+
+    if (weights_) {
+        ASSERT(static_cast<size_t>(weights_->rows()) == sampleCount_);
+        ASSERT((*weights_ > 0.0).all());
+        ASSERT((*weights_ < numeric_limits<float>::infinity()).all());
+    }
 }
 
 double BoostTrainer::calculateLor0_() const
@@ -208,7 +215,7 @@ ArrayXd BoostTrainer::trainAndEval(
     // Differents sets of options can take very different time.
     // To ensure that the OMP threads are balanced we use dynamical scheduling and we sort the options objects
     // from the most time-consuming to the least.
-    // In one test case, this decraesed the time spent waiting at the barrier
+    // In one test case, this decreased the time spent waiting at the barrier
     // from 3.9% to 0.2% of the total execution time.
 
     vector<size_t> optIndicesSortedByCost(optCount);
@@ -251,8 +258,8 @@ ArrayXd BoostTrainer::trainAndEval(
             }
 
         } // don't wait here ...
-        PROFILE::PUSH(PROFILE::OMP_BARRIER);
 
+        PROFILE::PUSH(PROFILE::OMP_BARRIER);
     } // ... but here so we can measure the wait time
     PROFILE::POP();
 

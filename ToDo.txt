@@ -1,13 +1,9 @@
-review profiling of predict functions
-
-split C++ code into three projects: Predictor, Trainer, PyModule
-	minimize the dependncies of Predictor, in particular no profiling
-
 documentation of regularized logit boost
 
 https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
 save and load classifier
+	use single precision
 	binary format
 		byte 1 classifier type
 		byte 2 version mumber of the format
