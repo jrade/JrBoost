@@ -9,20 +9,15 @@
 
 class TrivialPredictor : public BasePredictor {
 public:
-    TrivialPredictor(size_t variableCount, double y) : 
-        BasePredictor(variableCount),
-        y_(y)
-    {
-        ASSERT(std::isfinite(y));
-    }
-
+    TrivialPredictor(double y);
     virtual ~TrivialPredictor() = default;
+    virtual void save(ostream& os) const;
 
 private:
-    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const
-    {
-        outData += c * y_;
-    }
+    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
+    
+    friend class BasePredictor;
+    static unique_ptr<BasePredictor> loadImpl_(istream& is);
 
-    double y_;
+    float y_;
 };

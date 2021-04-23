@@ -129,7 +129,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
             if (sumW == 0) {
                 PROFILE::POP(ITEM_COUNT);
                 //cout << "Warning: sumW = 0" << endl;
-                return std::make_unique<TrivialPredictor>(variableCount_, 0.0);
+                return std::make_unique<TrivialPredictor>(0.0);
             }
 
             bestScore = sumWY * sumWY / sumW;
@@ -205,9 +205,9 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     }
 
     if (!splitFound)
-        return std::make_unique<TrivialPredictor>(variableCount_, sumWY / sumW);
+        return std::make_unique<TrivialPredictor>(sumWY / sumW);
     
-    return unique_ptr<StumpPredictor>(new StumpPredictor(variableCount_, bestJ, bestX, bestLeftY, bestRightY));
+    return unique_ptr<StumpPredictor>(new StumpPredictor(bestJ, bestX, bestLeftY, bestRightY));
 };
 
 

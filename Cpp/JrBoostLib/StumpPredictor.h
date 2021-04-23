@@ -10,16 +10,19 @@
 class StumpPredictor : public BasePredictor {
 public:
     virtual ~StumpPredictor() = default;
+    virtual void save(ostream& os) const;
 
 private:
     template<typename SampleIndex> friend class StumpTrainerImpl;
-
-    StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY);
+    StumpPredictor(size_t j, float x, double leftY, double rightY);
 
     virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
 
-    size_t j_;
+    friend class BasePredictor;
+    static unique_ptr<BasePredictor> loadImpl_(istream& is);
+
+    uint32_t j_;
     float x_;
-    double leftY_;
-    double rightY_;
+    float leftY_;
+    float rightY_;
 };

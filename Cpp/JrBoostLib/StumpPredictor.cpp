@@ -6,16 +6,15 @@
 #include "StumpPredictor.h"
 
 
-StumpPredictor::StumpPredictor(size_t variableCount, size_t j, float x, double leftY, double rightY) :
-    BasePredictor{ variableCount },
-    j_{ j },
+StumpPredictor::StumpPredictor(size_t j, float x, double leftY, double rightY) :
+    j_{ static_cast<uint32_t>(j) },
     x_{ x },
-    leftY_{ leftY },
-    rightY_{ rightY }
+    leftY_{ static_cast<float>(leftY) },
+    rightY_{ static_cast<float>(rightY) }
 {
-    ASSERT(j < variableCount);
     ASSERT(std::isfinite(x) && std::isfinite(leftY) && std::isfinite(rightY));
 }
+
 
 void StumpPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
 {
@@ -24,4 +23,37 @@ void StumpPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
         double y = (inData(i, j_) < x_) ? leftY_ : rightY_;
         outData(i) += c * y;
     }
+}
+
+
+void StumpPredictor::save(ostream& os) const
+{
+    uint8_t type = Stump;
+    os.write(reinterpret_cast<const char*>(&type), sizeof(type));
+
+    uint8_t version = 1;
+    os.write(reinterpret_cast<const char*>(&version), sizeof(version));
+
+    os.write(reinterpret_cast<const char*>(&j_), sizeof(j_));
+    os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
+    os.write(reinterpret_cast<const char*>(&leftY_), sizeof(leftY_));
+    os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));
+}
+
+unique_ptr<BasePredictor> StumpPredictor::loadImpl_(istream& is)
+{
+    uint8_t version;
+    is.read(reinterpret_cast<char*>(&version), sizeof(version));
+    if (version != 1)
+        throw runtime_error("Not a valid JrBoost predictor file.");
+
+    uint32_t j;
+    float x;
+    float leftY;
+    float rightY;
+    is.read(reinterpret_cast<char*>(&j), sizeof(j));
+    is.read(reinterpret_cast<char*>(&x), sizeof(x));
+    is.read(reinterpret_cast<char*>(&leftY), sizeof(leftY));
+    is.read(reinterpret_cast<char*>(&rightY), sizeof(rightY));
+    return unique_ptr<StumpPredictor>(new StumpPredictor(j, x, leftY, rightY));
 }

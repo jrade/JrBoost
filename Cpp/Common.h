@@ -12,6 +12,7 @@
 #include <atomic>
 #include <cmath>
 #include <exception>
+#include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
@@ -30,8 +31,12 @@ using std::atomic;
 using std::cout;
 using std::endl;
 using std::function;
+using std::ifstream;
+using std::istream;
 using std::numeric_limits;
+using std::ofstream;
 using std::optional;
+using std::ostream;
 using std::pair;
 using std::runtime_error;
 using std::shared_ptr;

@@ -8,24 +8,20 @@
 class BasePredictor {
 public:
     virtual ~BasePredictor() = default;
+    virtual void save(ostream& os) const = 0;
 
-    size_t variableCount() const { return variableCount_; }
+    void predict(CRefXXf inData, double c, RefXd outData) const;
 
-    void predict(CRefXXf inData, double c, RefXd outData) const
-    {
-        PROFILE::PUSH(PROFILE::BOOST_PREDICT);
-        predictImpl_(inData, c, outData);
-        size_t sampleCount = inData.rows();
-        PROFILE::POP(sampleCount);
-    }
+    static unique_ptr<BasePredictor> load(istream& is);
 
 protected:
-    BasePredictor(size_t variableCount) : variableCount_(variableCount) {}
+    enum { Trivial = 128, Stump = 129 };
+
+    BasePredictor() = default;
 
 private:
+    friend class BoostPredictor;
     virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const = 0;
-
-    size_t variableCount_;
     
 // deleted:
     BasePredictor(const BasePredictor&) = delete;

@@ -9,30 +9,17 @@
 
 class EnsemblePredictor : public Predictor {
 public:
-    EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors) :
-        predictors_(predictors)
-    {
-        ASSERT(!predictors_.empty());
-        for (const auto& pred : predictors_)
-            ASSERT(pred->variableCount() == variableCount());
-    }
+    EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors);
 
     virtual ~EnsemblePredictor() = default;
-
     virtual size_t variableCount() const { return predictors_[0]->variableCount(); }
+    virtual void save(ostream& os) const;
 
 private:
-    virtual ArrayXd predictImpl_(CRefXXf inData) const
-    {
-        validateInData(inData);
-        size_t sampleCount = static_cast<size_t>(inData.rows());
-        ArrayXd pred = ArrayXd::Zero(sampleCount);
-        size_t n = predictors_.size();
-        for (size_t k = 0; k < n; ++k)
-            pred += predictors_[k]->predictImpl_(inData);
-        pred /= static_cast<double>(n);
-        return pred;
-    }
+    virtual ArrayXd predictImpl_(CRefXXf inData) const;
+
+    friend class Predictor;
+    static shared_ptr<Predictor> loadImpl_(istream& is);
 
     vector<shared_ptr<Predictor>> predictors_;
 };
