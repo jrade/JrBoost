@@ -17,7 +17,6 @@ public:
 
 private:
     friend class BoostTrainer;
-
     BoostPredictor(
         size_t variableCount,
         double c0,

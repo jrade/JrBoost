@@ -18,7 +18,7 @@ StumpPredictor::StumpPredictor(size_t j, float x, double leftY, double rightY) :
 
 void StumpPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
 {
-    size_t sampleCount = inData.rows();
+    const size_t sampleCount = inData.rows();
     for (size_t i = 0; i < sampleCount; ++i) {
         double y = (inData(i, j_) < x_) ? leftY_ : rightY_;
         outData(i) += c * y;
@@ -28,10 +28,10 @@ void StumpPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
 
 void StumpPredictor::save(ostream& os) const
 {
-    uint8_t type = Stump;
+    const uint8_t type = Stump;
     os.write(reinterpret_cast<const char*>(&type), sizeof(type));
 
-    uint8_t version = 1;
+    const uint8_t version = 1;
     os.write(reinterpret_cast<const char*>(&version), sizeof(version));
 
     os.write(reinterpret_cast<const char*>(&j_), sizeof(j_));

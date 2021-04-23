@@ -2,19 +2,19 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="StumpOptions.h">
-      <Filter>Stump Trainer</Filter>
+      <Filter>Base Trainer</Filter>
     </ClInclude>
     <ClInclude Include="BoostOptions.h">
-      <Filter>Boost Trainer</Filter>
+      <Filter>Trainer</Filter>
     </ClInclude>
     <ClInclude Include="BoostTrainer.h">
-      <Filter>Boost Trainer</Filter>
+      <Filter>Trainer</Filter>
     </ClInclude>
     <ClInclude Include="StumpTrainerImpl.h">
-      <Filter>Stump Trainer</Filter>
+      <Filter>Base Trainer</Filter>
     </ClInclude>
     <ClInclude Include="StumpTrainer.h">
-      <Filter>Stump Trainer</Filter>
+      <Filter>Base Trainer</Filter>
     </ClInclude>
     <ClInclude Include="StaticStack.h">
       <Filter>Profiling</Filter>
@@ -37,13 +37,7 @@
     <ClInclude Include="BernoulliDistribution.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="Loss.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="TStatisticRank.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
     <ClInclude Include="SortedIndices.h">
       <Filter>Tools</Filter>
     </ClInclude>
@@ -56,12 +50,6 @@
     <ClInclude Include="FastMath.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="BasePredictor.h">
-      <Filter>Predictor</Filter>
-    </ClInclude>
-    <ClInclude Include="TrivialPredictor.h">
-      <Filter>Predictor</Filter>
-    </ClInclude>
     <ClInclude Include="Predictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>
@@ -71,25 +59,37 @@
     <ClInclude Include="BoostPredictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>
+    <ClInclude Include="BasePredictor.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
     <ClInclude Include="StumpPredictor.h">
-      <Filter>Predictor</Filter>
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="TrivialPredictor.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="Loss.h">
+      <Filter>Extra</Filter>
+    </ClInclude>
+    <ClInclude Include="TTest.h">
+      <Filter>Extra</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">
-      <Filter>Stump Trainer</Filter>
+      <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="BoostOptions.cpp">
-      <Filter>Boost Trainer</Filter>
+      <Filter>Trainer</Filter>
     </ClCompile>
     <ClCompile Include="BoostTrainer.cpp">
-      <Filter>Boost Trainer</Filter>
+      <Filter>Trainer</Filter>
     </ClCompile>
     <ClCompile Include="StumpTrainerImpl.cpp">
-      <Filter>Stump Trainer</Filter>
+      <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="StumpTrainer.cpp">
-      <Filter>Stump Trainer</Filter>
+      <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="Profile.cpp">
       <Filter>Profiling</Filter>
@@ -102,7 +102,22 @@
       <Filter>Predictor</Filter>
     </ClCompile>
     <ClCompile Include="StumpPredictor.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="BasePredictor.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="Predictor.cpp">
       <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="EnsemblePredictor.cpp">
+      <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="TrivialPredictor.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="TTest.cpp">
+      <Filter>Extra</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -115,11 +130,17 @@
     <Filter Include="Predictor">
       <UniqueIdentifier>{9affb562-15ae-49f3-856a-b1e15900e016}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Boost Trainer">
+    <Filter Include="Base Predictor">
+      <UniqueIdentifier>{536b7ec8-af35-494d-8758-3d38d0865ae1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base Trainer">
+      <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Trainer">
       <UniqueIdentifier>{218ce471-c2e9-439b-8a5e-6fad60ea77d1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Stump Trainer">
-      <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
+    <Filter Include="Extra">
+      <UniqueIdentifier>{97603f67-39e7-4923-a9e9-687d8efcbab7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

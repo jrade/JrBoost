@@ -21,10 +21,10 @@ void TrivialPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) con
 
 void TrivialPredictor::save(ostream& os) const
 {
-    uint8_t type = Trivial;
+    const uint8_t type = Trivial;
     os.write(reinterpret_cast<const char*>(&type), sizeof(type));
 
-    uint8_t version = 1;
+    const uint8_t version = 1;
     os.write(reinterpret_cast<const char*>(&version), sizeof(version));
 
     os.write(reinterpret_cast<const char*>(&y_), sizeof(y_));

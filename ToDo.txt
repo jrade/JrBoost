@@ -1,12 +1,20 @@
+optimizeFun -> minimizeFun
+change parameter ordering
+
+-----------------------------------------
+
+EnsemblePredictor:
+	variableCount_ as member
+	have empty ensemble return 0.0
+
+BoostPredictor:
+	only a single c1
+
+---------------------------------------------
+
 documentation of regularized logit boost
 
 https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
-
-save and load classifier
-	use single precision
-	binary format
-		byte 1 classifier type
-		byte 2 version mumber of the format
 
 test accuracy of fast math
 	1. improved fast math with smarter (x + 1) ^ (gamma-2)

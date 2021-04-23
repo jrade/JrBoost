@@ -25,22 +25,26 @@ void Predictor::validateInData(CRefXXf inData) const
     //ASSERT((inData < numeric_limits<float>::infinity()).all());
 }
 
+
 shared_ptr<Predictor> Predictor::load(const string& filePath)
 {
     ifstream ifs(filePath, std::ios::binary);
     if (!ifs)
         throw runtime_error("Unable to open the file " + filePath + " for reading.");
-        return load(ifs);
+    return load(ifs);
 }
 
 shared_ptr<Predictor> Predictor::load(istream& is)
-{    
+{
     uint8_t type = static_cast<uint8_t>(is.get());
-    if (type == Boost)
+    switch (type) {
+    case Boost:
         return BoostPredictor::loadImpl_(is);
-    if (type == Ensemble)
+    case Ensemble:
         return EnsemblePredictor::loadImpl_(is);
-    throw runtime_error("Not a valid JrBoost predictor file.")
+    default:
+        throw runtime_error("Not a valid JrBoost predictor file.");
+    }
 }
 
 void Predictor::save(const string& filePath) const

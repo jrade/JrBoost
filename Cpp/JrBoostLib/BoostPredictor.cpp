@@ -54,6 +54,7 @@ void BoostPredictor::save(ostream& os) const
     os.write(reinterpret_cast<const char*>(&variableCount), sizeof(variableCount));
     os.write(reinterpret_cast<const char*>(&c0_), sizeof(c0_));
     os.write(reinterpret_cast<const char*>(&n), sizeof(n));
+
     for (uint32_t i = 0; i < n; ++i) {
         os.write(reinterpret_cast<const char*>(&c1_[i]), sizeof(c1_[i]));
         basePredictors_[i]->save(os);
@@ -70,14 +71,12 @@ shared_ptr<Predictor> BoostPredictor::loadImpl_(istream& is)
     uint32_t variableCount;
     double c0;
     uint32_t n;
-    vector<double> c1;
-    vector<unique_ptr<BasePredictor>> basePredictors;
-
     is.read(reinterpret_cast<char*>(&variableCount), sizeof(variableCount));
     is.read(reinterpret_cast<char*>(&c0), sizeof(c0));
     is.read(reinterpret_cast<char*>(&n), sizeof(n));
-    c1.resize(n);
-    basePredictors.resize(n);
+
+    vector<double> c1(n);
+    vector<unique_ptr<BasePredictor>> basePredictors(n);
     for (uint32_t i = 0; i < n; ++i) {
         is.read(reinterpret_cast<char*>(&c1[i]), sizeof(c1[i]));
         basePredictors[i] = BasePredictor::load(is);

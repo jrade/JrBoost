@@ -9,12 +9,12 @@
 #include "../JrBoostLib/EnsemblePredictor.h"
 #include "../JrBoostLib/InterruptHandler.h"
 #include "../JrBoostLib/Loss.h"
-#include "../JrBoostLib/TStatisticRank.h"
+#include "../JrBoostLib/TTest.h"
 
 namespace py = pybind11;
 
 
-class PyBind11InterruptHandler : public InterruptHandler {
+class PyInterruptHandler : public InterruptHandler {
 public:
     virtual void check() 
     { 
@@ -24,12 +24,12 @@ public:
     }
 };
 
-PyBind11InterruptHandler thePyBind11InterruptHandler;
+PyInterruptHandler thePyInterruptHandler;
 
 
 PYBIND11_MODULE(_jrboostext, mod)
 {
-    currentInterruptHandler = &thePyBind11InterruptHandler;
+    currentInterruptHandler = &thePyInterruptHandler;
 
     py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
 
@@ -38,10 +38,8 @@ PYBIND11_MODULE(_jrboostext, mod)
         .value("Down", TestDirection::Down)
         .value("Any", TestDirection::Any);
 
-    mod.def("tStatisticRank", &tStatisticRank,
-        py::arg(), py::arg(), py::arg(), py::arg("direction") = TestDirection::Any);
-    //mod.def("tStatisticRank", &tStatisticRank, py::arg().noconvert(),
-    //    py::arg(), py::arg(), py::arg("direction") = TestDirection::Any);
+    mod.def("tTestRank", &tTestRank,
+        py::arg(), py::arg(), py::arg("samples") = optional<CRefXs>(), py::arg("direction") = TestDirection::Any);
     mod.def("setNumThreads", &omp_set_num_threads);
     mod.def("setProfile", [](bool b) { PROFILE::doProfile = b; });
 
@@ -83,7 +81,9 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     py::class_<Predictor, shared_ptr<Predictor>>{ mod, "Predictor" }
         .def("variableCount", &Predictor::variableCount)
-        .def("predict", &Predictor::predict);
+        .def("predict", &Predictor::predict)
+        .def("save", static_cast<void(Predictor::*)(const string&) const>(&Predictor::save))
+        .def_static("load", static_cast<shared_ptr<Predictor>(*)(const string&)>(&Predictor::load));
 
     py::class_<EnsemblePredictor, shared_ptr<EnsemblePredictor>, Predictor>{ mod, "EnsemblePredictor" }
         .def(py::init<const vector<shared_ptr<Predictor>>&>());

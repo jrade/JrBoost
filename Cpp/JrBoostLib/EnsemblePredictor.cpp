@@ -49,9 +49,8 @@ shared_ptr<Predictor> EnsemblePredictor::loadImpl_(istream& is)
         throw runtime_error("Not a valid JrBoost predictor file.");
 
     uint32_t n;
-    vector<shared_ptr<Predictor>> predictors;
     is.read(reinterpret_cast<char*>(&n), sizeof(n));
-    predictors.resize(n);
+    vector<shared_ptr<Predictor>> predictors(n);
     for (uint32_t i = 0; i < n; ++i)
         predictors[i] = load(is);
     return std::make_shared<EnsemblePredictor>(predictors);

@@ -20,9 +20,12 @@ void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
 unique_ptr<BasePredictor> BasePredictor::load(istream& is)
 {
     uint8_t type = static_cast<uint8_t>(is.get());
-    if (type == Trivial)
+    switch (type) {
+    case Trivial:
         return TrivialPredictor::loadImpl_(is);
-    if (type == Stump)
+    case Stump:
         return StumpPredictor::loadImpl_(is);
-    throw runtime_error("Not a valid JrBoost predictor file.");
+    default:
+        throw runtime_error("Not a valid JrBoost predictor file.");
+    }
 }
