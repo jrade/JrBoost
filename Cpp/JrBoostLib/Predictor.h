@@ -9,27 +9,27 @@ class Predictor {
 public:
     virtual ~Predictor() = default;
     virtual size_t variableCount() const = 0;
-    virtual void save(ostream& os) const = 0;
 
-    void save(const string& filePath) const;
     ArrayXd predict(CRefXXf inData) const;
 
+    void save(const string& filePath) const;
     static shared_ptr<Predictor> load(const string& filePath);
-    static shared_ptr<Predictor> load(istream& is);
 
 protected:
     enum { Boost = 0, Ensemble = 1 };
 
     Predictor() = default;
 
-
 private:
+    virtual void save_(ostream& os) const = 0;
+
     friend class EnsemblePredictor;
-    virtual ArrayXd predictImpl_(CRefXXf inData) const = 0;
+    virtual ArrayXd predict_(CRefXXf inData) const = 0;
+    static shared_ptr<Predictor> load_(istream& is);
 
     void validateInData_(CRefXXf inData) const;
     
-    // deleted:
+// deleted:
     Predictor(const Predictor&) = delete;
     Predictor& operator=(const Predictor&) = delete;
 };

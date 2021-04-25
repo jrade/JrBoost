@@ -6,5 +6,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PyInterruptHandler.h" />
   </ItemGroup>
 </Project>

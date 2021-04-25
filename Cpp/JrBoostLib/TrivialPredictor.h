@@ -14,10 +14,10 @@ public:
     virtual void save(ostream& os) const;
 
 private:
-    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
+    virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
     
     friend class BasePredictor;
-    static unique_ptr<BasePredictor> loadImpl_(istream& is);
+    static unique_ptr<BasePredictor> load_(istream& is);
 
     float y_;
 };

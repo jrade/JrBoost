@@ -24,28 +24,28 @@ BoostPredictor::BoostPredictor(
 }
 
 
-ArrayXd BoostPredictor::predictImpl_(CRefXXf inData) const
+ArrayXd BoostPredictor::predict_(CRefXXf inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Constant(sampleCount, c0_);
     size_t n = basePredictors_.size();
     for (size_t k = 0; k < n; ++k)
-        basePredictors_[k]->predictImpl_(inData, c1_[k], pred);
+        basePredictors_[k]->predict_(inData, c1_[k], pred);
     pred = 1.0 / (1.0 + (-pred).exp());
     return pred;
 }
 
 
-void BoostPredictor::save(ostream& os) const
+void BoostPredictor::save_(ostream& os) const
 {
     const uint8_t type = Boost;
-    os.write(reinterpret_cast<const char*>(&type), sizeof(type));
+    os.put(static_cast<char>(type));
 
     const uint8_t version = 1;
-    os.write(reinterpret_cast<const char*>(&version), sizeof(version));
+    os.put(static_cast<char>(version));
 
-    uint32_t variableCount = static_cast<uint32_t>(variableCount_);
-    uint32_t n = static_cast<uint32_t>(basePredictors_.size());
+    const uint32_t variableCount = static_cast<uint32_t>(variableCount_);
+    const uint32_t n = static_cast<uint32_t>(basePredictors_.size());
 
     os.write(reinterpret_cast<const char*>(&variableCount), sizeof(variableCount));
     os.write(reinterpret_cast<const char*>(&c0_), sizeof(c0_));
@@ -57,10 +57,9 @@ void BoostPredictor::save(ostream& os) const
     }
 }
 
-shared_ptr<Predictor> BoostPredictor::loadImpl_(istream& is)
+shared_ptr<Predictor> BoostPredictor::load_(istream& is)
 {
-    uint8_t version;
-    is.read(reinterpret_cast<char*>(&version), sizeof(version));
+    uint8_t version = static_cast<uint8_t>(is.get());
     if (version != 1)
         throw runtime_error("Not a valid JrBoost predictor file.");
 
@@ -75,7 +74,7 @@ shared_ptr<Predictor> BoostPredictor::loadImpl_(istream& is)
     vector<unique_ptr<BasePredictor>> basePredictors(n);
     for (uint32_t i = 0; i < n; ++i) {
         is.read(reinterpret_cast<char*>(&c1[i]), sizeof(c1[i]));
-        basePredictors[i] = BasePredictor::load(is);
+        basePredictors[i] = BasePredictor::load_(is);
     }
 
     return shared_ptr<BoostPredictor>(new BoostPredictor(variableCount, c0, std::move(c1), std::move(basePredictors)));

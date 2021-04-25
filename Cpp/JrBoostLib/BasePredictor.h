@@ -12,7 +12,6 @@ public:
 
     void predict(CRefXXf inData, double c, RefXd outData) const;
 
-    static unique_ptr<BasePredictor> load(istream& is);
 
 protected:
     enum { Trivial = 100, Stump = 101 };
@@ -21,8 +20,9 @@ protected:
 
 private:
     friend class BoostPredictor;
-    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const = 0;
-    
+    virtual void predict_(CRefXXf inData, double c, RefXd outData) const = 0;
+    static unique_ptr<BasePredictor> load_(istream& is);
+
 // deleted:
     BasePredictor(const BasePredictor&) = delete;
     BasePredictor& operator=(const BasePredictor&) = delete;

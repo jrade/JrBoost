@@ -13,7 +13,7 @@ TrivialPredictor::TrivialPredictor(double y) :
 }
 
 
-void TrivialPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
+void TrivialPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 {
     outData += c * static_cast<double>(y_);
 }
@@ -22,18 +22,17 @@ void TrivialPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) con
 void TrivialPredictor::save(ostream& os) const
 {
     const uint8_t type = Trivial;
-    os.write(reinterpret_cast<const char*>(&type), sizeof(type));
+    os.put(static_cast<char>(type));
 
     const uint8_t version = 1;
-    os.write(reinterpret_cast<const char*>(&version), sizeof(version));
+    os.put(static_cast<char>(version));
 
     os.write(reinterpret_cast<const char*>(&y_), sizeof(y_));
 }
 
-unique_ptr<BasePredictor> TrivialPredictor::loadImpl_(istream& is)
+unique_ptr<BasePredictor> TrivialPredictor::load_(istream& is)
 {
-    uint8_t version;
-    is.read(reinterpret_cast<char*>(&version), sizeof(version));
+    uint8_t version = static_cast<uint8_t>(is.get());
     if (version != 1)
         throw runtime_error("Not a valid JrBoost predictor file.");
 

@@ -16,7 +16,7 @@ StumpPredictor::StumpPredictor(size_t j, float x, double leftY, double rightY) :
 }
 
 
-void StumpPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
+void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 {
     const size_t sampleCount = inData.rows();
     for (size_t i = 0; i < sampleCount; ++i) {
@@ -29,10 +29,10 @@ void StumpPredictor::predictImpl_(CRefXXf inData, double c, RefXd outData) const
 void StumpPredictor::save(ostream& os) const
 {
     const uint8_t type = Stump;
-    os.write(reinterpret_cast<const char*>(&type), sizeof(type));
+    os.put(static_cast<char>(type));
 
     const uint8_t version = 1;
-    os.write(reinterpret_cast<const char*>(&version), sizeof(version));
+    os.put(static_cast<char>(version));
 
     os.write(reinterpret_cast<const char*>(&j_), sizeof(j_));
     os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
@@ -40,10 +40,9 @@ void StumpPredictor::save(ostream& os) const
     os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));
 }
 
-unique_ptr<BasePredictor> StumpPredictor::loadImpl_(istream& is)
+unique_ptr<BasePredictor> StumpPredictor::load_(istream& is)
 {
-    uint8_t version;
-    is.read(reinterpret_cast<char*>(&version), sizeof(version));
+    uint8_t version = static_cast<uint8_t>(is.get());
     if (version != 1)
         throw runtime_error("Not a valid JrBoost predictor file.");
 

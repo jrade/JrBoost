@@ -13,13 +13,13 @@ public:
 
     virtual ~EnsemblePredictor() = default;
     virtual size_t variableCount() const { return predictors_[0]->variableCount(); }
-    virtual void save(ostream& os) const;
 
 private:
-    virtual ArrayXd predictImpl_(CRefXXf inData) const;
+    virtual ArrayXd predict_(CRefXXf inData) const;
+    virtual void save_(ostream& os) const;
 
     friend class Predictor;
-    static shared_ptr<Predictor> loadImpl_(istream& is);
+    static shared_ptr<Predictor> load_(istream& is);
 
     vector<shared_ptr<Predictor>> predictors_;
 };

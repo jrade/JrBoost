@@ -13,7 +13,6 @@ class BoostPredictor : public Predictor {
 public:
     virtual ~BoostPredictor();
     virtual size_t variableCount() const { return variableCount_; }
-    virtual void save(ostream& os) const;
 
 private:
     friend class BoostTrainer;
@@ -24,10 +23,11 @@ private:
         vector<unique_ptr<BasePredictor>>&& basePredictors
     );
 
-    virtual ArrayXd predictImpl_(CRefXXf inData) const;
+    virtual ArrayXd predict_(CRefXXf inData) const;
+    virtual void save_(ostream& os) const;
 
     friend class Predictor;
-    static shared_ptr<Predictor> loadImpl_(istream& is);
+    static shared_ptr<Predictor> load_(istream& is);
 
     size_t variableCount_;
     double c0_;

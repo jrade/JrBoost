@@ -11,20 +11,20 @@
 void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
-    predictImpl_(inData, c, outData);
+    predict_(inData, c, outData);
     size_t sampleCount = inData.rows();
     PROFILE::POP(sampleCount);
 }
 
 
-unique_ptr<BasePredictor> BasePredictor::load(istream& is)
+unique_ptr<BasePredictor> BasePredictor::load_(istream& is)
 {
     uint8_t type = static_cast<uint8_t>(is.get());
     switch (type) {
     case Trivial:
-        return TrivialPredictor::loadImpl_(is);
+        return TrivialPredictor::load_(is);
     case Stump:
-        return StumpPredictor::loadImpl_(is);
+        return StumpPredictor::load_(is);
     default:
         throw runtime_error("Not a valid JrBoost predictor file.");
     }

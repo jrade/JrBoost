@@ -16,10 +16,10 @@ private:
     template<typename SampleIndex> friend class StumpTrainerImpl;
     StumpPredictor(size_t j, float x, double leftY, double rightY);
 
-    virtual void predictImpl_(CRefXXf inData, double c, RefXd outData) const;
+    virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
 
     friend class BasePredictor;
-    static unique_ptr<BasePredictor> loadImpl_(istream& is);
+    static unique_ptr<BasePredictor> load_(istream& is);
 
     uint32_t j_;
     float x_;
