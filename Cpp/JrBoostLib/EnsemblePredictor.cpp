@@ -16,7 +16,6 @@ EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<Predictor>>& predic
 
 ArrayXd EnsemblePredictor::predictImpl_(CRefXXf inData) const
 {
-    validateInData(inData);
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
     size_t n = predictors_.size();

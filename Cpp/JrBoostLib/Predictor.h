@@ -18,17 +18,18 @@ public:
     static shared_ptr<Predictor> load(istream& is);
 
 protected:
-    enum { Boost = 64, Ensemble = 65 };
+    enum { Boost = 0, Ensemble = 1 };
 
     Predictor() = default;
 
-    void validateInData(CRefXXf inData) const;
 
 private:
     friend class EnsemblePredictor;
     virtual ArrayXd predictImpl_(CRefXXf inData) const = 0;
 
-// deleted:
+    void validateInData_(CRefXXf inData) const;
+    
+    // deleted:
     Predictor(const Predictor&) = delete;
     Predictor& operator=(const Predictor&) = delete;
 };

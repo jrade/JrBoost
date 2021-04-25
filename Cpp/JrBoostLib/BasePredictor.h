@@ -15,7 +15,7 @@ public:
     static unique_ptr<BasePredictor> load(istream& is);
 
 protected:
-    enum { Trivial = 128, Stump = 129 };
+    enum { Trivial = 100, Stump = 101 };
 
     BasePredictor() = default;
 

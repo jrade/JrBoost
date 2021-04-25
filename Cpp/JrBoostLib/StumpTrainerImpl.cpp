@@ -20,13 +20,6 @@ StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
     stratum0Count_{ (strata == 0).cast<size_t>().sum() },
     stratum1Count_{ (strata == 1).cast<size_t>().sum() }
 {
-    ASSERT(sampleCount_ != 0);
-    ASSERT(variableCount_ != 0);
-    ASSERT(static_cast<size_t>(strata.rows()) == sampleCount_);
-
-    //ASSERT((inData > -numeric_limits<float>::infinity()).all());
-    //ASSERT((inData < numeric_limits<float>::infinity()).all());
-    //ASSERT((strata < 2).all());
 }
 
 

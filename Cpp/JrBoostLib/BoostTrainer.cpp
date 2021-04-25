@@ -25,9 +25,7 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
 {
     ASSERT(sampleCount_ != 0);
     ASSERT(variableCount_ != 0);
-
-    ASSERT((inData_ > -numeric_limits<float>::infinity()).all());
-    ASSERT((inData_ < numeric_limits<float>::infinity()).all());
+    ASSERT((inData_.abs() < numeric_limits<float>::infinity()).all());
 
     ASSERT(static_cast<size_t>(rawOutData_.rows()) == sampleCount_);
     ASSERT((rawOutData_ < 2).all());

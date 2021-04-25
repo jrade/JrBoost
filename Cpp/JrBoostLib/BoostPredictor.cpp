@@ -26,16 +26,12 @@ BoostPredictor::BoostPredictor(
 
 ArrayXd BoostPredictor::predictImpl_(CRefXXf inData) const
 {
-    PROFILE::PUSH(PROFILE::BOOST_PREDICT);
-
-    validateInData(inData);
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Constant(sampleCount, c0_);
     size_t n = basePredictors_.size();
     for (size_t k = 0; k < n; ++k)
         basePredictors_[k]->predictImpl_(inData, c1_[k], pred);
     pred = 1.0 / (1.0 + (-pred).exp());
-    PROFILE::POP(sampleCount * n);
     return pred;
 }
 

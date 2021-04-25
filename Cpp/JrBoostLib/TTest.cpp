@@ -15,6 +15,7 @@ ArrayXf tStatistic(
 {
     size_t variableCount = inData.cols();
     ASSERT(outData.rows() == inData.rows());
+    ASSERT((outData < 2).all());
 
     ArrayXs samples;
     size_t sampleCount;
@@ -71,6 +72,9 @@ ArrayXf tStatistic(
         (mean[1] - mean[0])
         /
         (SS[0] + SS[1] + numeric_limits<float>::min()).sqrt();
+
+    ASSERT((t < numeric_limits<float>::infinity()).all());
+    ASSERT((t > -numeric_limits<float>::infinity()).all());
 
     return t;
 }

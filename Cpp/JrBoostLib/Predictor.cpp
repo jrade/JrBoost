@@ -11,18 +11,26 @@
 ArrayXd Predictor::predict(CRefXXf inData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
+
+    validateInData_(inData);
     ArrayXd pred = predictImpl_(inData);
+
     size_t sampleCount = inData.rows();
     PROFILE::POP(sampleCount);
+
     return pred;
 }
 
 
-void Predictor::validateInData(CRefXXf inData) const
+void Predictor::validateInData_(CRefXXf inData) const
 {
+    PROFILE::PUSH(PROFILE::VALIDATE);
+    size_t ITEM_COUNT = inData.rows() * inData.cols();
+
     ASSERT(static_cast<size_t>(inData.cols()) == variableCount());
-    //ASSERT((inData > -numeric_limits<float>::infinity()).all());
-    //ASSERT((inData < numeric_limits<float>::infinity()).all());
+    ASSERT((inData.abs() < numeric_limits<float>::infinity()).all());
+
+    PROFILE::POP(ITEM_COUNT);
 }
 
 
@@ -52,5 +60,5 @@ void Predictor::save(const string& filePath) const
     ofstream ofs(filePath, std::ios::binary);
     if (!ofs)
         throw runtime_error("Unable to open the file " + filePath + " for writing.");
-    return save(ofs);
+    save(ofs);
 }
