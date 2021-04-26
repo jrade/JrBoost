@@ -26,7 +26,7 @@ void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 }
 
 
-void StumpPredictor::save(ostream& os) const
+void StumpPredictor::save_(ostream& os) const
 {
     const uint8_t type = Stump;
     os.put(static_cast<char>(type));
@@ -54,5 +54,5 @@ unique_ptr<BasePredictor> StumpPredictor::load_(istream& is)
     is.read(reinterpret_cast<char*>(&x), sizeof(x));
     is.read(reinterpret_cast<char*>(&leftY), sizeof(leftY));
     is.read(reinterpret_cast<char*>(&rightY), sizeof(rightY));
-    return unique_ptr<StumpPredictor>(new StumpPredictor(j, x, leftY, rightY));
+    return std::make_unique<StumpPredictor>(j, x, leftY, rightY);
 }

@@ -12,7 +12,9 @@ ArrayXd Predictor::predict(CRefXXf inData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
 
-    validateInData_(inData);
+    ASSERT(static_cast<size_t>(inData.cols()) == variableCount());
+    ASSERT((inData.abs() < numeric_limits<float>::infinity()).all());
+
     ArrayXd pred = predict_(inData);
 
     size_t sampleCount = inData.rows();
@@ -22,48 +24,55 @@ ArrayXd Predictor::predict(CRefXXf inData) const
 }
 
 
-void Predictor::validateInData_(CRefXXf inData) const
-{
-    PROFILE::PUSH(PROFILE::VALIDATE);
-    size_t ITEM_COUNT = inData.rows() * inData.cols();
-
-    ASSERT(static_cast<size_t>(inData.cols()) == variableCount());
-    ASSERT((inData.abs() < numeric_limits<float>::infinity()).all());
-
-    PROFILE::POP(ITEM_COUNT);
-}
-
-
 void Predictor::save(const string& filePath) const
 {
-    ofstream ofs(filePath, std::ios::binary);
-    if (!ofs)
-        throw runtime_error("Unable to open the file " + filePath + " for writing.");
+    ofstream ofs;
+    ofs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+    ofs.open(filePath, std::ios::binary);
+    save(ofs);
+}
 
-    ofs.write("JRBOOST", 7);
-
+void Predictor::save(ostream& os) const
+{
+    os.write("JRBOOST", 7);
     const uint8_t version = 1;
-    ofs.put(static_cast<char>(version));
-
-    save_(ofs);
+    os.put(static_cast<char>(version));
+    save_(os);
+    os.put('!');
 }
 
 shared_ptr<Predictor> Predictor::load(const string& filePath)
 {
-    ifstream ifs(filePath, std::ios::binary);
-    if (!ifs)
-        throw runtime_error("Unable to open the file " + filePath + " for reading.");
+    ifstream ifs;
+    ifs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+    ifs.open(filePath, std::ios::binary);
+    try {
+        return load(ifs);
+    }
+    catch(std::ios::failure&) {
+        throw runtime_error("Not a valid JrBoost predictor file.");
+    }
+}
 
+shared_ptr<Predictor> Predictor::load(istream& is)
+{
     char sig[7];
-    ifs.read(sig, 7);
+    is.read(sig, 7);
     if (memcmp(sig, "JRBOOST", 7) != 0)
+        throw runtime_error("Not a JrBoost predictor file.");
+
+    uint8_t version = static_cast<uint8_t>(is.get());
+    if (version < 1)
+        throw runtime_error("Not a valid JrBoost predictor file.");
+    if (version > 1)
+        throw runtime_error("Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
+    
+    shared_ptr<Predictor> pred = load_(is);
+
+    if (is.get() != '!')
         throw runtime_error("Not a valid JrBoost predictor file.");
 
-    uint8_t version = static_cast<uint8_t>(ifs.get());
-    if (version != 1)
-        throw runtime_error("Not a valid JrBoost predictor file.");
-
-    return load_(ifs);
+    return pred;
 }
 
 shared_ptr<Predictor> Predictor::load_(istream& is)
@@ -78,4 +87,3 @@ shared_ptr<Predictor> Predictor::load_(istream& is)
         throw runtime_error("Not a valid JrBoost predictor file.");
     }
 }
-

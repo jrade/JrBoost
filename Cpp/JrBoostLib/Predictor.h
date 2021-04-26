@@ -13,7 +13,9 @@ public:
     ArrayXd predict(CRefXXf inData) const;
 
     void save(const string& filePath) const;
+    void save(ostream& os) const;
     static shared_ptr<Predictor> load(const string& filePath);
+    static shared_ptr<Predictor> load(istream& is);
 
 protected:
     enum { Boost = 0, Ensemble = 1 };
@@ -26,8 +28,6 @@ private:
     friend class EnsemblePredictor;
     virtual ArrayXd predict_(CRefXXf inData) const = 0;
     static shared_ptr<Predictor> load_(istream& is);
-
-    void validateInData_(CRefXXf inData) const;
     
 // deleted:
     Predictor(const Predictor&) = delete;

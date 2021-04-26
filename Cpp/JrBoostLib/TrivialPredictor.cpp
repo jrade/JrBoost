@@ -19,7 +19,7 @@ void TrivialPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 }
 
 
-void TrivialPredictor::save(ostream& os) const
+void TrivialPredictor::save_(ostream& os) const
 {
     const uint8_t type = Trivial;
     os.put(static_cast<char>(type));

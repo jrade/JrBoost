@@ -1,31 +1,10 @@
 
-test file format again
-
-
-EnsemblePredictor:
-	variableCount_ as member
-	have empty ensemble return 0.0
-
-BoostPredictor:
-	only a single c1
-
-add file header with a file type idemtifier (JRBOOST) and a version number byte
-
-
--------------------------------------------
-
 get rid of Ada and logit enum, just use gamma instead (gamma = 1.0 means ada)
-
----------------------------------------------
 
 optimizeFun -> minimizeFun
 change parameter ordering
 
------------------------------------------
-
-documentation of regularized logit boost
-
-https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+do not use ASSERT for indata validation (neither in BoostTrainer nor StumpTrainer)
 
 test accuracy of fast math
 	1. improved fast math with smarter (x + 1) ^ (gamma-2)
@@ -33,6 +12,12 @@ test accuracy of fast math
 	3. plot min and max rel error of fastPow as a function of gamma
 		let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
 		send a mail to Nic with the results
+
+-----------------------------------------
+
+documentation of regularized logit boost
+
+https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
 try clang/llvm compiler plugin
 
@@ -51,12 +36,6 @@ General:
 		optimize case when all samples are used (usedSampleRation = 1.0, minSampleWeight = 0.0)
 		profile Higgs and otto with float versus double outData and weights - decide which to use
 
-	test:
-		test util.stratifiedRandomSplit
-		write some tests for the loss functions
-			feed random data into them and check that lor version on lor data and p version and p data give same thing
-			check limit behaviour of regularized log loss as gamma -> 0 or 1
-
 Higgs:
 	run with LOR and median
 	plot the result
@@ -64,11 +43,16 @@ Higgs:
 	should we use a 0 cutoff?
 	implement the AMS loss function
 	run with CV - ignore the test datasets
-
-Higgs:
 	AUC as optimization target
 		better cv + AUC implementation?
 	percentage threshold
+
+	maybe put together three things:
+		winning contribution
+		winning contribution with xgboost replaced by jrboost
+		winning contribution with jrboost and smart training algorithm
+		winning submission is written in lisp!!
+			https://github.com/melisgl/higgsml
 
 Otto:
 	run an explorative round with full dataset
@@ -82,13 +66,6 @@ Otto:
 	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
 
 =====================================================================
-
-better understanding of boosting:
-	log high sample weight ratio
-	log each sample after each boost iteration in a big spread sheet
-	how does boosted trees behave if we only use trivial predictors?
-
------------------------------------------------------------------------
 
 trees
 	allocate nodes with memory pool
@@ -117,37 +94,14 @@ stump train strategy:
 	this might be faster when usedSampleCount is small i.e. when we do weight filtering and most weights are small
 	use pdq-sort (https://github.com/orlp/pdqsort) when sorting
 
-Kaggle Higgs dataset:
-	maybe put together three things:
-		winning contribution
-		winning contribution with xgboost replaced by jrboost
-		winning contribution with jrboost and smart training algorithm
-		winning submission is written in lisp!!
-			https://github.com/melisgl/higgsml
-
-BART??
-
 ----------------------------------------------------------------------
 
 low prio:
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 	L2-penalty (lambda) or L1-penalty (alpha)
-	multi-group
-	validation of indata to predict?
 
 ======================================================================================
-
-PyBind11 issues:
-	how translate custom C++ exceptions to standard Python exceptions
-	no way of specifying noconvert for property setters
-	how to set function attributes
 	
-Gerstmann issues:
-	seed function would be useful
-	free functions (operator== and operator!=) should be inline
-		or linker will complain if you include the header in multiple translation units
-	should be standard compliant
-
 Eigen issues:
 	can not reset Ref objects
 	no select with two constants
@@ -167,17 +121,6 @@ Eigen issues:
 	const float* q3 = &u(0);
 
 	also reverse iterators
-
-NumPy issues:
-	inData[trainSamples, :] does not preserve Fortran (column major) order
-		how to get fortran ordered slices of fortran ordered arrays?
-
-Pandas issues:
-	if you set dtype when calling read_csv(), this is applied to the index column as well 
-
-------------------------------------------------------------------------
-
-take a look at std::span, std::view, std::mdview, ranges etc in C++20
 
 ======================================================================================
 

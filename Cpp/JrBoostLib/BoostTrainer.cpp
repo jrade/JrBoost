@@ -87,7 +87,6 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
     ArrayXd adjWeights(sampleCount);
 
     vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
-    vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
@@ -112,12 +111,9 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = std::move(basePred);
-        coeff[i] = 2.0 * eta;
     }
 
-    return shared_ptr<BoostPredictor>(
-        new BoostPredictor(variableCount_, lor0_, std::move(coeff), std::move(basePredictors))
-    );
+    return std::make_shared<BoostPredictor>(variableCount_, lor0_, 2 * eta, std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -138,7 +134,6 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
     ArrayXd adjWeights(sampleCount);
 
     vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
-    vector<double> coeff(iterationCount);
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
@@ -189,12 +184,9 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = std::move(basePred);
-        coeff[i] = (1.0 + gamma) * eta;
     }
 
-    return shared_ptr<BoostPredictor>(
-        new BoostPredictor(variableCount_, lor0_, std::move(coeff), std::move(basePredictors))
-    );
+    return std::make_shared<BoostPredictor>(variableCount_, lor0_, (1.0 + gamma) * eta, std::move(basePredictors));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

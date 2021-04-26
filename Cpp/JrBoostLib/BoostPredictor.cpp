@@ -12,25 +12,24 @@ BoostPredictor::~BoostPredictor() = default;
 BoostPredictor::BoostPredictor(
     size_t variableCount,
     double c0,
-    vector<double>&& c1,
+    double c1,
     vector<unique_ptr<BasePredictor>>&& basePredictors
 ) :
     variableCount_(variableCount),
-    c0_{ c0 },
-    c1_{ std::move(c1) },
+    c0_{ static_cast<float>(c0) },
+    c1_{ static_cast<float>(c1) },
     basePredictors_{ std::move(basePredictors) }
 {
-    ASSERT(c1_.size() == basePredictors_.size());
 }
 
 
 ArrayXd BoostPredictor::predict_(CRefXXf inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
-    ArrayXd pred = ArrayXd::Constant(sampleCount, c0_);
+    ArrayXd pred = ArrayXd::Constant(sampleCount, static_cast<double>(c0_));
     size_t n = basePredictors_.size();
     for (size_t k = 0; k < n; ++k)
-        basePredictors_[k]->predict_(inData, c1_[k], pred);
+        basePredictors_[k]->predict_(inData, static_cast<double>(c1_), pred);
     pred = 1.0 / (1.0 + (-pred).exp());
     return pred;
 }
@@ -45,16 +44,14 @@ void BoostPredictor::save_(ostream& os) const
     os.put(static_cast<char>(version));
 
     const uint32_t variableCount = static_cast<uint32_t>(variableCount_);
-    const uint32_t n = static_cast<uint32_t>(basePredictors_.size());
-
     os.write(reinterpret_cast<const char*>(&variableCount), sizeof(variableCount));
     os.write(reinterpret_cast<const char*>(&c0_), sizeof(c0_));
-    os.write(reinterpret_cast<const char*>(&n), sizeof(n));
+    os.write(reinterpret_cast<const char*>(&c1_), sizeof(c1_));
 
-    for (uint32_t i = 0; i < n; ++i) {
-        os.write(reinterpret_cast<const char*>(&c1_[i]), sizeof(c1_[i]));
-        basePredictors_[i]->save(os);
-    }
+    const uint32_t n = static_cast<uint32_t>(basePredictors_.size());
+    os.write(reinterpret_cast<const char*>(&n), sizeof(n));
+    for (uint32_t i = 0; i < n; ++i)
+        basePredictors_[i]->save_(os);
 }
 
 shared_ptr<Predictor> BoostPredictor::load_(istream& is)
@@ -64,18 +61,17 @@ shared_ptr<Predictor> BoostPredictor::load_(istream& is)
         throw runtime_error("Not a valid JrBoost predictor file.");
 
     uint32_t variableCount;
-    double c0;
-    uint32_t n;
+    float c0;
+    float c1;
     is.read(reinterpret_cast<char*>(&variableCount), sizeof(variableCount));
     is.read(reinterpret_cast<char*>(&c0), sizeof(c0));
+    is.read(reinterpret_cast<char*>(&c1), sizeof(c1));
+
+    uint32_t n;
     is.read(reinterpret_cast<char*>(&n), sizeof(n));
-
-    vector<double> c1(n);
     vector<unique_ptr<BasePredictor>> basePredictors(n);
-    for (uint32_t i = 0; i < n; ++i) {
-        is.read(reinterpret_cast<char*>(&c1[i]), sizeof(c1[i]));
+    for (uint32_t i = 0; i < n; ++i)
         basePredictors[i] = BasePredictor::load_(is);
-    }
 
-    return shared_ptr<BoostPredictor>(new BoostPredictor(variableCount, c0, std::move(c1), std::move(basePredictors)));
+    return std::make_shared<BoostPredictor>(variableCount, c0, c1, std::move(basePredictors));
 }

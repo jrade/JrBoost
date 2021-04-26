@@ -34,7 +34,7 @@ void EnsemblePredictor::save_(ostream& os) const
     const uint8_t version = 1;
     os.put(static_cast<char>(version));
 
-    uint32_t n = static_cast<uint32_t>(predictors_.size());
+    const uint32_t n = static_cast<uint32_t>(predictors_.size());
     os.write(reinterpret_cast<const char*>(&n), sizeof(n));
     for (uint32_t i = 0; i < n; ++i)
         predictors_[i]->save_(os);

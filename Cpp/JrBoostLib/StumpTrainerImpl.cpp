@@ -200,7 +200,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     if (!splitFound)
         return std::make_unique<TrivialPredictor>(sumWY / sumW);
     
-    return unique_ptr<StumpPredictor>(new StumpPredictor(bestJ, bestX, bestLeftY, bestRightY));
+    return std::make_unique<StumpPredictor>(bestJ, bestX, bestLeftY, bestRightY);
 };
 
 
