@@ -2,7 +2,7 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'optimizeDynamic', 'optimizeGrid']
+__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'minimizeGrid', 'minimizeDynamic']
 
 import copy, random, warnings
 import numpy as np
@@ -83,12 +83,44 @@ def stratifiedRandomSplit(outData, ratio, samples = None):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def optimizeDynamic(cvParam, evalFun):
+def minimizeGrid(fun, bpValues, cvParam):
+
+    bestOptionCount = cvParam['bestOptionCount']
+    ultraBoost = cvParam.get('ultraBoost', None)
+    bagSize = cvParam['bagSize']
+
+    optionList = [jrboost.BoostOptions()]
+    for name, values in bpValues.items():
+        tmp = []
+        for opt in optionList:
+            for value in values:
+                setattr(opt, name, value)
+                tmp.append(copy.copy(opt))
+        optionList = tmp
+
+    loss = fun(optionList)
+    
+    bestIndices = list(np.argsort(loss)) 
+    del bestIndices[bestOptionCount:]
+    bestOptionList = [optionList[i] for i in bestIndices]
+
+    if ultraBoost is not None:
+        for opt in bestOptionList:
+            opt.iterationCount *= ultraBoost
+            opt.eta /= ultraBoost
+
+    if bagSize is not None:
+        optionList *= bagSize
+
+    return optionList
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def minimizeDynamic(fun, bpValues, cvParam):
 
     cycleCount = cvParam['cycleCount']
     populationCount = cvParam['populationCount']
     survivorCount = cvParam['survivorCount']
-    bpValues = cvParam['boostParamValues']
 
     bpValues = copy.deepcopy(bpValues)
     k = 0
@@ -105,7 +137,7 @@ def optimizeDynamic(cvParam, evalFun):
             for i in range(populationCount):
                 setattr(optionList[i], name, values[i])
 
-        loss = evalFun(optionList)
+        loss = fun(optionList)
         sortedIndices = list(np.argsort(loss))
 
         k += 1
@@ -128,41 +160,6 @@ def optimizeDynamic(cvParam, evalFun):
 
     if ultraBoost is not None:
         for opt in optionList:
-            opt.iterationCount *= ultraBoost
-            opt.eta /= ultraBoost
-
-    if bagSize is not None:
-        optionList *= bagSize
-
-    return optionList
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def optimizeGrid(cvParam, evalFun):
-
-    bestOptionCount = cvParam['bestOptionCount']
-    ultraBoost = cvParam.get('ultraBoost', None)
-    bagSize = cvParam['bagSize']
-
-    bpValues = cvParam['boostParamValues']
-
-    optionList = [jrboost.BoostOptions()]
-    for name, values in bpValues.items():
-        tmp = []
-        for opt in optionList:
-            for value in values:
-                setattr(opt, name, value)
-                tmp.append(copy.copy(opt))
-        optionList = tmp
-
-    loss = evalFun(optionList)
-    
-    bestIndices = list(np.argsort(loss)) 
-    del bestIndices[bestOptionCount:]
-    bestOptionList = [optionList[i] for i in bestIndices]
-
-    if ultraBoost is not None:
-        for opt in bestOptionList:
             opt.iterationCount *= ultraBoost
             opt.eta /= ultraBoost
 

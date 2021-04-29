@@ -56,9 +56,9 @@ void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
     clocks_[id].start(t);
 }
 
-void PROFILE::PRINT()
+string PROFILE::RESULT()
 {
-    if (!doProfile) return;
+    if (!doProfile) return "";
 
     const Clock& zeroClock = clocks_[ZERO];
     double adjustment = static_cast<double>(zeroClock.clockCycleCount()) / zeroClock.callCount();
@@ -73,6 +73,9 @@ void PROFILE::PRINT()
     double totalAdjustment = adjustment * totalCallCount;
     double totalAdjustedClockCycleCount = totalClockCycleCount - totalAdjustment;
 
+
+    stringstream ss;
+
     for (int id = 0; id < CLOCK_COUNT; ++id) {
 
         if (id == ZERO) continue;
@@ -85,29 +88,31 @@ void PROFILE::PRINT()
         uint64_t itemCount = clock.itemCount();
         double adjustedClockCycleCount = clockCycleCount - adjustment * callCount;
 
-        cout << std::setw(22) << std::left << name << std::right;
+        ss << std::setw(22) << std::left << name << std::right;
         if (callCount != 0) {
-            cout << std::setw(8) << std::fixed << std::setprecision(0) << 1e-6 * adjustedClockCycleCount;
-            cout << "  ";
-            cout << std::setw(4) << std::setprecision(1) << 100.0 * adjustedClockCycleCount / totalAdjustedClockCycleCount << "%";
+            ss << std::setw(8) << std::fixed << std::setprecision(0) << 1e-6 * adjustedClockCycleCount;
+            ss << "  ";
+            ss << std::setw(4) << std::setprecision(1) << 100.0 * adjustedClockCycleCount / totalAdjustedClockCycleCount << "%";
             if (itemCount != 0) {
-                cout << "  ";
-                cout << std::setw(5) << adjustedClockCycleCount / itemCount;
+                ss << "  ";
+                ss << std::setw(5) << adjustedClockCycleCount / itemCount;
             }
         }
-        cout << endl;
+        ss << endl;
     }
 
-    cout << endl;
-    cout << "zero calibration: " << adjustment << endl;
-    cout << "profiling overhead: "
+    ss << endl;
+    ss << "zero calibration: " << adjustment << endl;
+    ss << "profiling overhead: "
         << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << endl;
-    cout << "slow branch: " << (100.0 * SLOW_BRANCH_COUNT) / SPLIT_ITERATION_COUNT << "%" << endl;
+    ss << "slow branch: " << (100.0 * SLOW_BRANCH_COUNT) / SPLIT_ITERATION_COUNT << "%" << endl;
 
     for (int id = 0; id < CLOCK_COUNT; ++id)
         clocks_[id].reset();
     SLOW_BRANCH_COUNT = 0;
     SPLIT_ITERATION_COUNT = 0;
+
+    return ss.str();
 }
 
 //..............................................................................

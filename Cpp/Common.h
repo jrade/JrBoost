@@ -11,7 +11,6 @@
 #include <array>
 #include <atomic>
 #include <cmath>
-#include <exception>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -38,7 +37,6 @@ using std::ofstream;
 using std::optional;
 using std::ostream;
 using std::pair;
-using std::runtime_error;
 using std::shared_ptr;
 using std::string;
 using std::stringstream;
@@ -55,7 +53,16 @@ using std::vector;
 
 #define EIGEN_DONT_PARALLELIZE
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable: 4127 )
+#endif
+
 #include <Eigen/Dense>
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
 using ArrayXXf = Eigen::ArrayXXf;
 using ArrayXd = Eigen::ArrayXd;
@@ -71,6 +78,10 @@ using CRefXd = Eigen::Ref<const ArrayXd>;
 using CRefXs = Eigen::Ref<const ArrayXs>;
 
 using Array3d = Eigen::Array3d;
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+inline const char* eigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJOR_VERSION) "." STR(EIGEN_MINOR_VERSION);
 
 
 // Tools

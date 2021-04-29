@@ -6,15 +6,10 @@
 #include "BoostOptions.h"
 
 
-void BoostOptions::setMethod(int m)
-{
-    ASSERT(m == Ada || m == Logit);
-    method_ = m;
-}
-
 void BoostOptions::setGamma(double gamma)
 {
-    ASSERT(0.0 <= gamma && gamma <= 1.0);
+    if (!(gamma >= 0.0 && gamma <= 1.0))
+        throw std::invalid_argument("gamma must lie in the interval [0.0, 1.0].");
     gamma_ = gamma;
 }
 
@@ -25,20 +20,9 @@ void BoostOptions::setIterationCount(size_t n)
 
 void BoostOptions::setEta(double eta)
 {
-    ASSERT(eta > 0.0);
+    if (!(eta > 0.0))
+        throw std::invalid_argument("eta must be positive.");
     eta_ = eta;
-}
-
-void BoostOptions::setMinAbsSampleWeight(double w)
-{
-    ASSERT(w >= 0.0);
-    minAbsSampleWeight_ = w;
-}
-
-void BoostOptions::setMinRelSampleWeight(double w)
-{
-    ASSERT(0.0 <= w && w <= 1.0);
-    minRelSampleWeight_ = w;
 }
 
 void BoostOptions::setFastExp(bool b)

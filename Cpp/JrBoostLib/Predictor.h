@@ -22,6 +22,8 @@ protected:
 
     Predictor() = default;
 
+    static void parseError_ [[noreturn]] ();
+
 private:
     virtual void save_(ostream& os) const = 0;
 

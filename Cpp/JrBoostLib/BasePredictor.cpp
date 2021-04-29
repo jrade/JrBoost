@@ -26,6 +26,11 @@ unique_ptr<BasePredictor> BasePredictor::load_(istream& is)
     case Stump:
         return StumpPredictor::load_(is);
     default:
-        throw runtime_error("Not a valid JrBoost predictor file.");
+        parseError_();
     }
+}
+
+void BasePredictor::parseError_()
+{
+    throw std::runtime_error("Not a valid JrBoost predictor file.");
 }

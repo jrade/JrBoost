@@ -15,15 +15,15 @@ public:
     enum CLOCK_ID {
         MAIN, 
         T_RANK, BOOST_TRAIN, STUMP_TRAIN,
-        VALIDATE, USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
-        BOOST_PREDICT, OMP_BARRIER, MEMORY,
+        /*VALIDATE,*/ USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
+        BOOST_PREDICT, THREAD_SYNCH,
         ZERO, CLOCK_COUNT
     };
     
     static void PUSH(CLOCK_ID id);
     static void POP(size_t itemCount = 0);
     static void SWITCH(size_t itemCount, CLOCK_ID id);
-    static void PRINT();
+    static string RESULT();
 
     static uint64_t SPLIT_ITERATION_COUNT;
     static uint64_t SLOW_BRANCH_COUNT;
@@ -32,10 +32,6 @@ private:
     static Clock clocks_[CLOCK_COUNT];
     static const string names_[CLOCK_COUNT];
     static StaticStack<CLOCK_ID, 1000> clockIndexStack_;
-    // Using a std::vector for the clockIndexStack_ would lead to problems:
-    // (1) Static initialization problems: PROFILE::PUSH() may be called before clockIndexStack_ has been initialized
-    // (2) Reentrancy if we profile operator new and delete:
-    //       PROFILE::PUSH() -> vector::push() -> operator new() -> PROFILE::PUSH()
 };
 
 
@@ -44,14 +40,13 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "  t-rank",
     "  train boost",
     "  train stumps",
-    "    validate",
+//  "    validate",
     "    used samples",
     "    used variables",
     "    sums",
     "    sorted used s.",
     "    best split",
     "  predict",
-    "  OMP barrier",
-    "  dyn. memory",
+    "  thread synch",
     "zero"
 };

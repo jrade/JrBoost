@@ -15,8 +15,8 @@ public:
     const bool empty() const { return pos_ == 0; }
     size_t size() const { return pos_; }
 
-    Value& top() { return values_[pos_ - 1]; }
-    const Value& top() const { return values_[pos_ - 1]; }
+    Value& top() { ASSERT(pos_ > 0);  return values_[pos_ - 1]; }
+    const Value& top() const { ASSERT(pos_ > 0);  return values_[pos_ - 1]; }
 
     void push(const Value value)
     {

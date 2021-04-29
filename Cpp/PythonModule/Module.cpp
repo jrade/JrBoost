@@ -18,9 +18,21 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     currentInterruptHandler = &thePyInterruptHandler;
 
-    py::register_exception<AssertionError>(mod, "AssertionError", PyExc_AssertionError);
+    py::register_exception_translator(
+        [] (std::exception_ptr p) {
+            try {
+                if (p) std::rethrow_exception(p);
+            }
+            catch (const AssertionError& e) {
+                PyErr_SetString(PyExc_AssertionError, e.what());
+            }
+        }
+    );
 
-    mod.def("setNumThreads", &omp_set_num_threads);
+    mod.def("setThreadCount", &omp_set_num_threads);
+    mod.def("getThreadCount", &omp_get_max_threads);
+
+    mod.def("getEigenVersion", []() { return eigenVersion; });
 
 
     // Predictors
@@ -43,23 +55,19 @@ PYBIND11_MODULE(_jrboostext, mod)
 
         .def(py::init<>())
 
-        .def_readonly_static("Ada", &BoostOptions::Ada)
-        .def_readonly_static("Logit", &BoostOptions::Logit)
-
-        .def_property("method", &BoostOptions::method, &BoostOptions::setMethod)
         .def_property("gamma", &BoostOptions::gamma, &BoostOptions::setGamma)
         .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
         .def_property("eta", &BoostOptions::eta, &BoostOptions::setEta)
-        .def_property("minAbsSampleWeight", &BoostOptions::minAbsSampleWeight, &BoostOptions::setMinAbsSampleWeight)
-        .def_property("minRelSampleWeight", &BoostOptions::minRelSampleWeight, &BoostOptions::setMinRelSampleWeight)
         .def_property("fastExp", &BoostOptions::fastExp, &BoostOptions::setFastExp)
 
-        .def_property("usedSampleRatio", &BoostOptions::usedSampleRatio, &BoostOptions::setUsedSampleRatio)
-        .def_property("usedVariableRatio", &BoostOptions::usedVariableRatio, &BoostOptions::setUsedVariableRatio)
-        .def_property("topVariableCount", &BoostOptions::topVariableCount, &BoostOptions::setTopVariableCount)
-        .def_property("minNodeSize", &BoostOptions::minNodeSize, &BoostOptions::setMinNodeSize)
-        .def_property("minNodeWeight", &BoostOptions::minNodeWeight, &BoostOptions::setMinNodeWeight)
-        .def_property("isStratified", &BoostOptions::isStratified, &BoostOptions::setIsStratified)
+        .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
+        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
+        .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
+        .def_property("minAbsSampleWeight", &StumpOptions::minAbsSampleWeight, &StumpOptions::setMinAbsSampleWeight)
+        .def_property("minRelSampleWeight", &StumpOptions::minRelSampleWeight, &StumpOptions::setMinRelSampleWeight)
+        .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
+        .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
+        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
 
         .def("__copy__", [](const BoostOptions& bOpt) { return BoostOptions(bOpt); });
 
@@ -76,18 +84,24 @@ PYBIND11_MODULE(_jrboostext, mod)
     // Loss functions
 
     mod.def("errorCount", &errorCount, py::arg(), py::arg(), py::arg("threshold") = 0.5);
+    mod.def("senseSpec", &senseSpec, py::arg(), py::arg(), py::arg("threshold") = 0.5);
     mod.def("linLoss", &linLoss);
     mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.1);
     mod.def("auc", &auc);
     mod.def("negAuc", &negAuc);
 
     py::class_<ErrorCount>{ mod, "ErrorCount" }
-    .def(py::init<double>())
+        .def(py::init<double>())
         .def("__call__", &ErrorCount::operator())
         .def_property_readonly("name", &ErrorCount::name);
 
+    py::class_<SenseSpec>{ mod, "SenseSpec" }
+        .def(py::init<double>())
+        .def("__call__", &SenseSpec::operator())
+        .def_property_readonly("name", &SenseSpec::name);
+
     py::class_<LogLoss>{ mod, "LogLoss" }
-    .def(py::init<double>())
+        .def(py::init<double>())
         .def("__call__", &LogLoss::operator())
         .def_property_readonly("name", &LogLoss::name);
 
@@ -116,5 +130,5 @@ PYBIND11_MODULE(_jrboostext, mod)
     profileMod
         .def("PUSH", &PROFILE::PUSH)
         .def("POP", &PROFILE::POP, py::arg() = 0)
-        .def("PRINT", &PROFILE::PRINT);
+        .def("RESULT", &PROFILE::RESULT);
 }

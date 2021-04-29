@@ -1,27 +1,29 @@
+improve interface:
+	C++ code should use Options objects
+	Python code should use dict objects
+	glue layer takes
+		map<string, py::object>
+		vector<map<string, py::object>
+	and converts map<string, py::object> -> BoostOptions
 
-get rid of Ada and logit enum, just use gamma instead (gamma = 1.0 means ada)
-
-optimizeFun -> minimizeFun
-change parameter ordering
-
-do not use ASSERT for indata validation (neither in BoostTrainer nor StumpTrainer)
-
-test accuracy of fast math
-	1. improved fast math with smarter (x + 1) ^ (gamma-2)
-	2. update the Gist with fastLog and fastPow
-	3. plot min and max rel error of fastPow as a function of gamma
-		let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
-		send a mail to Nic with the results
-
------------------------------------------
-
+cleanup of minimize functions
+	turn then into completely generic minimization functions
+	
 documentation of regularized logit boost
 
-https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
-
-try clang/llvm compiler plugin
+new GitHub login method
+	https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
 get Higgs, Otto and Iris to run again
+
+Eigen:
+	read Eigen 3.4 docs
+	report that
+		ArrayXf a = {0, 4, 5};
+	compiles
+	pass Ref<const Array> by const ref?
+
+========================================================================
 
 need to move on with
 	trees
@@ -67,16 +69,20 @@ Otto:
 
 =====================================================================
 
+alternative implementation of sortedUsedSamples
+	select fastest implementation dynamically depending on sample count etc.
+	maybe do this as a separate stump trainer class
+
+U-test (with correct handling of ties)
+
 trees
-	allocate nodes with memory pool
+	allocate nodes with memory pool (use std::pmr::monotonic_buffer_resource)
 	also pruning
 
 histogram based stumps (would speed up Otto a lot)
 
 gradient boost
 	read xgb paper and Friedman to check that my understanding is correct
-
-test PGO
 
 extended algorithms:
 	first and second order boost
@@ -94,33 +100,28 @@ stump train strategy:
 	this might be faster when usedSampleCount is small i.e. when we do weight filtering and most weights are small
 	use pdq-sort (https://github.com/orlp/pdqsort) when sorting
 
+multiple inData and multiple variableCount (to handle feature engineering etc.)
+
 ----------------------------------------------------------------------
 
 low prio:
 	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
 	L2-penalty (lambda) or L1-penalty (alpha)
 
+	test accuracy of fast math
+		1. improved fast math with smarter (x + 1) ^ (gamma-2)
+		2. update the Gist with fastLog and fastPow
+		3. plot min and max rel error of fastPow as a function of gamma
+			let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
+			send a mail to Nic with the results
+
 ======================================================================================
 	
 Eigen issues:
-	can not reset Ref objects
 	no select with two constants
 	    StumpTrainerImpl(CRefXXf inData, RefXs strata)
 			second argument should be CRefXs, but that leads to problems ...
-
-	Eigen::Ref<Eigen::ArrayXf> u;
-	auto p1 = u.begin();
-	auto p2 = begin(u);
-	auto p3 = u.cbegin();
-	auto p4 = cbegin(u);
-	float* p5 = &u(0);
-
-	Eigen::Ref<Eigen::ArrayXf> u;
-	auto q1 = u.cbegin();
-	auto q2 = cbegin(u);
-	const float* q3 = &u(0);
-
-	also reverse iterators
+	is BoostTrainer::trainAda_ slower with Eigen 3.4 than with Eigen 3.3.9?
 
 ======================================================================================
 

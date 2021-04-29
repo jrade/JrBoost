@@ -31,9 +31,6 @@
     <ClInclude Include="AGRandom.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="Assert.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
     <ClInclude Include="BernoulliDistribution.h">
       <Filter>Tools</Filter>
     </ClInclude>
@@ -74,6 +71,9 @@
     <ClInclude Include="TTest.h">
       <Filter>Extra</Filter>
     </ClInclude>
+    <ClInclude Include="Assert.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">
@@ -92,9 +92,6 @@
       <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="Profile.cpp">
-      <Filter>Profiling</Filter>
-    </ClCompile>
-    <ClCompile Include="Memory.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />

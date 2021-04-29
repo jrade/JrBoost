@@ -8,36 +8,50 @@
 
 void StumpOptions::setUsedSampleRatio(double r)
 {
-    ASSERT(r > 0.0 && r <= 1.0);
+    if (!(r >= 0.0 && r <= 1.0))
+        throw std::invalid_argument("usedSampleRatio must lie in the interval [0.0, 1.0].");
     usedSampleRatio_ = r;
 }
 
 void StumpOptions::setUsedVariableRatio(double r)
 {
-    ASSERT(r > 0.0 && r <= 1.0);
+    if (!(r >= 0.0 && r <= 1.0))
+        throw std::invalid_argument("usedVariableRatio must lie in the interval [0.0, 1.0].");
     usedVariableRatio_ = r;
 }
 
 void StumpOptions::setTopVariableCount(size_t n)
 {
-    ASSERT(n != 0);
+    if (!(n > 0))
+        throw std::invalid_argument("topVariableCount must be positive.");
     topVariableCount_ = n;
 }
 
-void StumpOptions::setMinSampleWeight(double w)
+void StumpOptions::setMinAbsSampleWeight(double w)
 {
-    ASSERT(w >= 0.0);
-    minSampleWeight_ = w;
+    if (!(w >= 0.0))
+        throw std::invalid_argument("minAbsSampleWeight must be non-negative.");
+    minAbsSampleWeight_ = w;
+}
+
+void StumpOptions::setMinRelSampleWeight(double w)
+{
+    if (!(w >= 0.0 && w <= 1.0))
+        throw std::invalid_argument("minRelSampleWeight must lie in the interval [0.0, 1.0].");
+    minRelSampleWeight_ = w;
 }
 
 void StumpOptions::setMinNodeSize(size_t n)
 {
-    ASSERT(n != 0);
+    if (!(n > 0))
+        throw std::invalid_argument("minNodeSize must be positive.");
     minNodeSize_ = n;
 }
 
 void StumpOptions::setMinNodeWeight(double w)
 {
+    if (!(w >= 0))
+        throw std::invalid_argument("minNodeWeight must be nonnegative.");
     minNodeWeight_ = w;
 }
 
@@ -48,5 +62,5 @@ void StumpOptions::setIsStratified(bool b)
 
 double StumpOptions::cost() const
 {
-    return usedSampleRatio_ * usedVariableRatio_ * topVariableCount_;
+    return (1.0 + 4.0 * usedSampleRatio_) * usedVariableRatio_ * topVariableCount_;
 }

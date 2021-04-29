@@ -48,22 +48,27 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
 {
     // validate data ...........................................................
 
-    PROFILE::PUSH(PROFILE::VALIDATE);
-    size_t ITEM_COUNT = sampleCount_;
+    //PROFILE::PUSH(PROFILE::VALIDATE);
+    //size_t ITEM_COUNT = sampleCount_;
 
-    ASSERT(static_cast<size_t>(outData.rows()) == sampleCount_);
-    ASSERT((outData > -numeric_limits<double>::infinity()).all());
-    ASSERT((outData < numeric_limits<double>::infinity()).all());
+    //if (static_cast<size_t>(outData.rows()) != sampleCount_)
+    //    throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
+    //if (!(outData.abs() < numeric_limits<double>::infinity()).all())
+    //    throw std::invalid_argument("Train outdata has values that are infinity or NaN.");
 
-    ASSERT(static_cast<size_t>(weights.rows()) == sampleCount_);
-    ASSERT((weights >= 0.0).all());
-    ASSERT((weights < numeric_limits<double>::infinity()).all());
+    //if (static_cast<size_t>(weights.rows()) != sampleCount_)
+    //    throw std::invalid_argument("Train indata and weights have different numbers of samples.");
+    //if (!(weights.abs() < numeric_limits<float>::infinity()).all())
+    //    throw std::invalid_argument("Train weights have values that are infinity or NaN.");
+    //if ((weights < 0.0).any())
+    //    throw std::invalid_argument("Train weights have negative values.");
 
 
     // zero calibration of the profiling .......................................
 
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
-    ITEM_COUNT = 1;
+    //PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
+    PROFILE::PUSH(PROFILE::ZERO);
+    size_t ITEM_COUNT = 1;
 
 
     // initialize used sample mask .............................................
@@ -121,7 +126,6 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
             std::tie(sumW, sumWY) = initSums_(outData, weights);
             if (sumW == 0) {
                 PROFILE::POP(ITEM_COUNT);
-                //cout << "Warning: sumW = 0" << endl;
                 return std::make_unique<TrivialPredictor>(0.0);
             }
 
@@ -210,9 +214,12 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& op
     size_t usedSampleCount;
     usedSampleMask_.resize(sampleCount_);
 
-    double minSampleWeight = options.minSampleWeight();
-    bool isStratified = options.isStratified();
+    double minSampleWeight = options.minAbsSampleWeight();
+    double minRelSampleWeight = options.minRelSampleWeight();
+    if (minRelSampleWeight > 0.0)
+        minSampleWeight = std::max(minSampleWeight, weights.maxCoeff() * minRelSampleWeight);
 
+    bool isStratified = options.isStratified();
 
     if (minSampleWeight == 0.0) {
 

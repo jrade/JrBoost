@@ -23,17 +23,25 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     lor0_{ calculateLor0_() },
     baseTrainer_{ std::make_shared<StumpTrainer>(inData_, rawOutData_) }
 {
-    ASSERT(sampleCount_ != 0);
-    ASSERT(variableCount_ != 0);
-    ASSERT((inData_.abs() < numeric_limits<float>::infinity()).all());
+    if (sampleCount_ == 0)
+        throw std::invalid_argument("Train indata has 0 samples.");
+    if (variableCount_ == 0)
+        throw std::invalid_argument("Train indata has 0 variables.");
+    if(!(inData_.abs() < numeric_limits<float>::infinity()).all())
+        throw std::invalid_argument("Train indata has values that are infinity or NaN.");
 
-    ASSERT(static_cast<size_t>(rawOutData_.rows()) == sampleCount_);
-    ASSERT((rawOutData_ < 2).all());
+    if(static_cast<size_t>(rawOutData_.rows()) != sampleCount_)
+        throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
+    if((rawOutData_ > 1).any())
+        throw std::invalid_argument("Train outdata has values that are not 0 or 1.");
 
     if (weights_) {
-        ASSERT(static_cast<size_t>(weights_->rows()) == sampleCount_);
-        ASSERT((*weights_ > 0.0).all());
-        ASSERT((*weights_ < numeric_limits<float>::infinity()).all());
+        if(static_cast<size_t>(weights_->rows()) != sampleCount_)
+            throw std::invalid_argument("Train indata and weights have different numbers of samples.");
+        if(!(weights_->abs() < numeric_limits<float>::infinity()).all())
+            throw std::invalid_argument("Train weights have values that are infinity or NaN.");
+        if((*weights_ <= 0.0).any())
+            throw std::invalid_argument("Train weights have non-positive values.");
     }
 }
 
@@ -56,32 +64,28 @@ shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
 
     shared_ptr<BoostPredictor> pred;
-    switch (opt.method()) {
-    case BoostOptions::Ada:
+    double gamma = opt.gamma();
+    if (gamma == 1.0)
         pred = trainAda_(opt);
-        break;
-    case BoostOptions::Logit:
+    else if (gamma == 0.0)
         pred = trainLogit_(opt);
-        break;
-    default:
-        ASSERT(false);
-    }
-
+    else
+        pred = trainRegularizedLogit_(opt);
+    
     const size_t ITEM_COUNT = sampleCount_ *  opt.iterationCount();
     PROFILE::POP(ITEM_COUNT);
 
     return pred;
 }
 
-shared_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
+//----------------------------------------------------------------------------------------------------------------------
+
+shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
 {
     const size_t sampleCount = sampleCount_;
 
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
-    const double minAbsSampleWeight = opt.minAbsSampleWeight();
-    const double minRelSampleWeight = opt.minRelSampleWeight();
-    const bool useFastExp = opt.fastExp();
 
     ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / 2.0);
     ArrayXd adjWeights(sampleCount);
@@ -90,23 +94,18 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
-        if (useFastExp) {
-            const double* pF = &F(0);
-            const double* pOutData = &outData_(0);
-            double* pAdjWeights = &adjWeights(0);
-            for (size_t j = 0; j < sampleCount; ++j)           // not vectorized by MSVS 2019
-                pAdjWeights[j] = fastExp(-pF[j] * pOutData[j]);
-        }
-        else
-            adjWeights = (-F * outData_).exp();
+        //adjWeights = (-F * outData_).exp();
+
+        const double* pF = &F(0);
+        const double* pOutData = &outData_(0);
+        double* pAdjWeights = &adjWeights(0);
+        for (size_t j = 0; j < sampleCount; ++j)
+            pAdjWeights[j] = exp(-pF[j] * pOutData[j]);
 
         if (weights_)
             adjWeights *= (*weights_);
-
-        double minSampleWeight = minAbsSampleWeight;
-        if (minRelSampleWeight > 0.0)
-            minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
-        opt.setMinSampleWeight(minSampleWeight);
+        if (!(adjWeights < numeric_limits<float>::infinity()).all())
+            overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
         basePred->predict(inData_, eta, F);
@@ -118,15 +117,82 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(BoostOptions opt) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
+shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
+{
+    const size_t sampleCount = sampleCount_;
+
+    const size_t iterationCount = opt.iterationCount();
+    const double eta = opt.eta();
+    const bool useFastExp = opt.fastExp();
+
+    ArrayXd F = ArrayXd::Constant(sampleCount, lor0_);
+    ArrayXd adjOutData(sampleCount);
+    ArrayXd adjWeights(sampleCount);
+
+    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
+
+    for (size_t i = 0; i < iterationCount; ++i) {
+
+        if (useFastExp) {
+
+            //ArrayXd x = fastExp(-F * outData_);                   
+            //adjOutData = outData_ * (x + 1.0);
+            //adjWeights = x / (x + 1.0).square()
+
+            const double* pF = &F(0);
+            const double* pOutData = &outData_(0);
+            double* pAdjOutData = &adjOutData(0);
+            double* pAdjWeights = &adjWeights(0);
+
+            for (size_t j = 0; j < sampleCount; ++j) {      // not vectorized by MSVS 2019
+                double x = fastExp(-pF[j] * pOutData[j]);
+                pAdjOutData[j] = pOutData[j] * (x + 1.0);
+                pAdjWeights[j] = x / ((x + 1.0) * (x + 1.0));
+            }
+        }
+
+        else {
+
+            //ArrayXd x = (-F * outData_).exp();               
+            //adjOutData = outData_ * (x + 1.0);
+            //adjWeights = x / (x + 1.0).square()
+
+            const double* pF = &F(0);
+            const double* pOutData = &outData_(0);
+            double* pAdjOutData = &adjOutData(0);
+            double* pAdjWeights = &adjWeights(0);
+
+            for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
+                double x = std::exp(-pF[j] * pOutData[j]);
+                pAdjOutData[j] = pOutData[j] * (x + 1.0);
+                pAdjWeights[j] = x / ((x + 1.0) * (x + 1.0));
+            }
+        }
+
+
+        if (weights_)
+            adjWeights *= (*weights_);
+
+        if (!(adjWeights < numeric_limits<float>::infinity()).all())
+            overflow_(opt);
+
+        unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
+        basePred->predict(inData_, eta, F);
+        basePredictors[i] = std::move(basePred);
+    }
+
+    return std::make_shared<BoostPredictor>(variableCount_, lor0_, eta, std::move(basePredictors));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt) const
 {
     const size_t sampleCount = sampleCount_;
 
     const double gamma = opt.gamma();
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
-    const double minAbsSampleWeight = opt.minAbsSampleWeight();
-    const double minRelSampleWeight = opt.minRelSampleWeight();
     const bool useFastExp = opt.fastExp();
 
     ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / (gamma + 1.0));
@@ -176,10 +242,8 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(BoostOptions opt) const
         if (weights_)
             adjWeights *= (*weights_);
 
-        double minSampleWeight = minAbsSampleWeight;
-        if (minRelSampleWeight > 0.0)
-            minSampleWeight = std::max(minSampleWeight, adjWeights.maxCoeff() * minRelSampleWeight);
-        opt.setMinSampleWeight(minSampleWeight);
+        if (!(adjWeights < numeric_limits<float>::infinity()).all())
+            overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
         basePred->predict(inData_, eta, F);
@@ -198,7 +262,9 @@ ArrayXd BoostTrainer::trainAndEval(
     function<Array3d(CRefXs, CRefXd)> lossFun
 ) const
 {
-    ASSERT(testInData.rows() == testOutData.rows());
+    if (testInData.rows() == 0)
+        throw std::invalid_argument("Test indata has 0 samples.");
+
     size_t optCount = opt.size();
 
     // In each iteration of the loop we build and evaluate a classifier with one set of options
@@ -247,11 +313,22 @@ ArrayXd BoostTrainer::trainAndEval(
 
         } // don't wait here ...
 
-        PROFILE::PUSH(PROFILE::OMP_BARRIER);
+        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
     } // ... but here so we can measure the wait time
     PROFILE::POP();
 
     if (exceptionThrown) std::rethrow_exception(ep);
 
     return scores;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void BoostTrainer::overflow_(const BoostOptions& opt)
+{
+    double gamma = opt.gamma();
+    string msg = gamma == 1.0
+        ? "Numerical overflow in the boost algorithm.\nTry decreasing eta."
+        : "Numerical overflow in the boost algorithm.\nTry decreasing eta or increasing gamma.";
+    throw std::overflow_error(msg);
 }

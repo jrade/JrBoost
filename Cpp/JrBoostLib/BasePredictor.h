@@ -16,6 +16,8 @@ protected:
 
     BasePredictor() = default;
 
+    static void parseError_ [[noreturn]] ();
+
 private:
     friend class BoostPredictor;
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const = 0;

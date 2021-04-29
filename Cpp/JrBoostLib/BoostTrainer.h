@@ -29,8 +29,10 @@ public:
 
 private:
     double calculateLor0_() const;
-    shared_ptr<BoostPredictor> trainAda_(BoostOptions opt) const;
-    shared_ptr<BoostPredictor> trainLogit_(BoostOptions opt) const;
+    shared_ptr<BoostPredictor> trainAda_(const BoostOptions& opt) const;
+    shared_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt) const;
+    shared_ptr<BoostPredictor> trainRegularizedLogit_(const BoostOptions& opt) const;
+    static void overflow_ [[noreturn]] (const BoostOptions& opt);
 
 private:
     const ArrayXXf inData_;
@@ -42,3 +44,4 @@ private:
     const shared_ptr<StumpTrainer> baseTrainer_;
     const double lor0_;
 };
+

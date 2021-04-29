@@ -58,7 +58,7 @@ shared_ptr<Predictor> BoostPredictor::load_(istream& is)
 {
     uint8_t version = static_cast<uint8_t>(is.get());
     if (version != 1)
-        throw runtime_error("Not a valid JrBoost predictor file.");
+        parseError_();
 
     uint32_t variableCount;
     float c0;

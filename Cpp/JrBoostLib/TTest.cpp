@@ -7,15 +7,18 @@
 #include "SortedIndices.h"
 
 
-ArrayXf tStatistic(
-    Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
-    CRefXs outData,
-    optional<CRefXs> optSamples
-)
+using AccScalar = float;
+using DataArray = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using StatArray = Eigen::Array<AccScalar, 2, Eigen::Dynamic, Eigen::RowMajor>;
+
+
+ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
 {
     size_t variableCount = inData.cols();
-    ASSERT(outData.rows() == inData.rows());
-    ASSERT((outData < 2).all());
+    if (outData.rows() != inData.rows())
+        throw std::invalid_argument("Indata and outdata have different numbers of samples.");
+    if((outData > 1).any())
+        throw std::invalid_argument("Outdata has values that are not 0 or 1.");
 
     ArrayXs samples;
     size_t sampleCount;
@@ -30,58 +33,81 @@ ArrayXf tStatistic(
             samples(i) = i;
     }
 
-    size_t n[2] = { 0, 0 };
-    ArrayXf mean[2];
-    mean[0] = ArrayXf::Zero(variableCount);
-    mean[1] = ArrayXf::Zero(variableCount);
-    for (int i = 0; i < sampleCount; ++i) {
-        size_t j = samples[i];
-        size_t k = outData(j);
-        ++n[k];
-        mean[k] += inData.row(j);
+    ArrayXs n = { {0,0} };
+    for (size_t i : samples) {
+        size_t s = outData(i);
+        ++n(s);
     }
 
-    if (n[0] == 0)
-        throw runtime_error("Unable to do t-test: First group is empty");
-    if (n[1] == 0)
-        throw runtime_error("Unable to do t-test: Second group is empty");
-    if (n[0] + n[1] == 2)
-        throw runtime_error("Unable to do t-test: Zero degrees of freedom");
+    if (n(0) == 0)
+        throw std::invalid_argument("Unable to do t-test: First group is empty");
+    if (n(1) == 0)
+        throw std::invalid_argument("Unable to do t-test: Second group is empty");
+    if (n(0) + n(1) == 2)
+        throw std::invalid_argument("Unable to do t-test: Zero degrees of freedom");
 
-    for (int k = 0; k < 2; ++k)
-        mean[k] /= static_cast<float>(n[k]);
+    ArrayXf t(variableCount);
 
-    ArrayXf SS[2];
-    SS[0] = ArrayXf::Zero(variableCount);
-    SS[1] = ArrayXf::Zero(variableCount);
-    for (int i = 0; i < sampleCount; ++i) {
-        size_t j = samples[i];
-        size_t k = outData(j);
-        SS[k] += (inData.row(j) - mean[k].transpose()).square();
-    }
-
-    float a = sqrt(
-        (n[0] + n[1] - 2.0f)
+    AccScalar a = sqrt(
+        (n(0) + n(1) - AccScalar(2))
         /
-        (1.0f / n[0] + 1.0f / n[1])
+        (AccScalar(1) / n(0) + AccScalar(1) / n(1))
     );
 
-    ArrayXf t =
-        a
-        *
-        (mean[1] - mean[0])
-        /
-        (SS[0] + SS[1] + numeric_limits<float>::min()).sqrt();
+    const size_t blockWidth = 256;
+    const size_t blockCount = (variableCount + blockWidth - 1) / blockWidth;
+    ASSERT(blockCount == static_cast<int>(blockCount));
 
-    ASSERT((t < numeric_limits<float>::infinity()).all());
-    ASSERT((t > -numeric_limits<float>::infinity()).all());
+#pragma omp parallel
+    {
+        StatArray mean(2, blockWidth);
+        StatArray ss(2, blockWidth);
+
+#pragma omp for
+        for (int v = 0; v < static_cast<int>(blockCount); ++v) {
+
+            size_t j0 = v * blockWidth;
+            size_t j1 = j0 + blockWidth;
+            j1 = std::min(j1, variableCount);
+
+            Eigen::Ref<const DataArray> inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
+            Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, 2, j1 - j0));
+            Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
+            Eigen::Ref<ArrayXf> tBlock(t.segment(j0, j1 - j0));
+
+            meanBlock = AccScalar(0);
+            for (size_t i: samples) {
+                size_t s = outData(i);
+                meanBlock.row(s) += inDataBlock.row(i).cast<AccScalar>();
+            }
+            meanBlock.colwise() /= n.cast<AccScalar>();
+
+            ssBlock = AccScalar(0);
+            for (size_t i : samples) {
+                size_t s = outData(i);
+                ssBlock.row(s) += (inDataBlock.row(i).cast<AccScalar>() - meanBlock.row(s)).square();
+            }
+
+            tBlock = (
+                a * (meanBlock.row(1) - meanBlock.row(0))
+                / (ssBlock.row(0) + ssBlock.row(1) + numeric_limits<AccScalar>::min()).sqrt()
+            ).cast<float>();
+        }
+    }
+
+    if (!(t.abs() < numeric_limits<float>::infinity()).all()) {
+        if (!(inData.abs() < numeric_limits<float>::infinity()).all())
+            throw std::invalid_argument("Indata has values that are infinity or NaN.");
+        else
+            throw std::overflow_error("Numerical overflow when calculating the t-statistic.");
+    }
 
     return t;
 }
 
 
 ArrayXs tTestRank(
-    Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
+    Eigen::Ref<const DataArray> inData,
     CRefXs outData,
     optional<CRefXs> optSamples,
     TestDirection testDirection

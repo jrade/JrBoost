@@ -12,8 +12,10 @@ ArrayXd Predictor::predict(CRefXXf inData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
 
-    ASSERT(static_cast<size_t>(inData.cols()) == variableCount());
-    ASSERT((inData.abs() < numeric_limits<float>::infinity()).all());
+    if (static_cast<size_t>(inData.cols()) != variableCount())
+        throw std::invalid_argument("Train and test indata have different numbers of variables.");
+    if (!(inData.abs() < numeric_limits<float>::infinity()).all())
+        throw std::invalid_argument("Test indata has values that are infinity or NaN.");
 
     ArrayXd pred = predict_(inData);
 
@@ -46,12 +48,7 @@ shared_ptr<Predictor> Predictor::load(const string& filePath)
     ifstream ifs;
     ifs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
     ifs.open(filePath, std::ios::binary);
-    try {
-        return load(ifs);
-    }
-    catch(std::ios::failure&) {
-        throw runtime_error("Not a valid JrBoost predictor file.");
-    }
+    return load(ifs);
 }
 
 shared_ptr<Predictor> Predictor::load(istream& is)
@@ -59,18 +56,18 @@ shared_ptr<Predictor> Predictor::load(istream& is)
     char sig[7];
     is.read(sig, 7);
     if (memcmp(sig, "JRBOOST", 7) != 0)
-        throw runtime_error("Not a JrBoost predictor file.");
+        throw std::runtime_error("Not a JrBoost predictor file.");
 
     uint8_t version = static_cast<uint8_t>(is.get());
     if (version < 1)
-        throw runtime_error("Not a valid JrBoost predictor file.");
+        parseError_();
     if (version > 1)
-        throw runtime_error("Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
+        throw std::runtime_error("Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
     
     shared_ptr<Predictor> pred = load_(is);
 
     if (is.get() != '!')
-        throw runtime_error("Not a valid JrBoost predictor file.");
+        parseError_();
 
     return pred;
 }
@@ -84,6 +81,12 @@ shared_ptr<Predictor> Predictor::load_(istream& is)
     case Ensemble:
         return EnsemblePredictor::load_(is);
     default:
-        throw runtime_error("Not a valid JrBoost predictor file.");
+        parseError_();
     }
 }
+
+void Predictor::parseError_()
+{
+    throw std::runtime_error("Not a valid JrBoost predictor file.");
+}
+
