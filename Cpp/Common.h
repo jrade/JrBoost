@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -23,6 +24,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <variant>
 #include <vector>
 
 using std::array;
@@ -32,6 +34,7 @@ using std::endl;
 using std::function;
 using std::ifstream;
 using std::istream;
+using std::map;
 using std::numeric_limits;
 using std::ofstream;
 using std::optional;
@@ -41,6 +44,7 @@ using std::shared_ptr;
 using std::string;
 using std::stringstream;
 using std::unique_ptr;
+using std::variant;
 using std::vector;
 
 

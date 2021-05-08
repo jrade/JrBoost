@@ -3,9 +3,11 @@
   <ItemGroup>
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="pch.cpp" />
+    <ClCompile Include="BoostParam.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h" />
     <ClInclude Include="PyInterruptHandler.h" />
+    <ClInclude Include="BoostParam.h" />
   </ItemGroup>
 </Project>

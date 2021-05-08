@@ -2,9 +2,9 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'minimizeGrid', 'minimizeDynamic']
+__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'minimizeGrid', 'minimizeDynamic', 'findPath']
 
-import copy, random, warnings
+import copy, os, random, warnings
 import numpy as np
 import pandas as pd
 import jrboost
@@ -83,87 +83,88 @@ def stratifiedRandomSplit(outData, ratio, samples = None):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def minimizeGrid(fun, bpValues, cvParam):
+def minimizeGrid(f, grid, param = {}):
 
-    bestOptionCount = cvParam['bestOptionCount']
-    ultraBoost = cvParam.get('ultraBoost', None)
-    bagSize = cvParam['bagSize']
+    bestCount = param.get('bestCount', 1)
 
-    optionList = [jrboost.BoostOptions()]
-    for name, values in bpValues.items():
-        tmp = []
-        for opt in optionList:
+    xList = [dict()]
+    for key, values in grid.items():
+        xList1 = []
+        for x in xList:
             for value in values:
-                setattr(opt, name, value)
-                tmp.append(copy.copy(opt))
-        optionList = tmp
+                x[key] = value
+                xList1.append(copy.copy(x))
+        xList = xList1
 
-    loss = fun(optionList)
-    
-    bestIndices = list(np.argsort(loss)) 
-    del bestIndices[bestOptionCount:]
-    bestOptionList = [optionList[i] for i in bestIndices]
+    yList = f(xList)
+    bestIndices = list(np.argsort(yList)) 
+    xList = [xList[i] for i in bestIndices[:bestCount]]
 
-    if ultraBoost is not None:
-        for opt in bestOptionList:
-            opt.iterationCount *= ultraBoost
-            opt.eta /= ultraBoost
-
-    if bagSize is not None:
-        optionList *= bagSize
-
-    return optionList
+    return xList
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def minimizeDynamic(fun, bpValues, cvParam):
+def minimizeDynamic(f, grid, param):
 
-    cycleCount = cvParam['cycleCount']
-    populationCount = cvParam['populationCount']
-    survivorCount = cvParam['survivorCount']
+    cycleCount = param['cycleCount']
+    populationCount = param['populationCount']
+    survivorCount = param['survivorCount']
+    bestCount = param.get('bestCount', 1)
 
-    bpValues = copy.deepcopy(bpValues)
+    xDict = copy.deepcopy(grid)
     k = 0
     while True:
 
-        for values in bpValues.values():
-            valueCount = len(values)
-            values *= (populationCount + valueCount - 1) // valueCount
-            random.shuffle(values)
-            del values[populationCount:]
-
-        optionList = [jrboost.BoostOptions() for _ in range(populationCount)]
-        for name, values in bpValues.items():
-            for i in range(populationCount):
-                setattr(optionList[i], name, values[i])
-
-        loss = fun(optionList)
-        sortedIndices = list(np.argsort(loss))
+        xDict = _sampleDict(xDict, populationCount)
+        xList = _split(xDict)
+        yList = f(xList)
+        bestIndices = list(np.argsort(yList))
 
         k += 1
         if k == cycleCount:
-            break
+            xList = [xList[i] for i in bestIndices[:bestCount]]
+            return xList
 
-        del sortedIndices[survivorCount:]
-        for values in bpValues.values():
-            values[:] = [values[i] for i in sortedIndices]
-            values.sort()
+        xList = [xList[i] for i in bestIndices[:survivorCount]]
+        xDict = _merge(xList)
 
-    # finalize
 
-    bestOptionCount = cvParam['bestOptionCount']
-    ultraBoost = cvParam.get('ultraBoost', None)
-    bagSize = cvParam.get('bagSize', None)
+# random sample of size n from the list a
+def _sampleList(a, n):
+    k = (n + len(a) - 1) // len(a)
+    a = k * a
+    assert len(a) >= n
+    random.shuffle(a)
+    return a[:n]
 
-    del sortedIndices[bestOptionCount:]
-    optionList = [optionList[i] for i in sortedIndices]
+# dictionary with values that are lists -> dictionary with values that are random samples from those lists
+def _sampleDict(a, n):
+    return {key : _sampleList(valueList, n) for key, valueList in a.items()}
 
-    if ultraBoost is not None:
-        for opt in optionList:
-            opt.iterationCount *= ultraBoost
-            opt.eta /= ultraBoost
 
-    if bagSize is not None:
-        optionList *= bagSize
+# dictionary with values thar are lists -> list of dictionaries
+# all values of the input dictionary must be lists of he same length
+def _split(a):
+    n = len(next(iter(a.values())))
+    return  [ {key: valueList[i] for key, valueList in a.items()} for i in range(n) ]
 
-    return optionList
+# list of dictionaries -> dictionary with values thar are lists
+# all dictionaries in the list must have the same keys
+def _merge(a):
+    keys = a[0].keys()
+    return {key : [b[key] for b in a] for key in keys}
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def findPath(filePath):
+    adjFilePath = filePath
+    i = 0
+    while not os.path.exists(adjFilePath):
+        if i == 10:
+            raise RuntimeError(f'Cannot find the file {filePath}')
+        adjFilePath = '../' + adjFilePath
+        i += 1
+    return adjFilePath
+
+
+

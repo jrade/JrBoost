@@ -9,13 +9,14 @@
 #include "../JrBoostLib/EnsemblePredictor.h"
 #include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/TTest.h"
+#include "BoostParam.h"
 #include "PyInterruptHandler.h"
+
+namespace py = pybind11;
 
 
 PYBIND11_MODULE(_jrboostext, mod)
 {
-    namespace py = pybind11;
-
     currentInterruptHandler = &thePyInterruptHandler;
 
     py::register_exception_translator(
@@ -29,10 +30,9 @@ PYBIND11_MODULE(_jrboostext, mod)
         }
     );
 
-    mod.def("setThreadCount", &omp_set_num_threads);
     mod.def("getThreadCount", &omp_get_max_threads);
-
-    mod.def("getEigenVersion", []() { return eigenVersion; });
+    mod.def("setThreadCount", &omp_set_num_threads);
+    mod.attr("eigenVersion") = py::str(eigenVersion);
 
 
     // Predictors
@@ -51,34 +51,28 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     // Boost trainer
 
-    py::class_<BoostOptions>{ mod, "BoostOptions" }
-
-        .def(py::init<>())
-
-        .def_property("gamma", &BoostOptions::gamma, &BoostOptions::setGamma)
-        .def_property("iterationCount", &BoostOptions::iterationCount, &BoostOptions::setIterationCount)
-        .def_property("eta", &BoostOptions::eta, &BoostOptions::setEta)
-        .def_property("fastExp", &BoostOptions::fastExp, &BoostOptions::setFastExp)
-
-        .def_property("usedSampleRatio", &StumpOptions::usedSampleRatio, &StumpOptions::setUsedSampleRatio)
-        .def_property("usedVariableRatio", &StumpOptions::usedVariableRatio, &StumpOptions::setUsedVariableRatio)
-        .def_property("topVariableCount", &StumpOptions::topVariableCount, &StumpOptions::setTopVariableCount)
-        .def_property("minAbsSampleWeight", &StumpOptions::minAbsSampleWeight, &StumpOptions::setMinAbsSampleWeight)
-        .def_property("minRelSampleWeight", &StumpOptions::minRelSampleWeight, &StumpOptions::setMinRelSampleWeight)
-        .def_property("minNodeSize", &StumpOptions::minNodeSize, &StumpOptions::setMinNodeSize)
-        .def_property("minNodeWeight", &StumpOptions::minNodeWeight, &StumpOptions::setMinNodeWeight)
-        .def_property("isStratified", &StumpOptions::isStratified, &StumpOptions::setIsStratified)
-
-        .def("__copy__", [](const BoostOptions& bOpt) { return BoostOptions(bOpt); });
-
-
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
-        .def(py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(), py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>())
-        .def("train", &BoostTrainer::train)
-        .def("trainAndEval", &BoostTrainer::trainAndEval, py::call_guard<py::gil_scoped_release>());
+        .def(
+            py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(),
+            py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
+        )
+        .def(
+            "train",
+            [] (BoostTrainer& self, const BoostParam& param) { return self.train(toBoostOptions(param)); }
+        )
+        .def(
+            "trainAndEval",
+            [] (BoostTrainer& self, CRefXXf testInData, CRefXs testOutData,
+                const vector<BoostParam>& paramList, function<Array3d(CRefXs, CRefXd)> lossFun
+            )
+            { return self.trainAndEval(testInData, testOutData, toBoostOptions(paramList), lossFun); },
+            py::call_guard<py::gil_scoped_release>()
+        );
         // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.
         // These callbacks may be to Python functions that need to acquire the GIL.
         // If we don't release the GIL here it will be held by the master thread and the other threads will be blocked.
+
+    mod.def("getDefaultBoostParam", []() { return toBoostParam(BoostOptions()); });
 
 
     // Loss functions
@@ -119,8 +113,6 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     // Profiling
 
-    mod.def("setProfile", [](bool b) { PROFILE::doProfile = b; });
-
     py::module profileMod = mod.def_submodule("PROFILE");
 
     py::enum_<PROFILE::CLOCK_ID>(profileMod, "CLOCK_ID")
@@ -128,6 +120,8 @@ PYBIND11_MODULE(_jrboostext, mod)
         .export_values();
 
     profileMod
+        .def("GET_ENABLED", []() { return PROFILE::ENABLED; })
+        .def("SET_ENABLED", [](bool b) { PROFILE::ENABLED = b; })
         .def("PUSH", &PROFILE::PUSH)
         .def("POP", &PROFILE::POP, py::arg() = 0)
         .def("RESULT", &PROFILE::RESULT);

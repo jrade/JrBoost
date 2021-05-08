@@ -10,7 +10,7 @@
 
 class PROFILE {
 public:
-    inline static bool doProfile = false;
+    inline static bool ENABLED = false;
 
     enum CLOCK_ID {
         MAIN, 

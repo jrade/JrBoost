@@ -9,7 +9,7 @@
 
 void PROFILE::PUSH(CLOCK_ID id)
 {
-    if (!doProfile) return;
+    if (!ENABLED) return;
     if (omp_get_thread_num() != 0) return;
 
     uint64_t t = clockCycleCount();
@@ -25,7 +25,7 @@ void PROFILE::PUSH(CLOCK_ID id)
 
 void PROFILE::POP(size_t itemCount)
 {
-    if (!doProfile) return;
+    if (!ENABLED) return;
     if (omp_get_thread_num() != 0) return;
 
     uint64_t t = clockCycleCount();
@@ -43,7 +43,7 @@ void PROFILE::POP(size_t itemCount)
 
 void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 {
-    if (!doProfile) return;
+    if (!ENABLED) return;
     if (omp_get_thread_num() != 0) return;
 
     uint64_t t = clockCycleCount();
@@ -58,7 +58,7 @@ void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 
 string PROFILE::RESULT()
 {
-    if (!doProfile) return "";
+    if (!ENABLED) return "";
 
     const Clock& zeroClock = clocks_[ZERO];
     double adjustment = static_cast<double>(zeroClock.clockCycleCount()) / zeroClock.callCount();
@@ -102,7 +102,7 @@ string PROFILE::RESULT()
     }
 
     ss << endl;
-    ss << "zero calibration: " << adjustment << endl;
+    //ss << "zero calibration: " << adjustment << endl;
     ss << "profiling overhead: "
         << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << endl;
     ss << "slow branch: " << (100.0 * SLOW_BRANCH_COUNT) / SPLIT_ITERATION_COUNT << "%" << endl;

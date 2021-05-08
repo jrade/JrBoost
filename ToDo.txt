@@ -1,26 +1,26 @@
-improve interface:
-	C++ code should use Options objects
-	Python code should use dict objects
-	glue layer takes
-		map<string, py::object>
-		vector<map<string, py::object>
-	and converts map<string, py::object> -> BoostOptions
 
-cleanup of minimize functions
-	turn then into completely generic minimization functions
-	
+simpler PROFILE::START and PROFILE::STOP functions in Python interface
+
+add attributes to the loss functions?
+	name, component names
+
+.............................................................................
+
+reimplement Iris by cloning and mutating the Leukemia script
+
+continue with Otto and Higgs
+	Higgs train function should return classifier and cutoff
+
 documentation of regularized logit boost
 
 new GitHub login method
 	https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
-get Higgs, Otto and Iris to run again
-
 Eigen:
 	read Eigen 3.4 docs
 	report that
-		ArrayXf a = {0, 4, 5};
-	compiles
+			ArrayXf a = {0, 4, 5};
+		compiles
 	pass Ref<const Array> by const ref?
 
 ========================================================================
