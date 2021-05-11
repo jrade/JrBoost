@@ -9,14 +9,14 @@
 #include "../JrBoostLib/EnsemblePredictor.h"
 #include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/TTest.h"
-#include "BoostParam.h"
+#include "PyBoostOptions.h"
 #include "PyInterruptHandler.h"
-
-namespace py = pybind11;
 
 
 PYBIND11_MODULE(_jrboostext, mod)
 {
+    namespace py = pybind11;
+
     currentInterruptHandler = &thePyInterruptHandler;
 
     py::register_exception_translator(
@@ -56,23 +56,13 @@ PYBIND11_MODULE(_jrboostext, mod)
             py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(),
             py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
         )
-        .def(
-            "train",
-            [] (BoostTrainer& self, const BoostParam& param) { return self.train(toBoostOptions(param)); }
-        )
-        .def(
-            "trainAndEval",
-            [] (BoostTrainer& self, CRefXXf testInData, CRefXs testOutData,
-                const vector<BoostParam>& paramList, function<Array3d(CRefXs, CRefXd)> lossFun
-            )
-            { return self.trainAndEval(testInData, testOutData, toBoostOptions(paramList), lossFun); },
-            py::call_guard<py::gil_scoped_release>()
-        );
+        .def("train", &BoostTrainer::train)
+        .def("trainAndEval", &BoostTrainer::trainAndEval, py::call_guard<py::gil_scoped_release>());
         // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.
         // These callbacks may be to Python functions that need to acquire the GIL.
         // If we don't release the GIL here it will be held by the master thread and the other threads will be blocked.
 
-    mod.def("getDefaultBoostParam", []() { return toBoostParam(BoostOptions()); });
+    mod.def("getDefaultBoostParam", []() { return BoostOptions(); });
 
 
     // Loss functions
