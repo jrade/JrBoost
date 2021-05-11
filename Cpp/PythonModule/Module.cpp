@@ -120,6 +120,10 @@ PYBIND11_MODULE(_jrboostext, mod)
         .export_values();
 
     profileMod
+        // high level API
+        .def("START", &PROFILE::START)
+        .def("STOP", &PROFILE::STOP)
+        // low level API
         .def("GET_ENABLED", []() { return PROFILE::ENABLED; })
         .def("SET_ENABLED", [](bool b) { PROFILE::ENABLED = b; })
         .def("PUSH", &PROFILE::PUSH)

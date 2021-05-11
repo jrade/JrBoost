@@ -1,7 +1,6 @@
 
-simpler PROFILE::START and PROFILE::STOP functions in Python interface
-
 add attributes to the loss functions?
+	are function attributes supported?
 	name, component names
 
 .............................................................................

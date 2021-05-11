@@ -9,6 +9,22 @@
 
 
 class PROFILE {
+
+public:
+    static void START()
+    {
+        ENABLED = true;
+        PUSH(MAIN);
+    }
+
+    static string STOP()
+    {
+        POP(MAIN);
+        string msg = RESULT();
+        ENABLED = false;
+        return msg;
+    }
+
 public:
     inline static bool ENABLED = false;
 
@@ -25,13 +41,14 @@ public:
     static void SWITCH(size_t itemCount, CLOCK_ID id);
     static string RESULT();
 
-    static uint64_t SPLIT_ITERATION_COUNT;
-    static uint64_t SLOW_BRANCH_COUNT;
-
 private:
     static Clock clocks_[CLOCK_COUNT];
     static const string names_[CLOCK_COUNT];
     static StaticStack<CLOCK_ID, 1000> clockIndexStack_;
+
+    template<typename SampleIndex> friend class StumpTrainerImpl;
+    static uint64_t SPLIT_ITERATION_COUNT;
+    static uint64_t SLOW_BRANCH_COUNT;
 };
 
 
