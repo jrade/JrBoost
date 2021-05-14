@@ -15,7 +15,7 @@ StumpTrainer::StumpTrainer(CRefXXf inData, CRefXs strata) :
 
 shared_ptr<StumpTrainerImplBase> StumpTrainer::createImpl_(CRefXXf inData, CRefXs strata)
 {
-    size_t sampleCount = static_cast<size_t>(inData.rows());
+    const size_t sampleCount = static_cast<size_t>(inData.rows());
     if (sampleCount < 0x100)
         return std::make_shared<StumpTrainerImpl<uint8_t>>(inData, strata);
     else if (sampleCount < 0x10000)
@@ -28,5 +28,8 @@ shared_ptr<StumpTrainerImplBase> StumpTrainer::createImpl_(CRefXXf inData, CRefX
 
 unique_ptr<BasePredictor> StumpTrainer::train(CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
-    return impl_->train(outData, weights, options);
+    PROFILE::PUSH(PROFILE::STUMP_TRAIN);
+    unique_ptr<BasePredictor> pred =  impl_->train(outData, weights, options);
+    PROFILE::POP();
+    return pred;
 }

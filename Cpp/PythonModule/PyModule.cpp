@@ -7,6 +7,7 @@
 #include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/BoostTrainer.h"
 #include "../JrBoostLib/EnsemblePredictor.h"
+#include "../JrBoostLib/Paralleltrain.h"
 #include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/TTest.h"
 #include "PyBoostOptions.h"
@@ -56,13 +57,17 @@ PYBIND11_MODULE(_jrboostext, mod)
             py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(),
             py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
         )
-        .def("train", &BoostTrainer::train)
-        .def("trainAndEval", &BoostTrainer::trainAndEval, py::call_guard<py::gil_scoped_release>());
-        // BoostTrainer::trainAndEval() makes callbacks from OMP parallellized code.
-        // These callbacks may be to Python functions that need to acquire the GIL.
-        // If we don't release the GIL here it will be held by the master thread and the other threads will be blocked.
+        .def("train", &BoostTrainer::train);
 
     mod.def("getDefaultBoostParam", []() { return BoostOptions(); });
+
+    mod.def("parallelTrain", &parallelTrain);
+    mod.def("parallelTrainAndPredict", &parallelTrainAndPredict);
+    mod.def("parallelTrainAndEval", &parallelTrainAndEval, py::call_guard<py::gil_scoped_release>());
+
+    // parallelTrainAndEval() makes callbacks from multi-threaded code.
+    // These callbacks may be to Python functions that need to acquire the GIL.
+    // If we don't relasee the GIL here it will be held by the master thread and the other threads will be blocked
 
 
     // Loss functions
@@ -105,10 +110,6 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     py::module profileMod = mod.def_submodule("PROFILE");
 
-    py::enum_<PROFILE::CLOCK_ID>(profileMod, "CLOCK_ID")
-        .value("MAIN", PROFILE::MAIN)
-        .export_values();
-
     profileMod
         // high level API
         .def("START", &PROFILE::START)
@@ -119,4 +120,11 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("PUSH", &PROFILE::PUSH)
         .def("POP", &PROFILE::POP, py::arg() = 0)
         .def("RESULT", &PROFILE::RESULT);
+
+    py::enum_<PROFILE::CLOCK_ID>(profileMod, "CLOCK_ID")
+        .value("MAIN", PROFILE::MAIN)
+        .value("TEST1", PROFILE::TEST1)
+        .value("TEST2", PROFILE::TEST2)
+        .value("TEST3", PROFILE::TEST3)
+        .export_values();
 }

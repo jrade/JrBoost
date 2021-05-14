@@ -68,6 +68,7 @@ using std::vector;
 #pragma warning( pop )
 #endif
 
+using ArrayXXd = Eigen::ArrayXXd;
 using ArrayXXf = Eigen::ArrayXXf;
 using ArrayXd = Eigen::ArrayXd;
 using ArrayXf = Eigen::ArrayXf;

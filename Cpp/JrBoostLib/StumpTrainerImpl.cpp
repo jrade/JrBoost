@@ -26,6 +26,10 @@ StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
 template<typename SampleIndex>
 vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_() const
 {
+    PROFILE::PUSH(PROFILE::STUMP_INIT);
+    uint64_t ITEM_COUNT = static_cast<uint64_t>(
+        sampleCount_ * std::log2(static_cast<double>(sampleCount_)) * variableCount_);
+
     vector<vector<SampleIndex>> sortedSamples(variableCount_);
     vector<pair<float, SampleIndex>> tmp{ sampleCount_ };
     for (size_t j = 0; j < variableCount_; ++j) {
@@ -36,6 +40,8 @@ vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_(
         for (size_t i = 0; i < sampleCount_; ++i)
             sortedSamples[j][i] = tmp[i].second;
     }
+
+    PROFILE::POP(ITEM_COUNT);
 
     return sortedSamples;
 }
@@ -276,17 +282,16 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& op
 
         if (!isStratified) {
             tmpSamples_.resize(sampleCount_);
-            size_t n = 0;
             auto p = begin(tmpSamples_);
             for (size_t i = 0; i < sampleCount_; ++i) {
                 usedSampleMask_[i] = 0;
                 bool b = weights(i) >= minSampleWeight;
                 *p = static_cast<SampleIndex>(i);
                 p += b;
-                n += b;
             }
             tmpSamples_.resize(p - begin(tmpSamples_));
 
+            size_t n = tmpSamples_.size();
             size_t k = static_cast<size_t>(options.usedSampleRatio() * n + 0.5);
             if (k == 0 && n > 0) k = 1;
             usedSampleCount = k;

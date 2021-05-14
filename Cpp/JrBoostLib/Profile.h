@@ -30,9 +30,10 @@ public:
 
     enum CLOCK_ID {
         MAIN, 
-        T_RANK, BOOST_TRAIN, STUMP_TRAIN,
-        /*VALIDATE,*/ USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT,
-        BOOST_PREDICT, THREAD_SYNCH,
+        T_RANK, BOOST_INIT, STUMP_INIT, BOOST_TRAIN, STUMP_TRAIN,
+        /*VALIDATE,*/ USED_SAMPLES, USED_VARIABLES, SUMS, SORTED_USED_SAMPLES, BEST_SPLIT, STUMP_PREDICT,
+        THREAD_SYNCH, BOOST_PREDICT,
+        TEST1, TEST2, TEST3,
         ZERO, CLOCK_COUNT
     };
     
@@ -55,15 +56,21 @@ private:
 inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "main",
     "  t-rank",
-    "  train boost",
-    "  train stumps",
-//  "    validate",
-    "    used samples",
-    "    used variables",
-    "    sums",
-    "    sorted used s.",
-    "    best split",
-    "  predict",
-    "  thread synch",
+    "  boost init",
+    "    stump init",
+    "  boost train",
+    "    stump train",
+//  "      validate",
+    "      used samples",
+    "      used variables",
+    "      sums",
+    "      sorted used s.",
+    "      best split",
+    "    stump predict",
+    "    thread synch",
+    "  boost predict",
+    "  test-1",
+    "  test-2",
+    "  test-3",
     "zero"
 };

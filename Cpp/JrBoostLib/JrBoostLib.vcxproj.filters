@@ -74,6 +74,9 @@
     <ClInclude Include="Assert.h">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="ParallelTrain.h">
+      <Filter>Trainer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">
@@ -115,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="TTest.cpp">
       <Filter>Extra</Filter>
+    </ClCompile>
+    <ClCompile Include="ParallelTrain.cpp">
+      <Filter>Trainer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

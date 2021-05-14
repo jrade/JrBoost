@@ -16,13 +16,6 @@ public:
 
     shared_ptr<BoostPredictor> train(const BoostOptions& opt) const;
 
-    ArrayXd trainAndEval(
-        CRefXXf testInData,
-        CRefXs testOutData,
-        const vector<BoostOptions>& opt,
-        function<Array3d(CRefXs, CRefXd)> lossFun
-    ) const;
-
  // deleted:
     BoostTrainer(const BoostTrainer&) = delete;
     BoostTrainer& operator=(const  BoostTrainer&) = delete;
@@ -44,4 +37,3 @@ private:
     const shared_ptr<StumpTrainer> baseTrainer_;
     const double lor0_;
 };
-

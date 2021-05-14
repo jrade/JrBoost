@@ -88,8 +88,8 @@ string PROFILE::RESULT()
         uint64_t itemCount = clock.itemCount();
         double adjustedClockCycleCount = clockCycleCount - adjustment * callCount;
 
-        ss << std::setw(22) << std::left << name << std::right;
         if (callCount != 0) {
+            ss << std::setw(24) << std::left << name << std::right;
             ss << std::setw(8) << std::fixed << std::setprecision(0) << 1e-6 * adjustedClockCycleCount;
             ss << "  ";
             ss << std::setw(4) << std::setprecision(1) << 100.0 * adjustedClockCycleCount / totalAdjustedClockCycleCount << "%";
@@ -97,8 +97,8 @@ string PROFILE::RESULT()
                 ss << "  ";
                 ss << std::setw(5) << adjustedClockCycleCount / itemCount;
             }
+            ss << endl;
         }
-        ss << endl;
     }
 
     ss << endl;

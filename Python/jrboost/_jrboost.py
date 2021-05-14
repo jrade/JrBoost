@@ -2,7 +2,7 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'minimizeGrid', 'minimizeDynamic', 'findPath']
+__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'minimizeGrid', 'minimizePopulation', 'findPath']
 
 import copy, os, random, warnings
 import numpy as np
@@ -10,14 +10,11 @@ import pandas as pd
 import jrboost
 
 
-def oneHotEncode(dataSeries, separator = None):
+def oneHotEncode(dataSeries):
 
     assert isinstance(dataSeries, pd.Series)
 
-    if separator is None:
-        labels = sorted(set([label.strip() for label in dataSeries]))
-    else:
-        labels = sorted(set([label.strip() for s in dataSeries for label in s.split(separator) ]))
+    labels = sorted(set([label.strip() for label in dataSeries]))
                     
     dataFrame = pd.DataFrame(
         index = dataSeries.index,
@@ -25,14 +22,9 @@ def oneHotEncode(dataSeries, separator = None):
         data = 0
     )
 
-    if separator is None:
-        for sample in dataSeries.index:
-            label = dataSeries[sample]
-            dataFrame.loc[sample, label.strip()] = 1
-    else:
-        for sample in dataSeries.index:
-            for label in dataSeries[sample].split(separator):
-                dataFrame.loc[sample, label.strip()] = 1
+    for sample in dataSeries.index:
+        label = dataSeries[sample]
+        dataFrame.loc[sample, label.strip()] = 1
 
     return dataFrame
 
@@ -104,7 +96,7 @@ def minimizeGrid(f, grid, param = {}):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def minimizeDynamic(f, grid, param):
+def minimizePopulation(f, grid, param):
 
     cycleCount = param['cycleCount']
     populationCount = param['populationCount']
@@ -165,6 +157,3 @@ def findPath(filePath):
         adjFilePath = '../' + adjFilePath
         i += 1
     return adjFilePath
-
-
-

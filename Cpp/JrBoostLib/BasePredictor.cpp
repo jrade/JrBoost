@@ -10,7 +10,7 @@
 
 void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
 {
-    PROFILE::PUSH(PROFILE::BOOST_PREDICT);
+    PROFILE::PUSH(PROFILE::STUMP_PREDICT);
     predict_(inData, c, outData);
     size_t sampleCount = inData.rows();
     PROFILE::POP(sampleCount);

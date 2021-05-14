@@ -9,8 +9,6 @@
 #include "StumpTrainer.h"
 #include "BasePredictor.h"
 #include "FastMath.h"
-#include "InterruptHandler.h"
-#include "SortedIndices.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights) :
@@ -23,6 +21,8 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     lor0_{ calculateLor0_() },
     baseTrainer_{ std::make_shared<StumpTrainer>(inData_, rawOutData_) }
 {
+    PROFILE::PUSH(PROFILE::BOOST_INIT);
+
     if (sampleCount_ == 0)
         throw std::invalid_argument("Train indata has 0 samples.");
     if (variableCount_ == 0)
@@ -43,6 +43,8 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
         if((*weights_ <= 0.0).any())
             throw std::invalid_argument("Train weights have non-positive values.");
     }
+
+    PROFILE::POP();
 }
 
 double BoostTrainer::calculateLor0_() const
@@ -58,6 +60,8 @@ double BoostTrainer::calculateLor0_() const
             - std::log(static_cast<double>((1 - rawOutData_).sum()))
         );
 }
+
+//----------------------------------------------------------------------------------------------------------------------
 
 shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 {
@@ -78,7 +82,7 @@ shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
     return pred;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//......................................................................................................................
 
 shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
 {
@@ -115,7 +119,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
     return std::make_shared<BoostPredictor>(variableCount_, lor0_, 2 * eta, std::move(basePredictors));
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//......................................................................................................................
 
 shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
 {
@@ -184,7 +188,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
     return std::make_shared<BoostPredictor>(variableCount_, lor0_, eta, std::move(basePredictors));
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//......................................................................................................................
 
 shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt) const
 {
@@ -253,76 +257,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
     return std::make_shared<BoostPredictor>(variableCount_, lor0_, (1.0 + gamma) * eta, std::move(basePredictors));
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-ArrayXd BoostTrainer::trainAndEval(
-    CRefXXf testInData,
-    CRefXs testOutData,
-    const vector<BoostOptions>& opt,
-    function<Array3d(CRefXs, CRefXd)> lossFun
-) const
-{
-    if (testInData.rows() == 0)
-        throw std::invalid_argument("Test indata has 0 samples.");
-
-    size_t optCount = opt.size();
-
-    // In each iteration of the loop we build and evaluate a classifier with one set of options
-    // Differents sets of options can take very different time.
-    // To ensure that the OMP threads are balanced we use dynamical scheduling and we sort the options objects
-    // from the most time-consuming to the least.
-    // In one test case, this decreased the time spent waiting at the barrier
-    // from 3.9% to 0.2% of the total execution time.
-
-    vector<size_t> optIndicesSortedByCost(optCount);
-    sortedIndices(
-        cbegin(opt), 
-        cend(opt),
-        begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -opt.cost(); }
-    );
-
-    ArrayXd scores(optCount);
-    std::exception_ptr ep;
-    atomic<bool> exceptionThrown = false;
-    
-    #pragma omp parallel
-    {
-        #pragma omp for nowait schedule(dynamic)
-        for (int i = 0; i < static_cast<int>(optCount); ++i) {
-
-            if (exceptionThrown) continue;
-
-            try {
-                if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
-
-                size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = train(opt[j]);
-                ArrayXd predData = pred->predict(testInData);
-                scores(j) = lossFun(testOutData, predData)(2);
-            }
-
-            catch (const std::exception&) {
-                #pragma omp critical
-                if (!exceptionThrown) {
-                    ep = std::current_exception();
-                    exceptionThrown = true;
-                }
-            }
-
-        } // don't wait here ...
-
-        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
-    } // ... but here so we can measure the wait time
-    PROFILE::POP();
-
-    if (exceptionThrown) std::rethrow_exception(ep);
-
-    return scores;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
+//......................................................................................................................
 
 void BoostTrainer::overflow_(const BoostOptions& opt)
 {

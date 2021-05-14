@@ -17,6 +17,8 @@ using tcBO = py::detail::type_caster<BoostOptions>;
 
 // This conversion may fail
 // Take care to provide clear error messages
+// By throwing exceptions instead of returning false, the user gets better error messages
+// (This also means that PyBind11 will not be able to handle muliple overloads.)
 
 bool tcBO::load(py::handle h, bool)
 {
@@ -30,7 +32,7 @@ bool tcBO::load(py::handle h, bool)
         throw std::invalid_argument(msg);
     }
 
-    value = fromPython_(pyOpt); 
+    value = fromPython_(pyOpt);
     // The macro PYBIND11_TYPE_CASTER defines a data member 'value' of type BoostOptions
     return true;
 }

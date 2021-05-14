@@ -14,7 +14,7 @@ using StatArray = Eigen::Array<AccScalar, 2, Eigen::Dynamic, Eigen::RowMajor>;
 
 ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
 {
-    size_t variableCount = inData.cols();
+    const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
     if((outData > 1).any())
@@ -114,9 +114,9 @@ ArrayXs tTestRank(
 )
 {
     PROFILE::PUSH(PROFILE::T_RANK);
-    size_t sampleCount = optSamples ? optSamples->size() : static_cast<size_t>(inData.rows());
-    size_t variableCount = inData.cols();
-    size_t ITEM_COUNT = sampleCount * variableCount;
+    const size_t sampleCount = optSamples ? optSamples->size() : static_cast<size_t>(inData.rows());
+    const size_t variableCount = inData.cols();
+    const size_t ITEM_COUNT = sampleCount * variableCount;
 
     ArrayXf t = tStatistic(inData, outData, optSamples);
 
