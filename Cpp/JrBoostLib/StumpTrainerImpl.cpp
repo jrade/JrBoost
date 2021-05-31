@@ -376,12 +376,13 @@ void StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCoun
     auto p0 = cbegin(sortedSamples_[j]);
     auto q0 = begin(sortedUsedSamples_);
     auto q1 = end(sortedUsedSamples_);
+    auto m = cbegin(usedSampleMask_);
 
     while (q0 != q1) {
         SampleIndex i = *p0;
         *q0 = i;
         ++p0;
-        q0 += usedSampleMask_[i];
+        q0 += m[i];
     }
 }
 
