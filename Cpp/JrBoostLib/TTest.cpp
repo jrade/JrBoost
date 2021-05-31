@@ -7,13 +7,18 @@
 #include "SortedIndices.h"
 
 
-using AccScalar = float;
 using DataArray = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using StatArray = Eigen::Array<AccScalar, 2, Eigen::Dynamic, Eigen::RowMajor>;
+using StatArray = Eigen::Array<double, 2, Eigen::Dynamic, Eigen::RowMajor>;
+
+
+inline size_t divideRoundUp(size_t a, size_t b)
+{
+    return (a + b - 1) / b;
+}
 
 
 ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
-{
+{        
     const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
@@ -48,15 +53,19 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
 
     ArrayXf t(variableCount);
 
-    AccScalar a = sqrt(
-        (n(0) + n(1) - AccScalar(2))
+    double a = sqrt(
+        (n(0) + n(1) - 2.0)
         /
-        (AccScalar(1) / n(0) + AccScalar(1) / n(1))
+        (1.0 / n(0) + 1.0 / n(1))
     );
 
-    const size_t blockWidth = 256;
-    const size_t blockCount = (variableCount + blockWidth - 1) / blockWidth;
-    ASSERT(blockCount == static_cast<int>(blockCount));
+    // one block per thread...
+    size_t blockCount = omp_get_max_threads();
+    size_t blockWidth = divideRoundUp(variableCount, blockCount);
+    // ... but avoid too small blocks
+    const size_t minBlockWidth = 1024;
+    blockWidth = minBlockWidth * divideRoundUp(blockWidth, minBlockWidth);
+    blockCount = divideRoundUp(variableCount, blockWidth);
 
 #pragma omp parallel
     {
@@ -75,22 +84,22 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
             Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
             Eigen::Ref<ArrayXf> tBlock(t.segment(j0, j1 - j0));
 
-            meanBlock = AccScalar(0);
+            meanBlock = 0.0;
             for (size_t i: samples) {
                 size_t s = outData(i);
-                meanBlock.row(s) += inDataBlock.row(i).cast<AccScalar>();
+                meanBlock.row(s) += inDataBlock.row(i).cast<double>();
             }
-            meanBlock.colwise() /= n.cast<AccScalar>();
+            meanBlock.colwise() /= n.cast<double>();
 
-            ssBlock = AccScalar(0);
+            ssBlock = 0.0;
             for (size_t i : samples) {
                 size_t s = outData(i);
-                ssBlock.row(s) += (inDataBlock.row(i).cast<AccScalar>() - meanBlock.row(s)).square();
+                ssBlock.row(s) += (inDataBlock.row(i).cast<double>() - meanBlock.row(s)).square();
             }
 
             tBlock = (
                 a * (meanBlock.row(1) - meanBlock.row(0))
-                / (ssBlock.row(0) + ssBlock.row(1) + numeric_limits<AccScalar>::min()).sqrt()
+                / (ssBlock.row(0) + ssBlock.row(1) + numeric_limits<float>::min()).sqrt()
             ).cast<float>();
         }
     }
