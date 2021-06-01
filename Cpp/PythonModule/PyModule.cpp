@@ -73,10 +73,11 @@ PYBIND11_MODULE(_jrboostext, mod)
     // Loss functions
 
     mod.def("errorCount", &errorCount, py::arg(), py::arg(), py::arg("threshold") = 0.5);
-    mod.def("senseSpec", &senseSpec, py::arg(), py::arg(), py::arg("threshold") = 0.5);
+    mod.def("accuracy", &accuracy, py::arg(), py::arg(), py::arg("threshold") = 0.5);
     mod.def("linLoss", &linLoss);
     mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.1);
     mod.def("auc", &auc);
+    mod.def("aoc", &aoc);
     mod.def("negAuc", &negAuc);
 
     py::class_<ErrorCount>{ mod, "ErrorCount" }
@@ -84,10 +85,10 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("__call__", &ErrorCount::operator())
         .def_property_readonly("name", &ErrorCount::name);
 
-    py::class_<SenseSpec>{ mod, "SenseSpec" }
+    py::class_<Accuracy>{ mod, "Accuracy" }
         .def(py::init<double>())
-        .def("__call__", &SenseSpec::operator())
-        .def_property_readonly("name", &SenseSpec::name);
+        .def("__call__", &Accuracy::operator())
+        .def_property_readonly("name", &Accuracy::name);
 
     py::class_<LogLoss>{ mod, "LogLoss" }
         .def(py::init<double>())

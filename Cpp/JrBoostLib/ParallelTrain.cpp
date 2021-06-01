@@ -130,7 +130,7 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
 
 ArrayXd parallelTrainAndEval(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, function<Array3d(CRefXs, CRefXd)> lossFun
+    CRefXXf testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
 )
 {
     size_t optCount = opt.size();
@@ -161,7 +161,7 @@ ArrayXd parallelTrainAndEval(
                 size_t j = optIndicesSortedByCost[i];
                 shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);    // may also throw
                 ArrayXd predData = pred->predict(testInData);
-                scores(j) = lossFun(testOutData, predData)(2);
+                scores(j) = lossFun(testOutData, predData);
             }
 
             catch (const std::exception&) {

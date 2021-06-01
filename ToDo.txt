@@ -1,29 +1,23 @@
-improved score functions and classes
+later: merge feature branch example-cleanup
 
-	1. simple API: functions and callable objects that return a single number (to be minimized)
+clean up Higgs
+	what should the train() function return?
 
-			logLoss
-			LogLoss
-			auc
-			aoc
-			negAuc etc
+clean up Otto
 
-	2. advanced API: objects that return all info needed for a log:
+================================================================================================
 
-			class AbstractScoreExt {
-				enum SummaryMode { sum, mean, none };
-				virtual const string& name() const;
-				virtual const vector<string>& header() const;
-				virtual vector<double> score(outData, predData) const;
-				SummaryMode summaryMode() const;
-			}
+trees
+	for the time being, control with a preprocessor macro in BoostTrainer.h
+		later add a dispatcher (based on tree depth parameter)
 
+	allocate nodes with memory pool (use std::pmr::monotonic_buffer_resource)
 
-make Iris, Otto and Higgs run again
-	Higgs train function should return classifier and cutoff
+	also pruning
+
+================================================================================================
 
 possible optimizations
-	test usedSampleMask_ ->  pUsedSampleMask in StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_
 	test PGO again
 	test narrower type for strata
 	float or double for outdata and weights?
@@ -87,9 +81,6 @@ Otto:
 
 U-test (with correct handling of ties)
 
-trees
-	allocate nodes with memory pool (use std::pmr::monotonic_buffer_resource)
-	also pruning
 
 histogram based stumps (would speed up Otto a lot)
 
@@ -130,6 +121,8 @@ low prio:
 	better error messages when converting arguments to BoostTrainer::train
 
 	profiling system that distinguishes between time in parallellized and non-parallellized code
+
+	multinomial classification
 
 ======================================================================================
 	

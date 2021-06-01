@@ -18,7 +18,7 @@ inline void lossFunValidate_(CRefXs outData, CRefXd predData)
 }
 
 
-inline Array3d errorCount(CRefXs outData, CRefXd predData, double threshold = 0.5)
+inline double errorCount(CRefXs outData, CRefXd predData, double threshold = 0.5)
 {
     lossFunValidate_(outData, predData);
     if (!(threshold > 0 && threshold < 1.0))
@@ -26,15 +26,10 @@ inline Array3d errorCount(CRefXs outData, CRefXd predData, double threshold = 0.
 
     const size_t falsePos = (((1 - outData) * (predData >= threshold).cast<size_t>()).sum());
     const size_t falseNeg = ((outData * (predData < threshold).cast<size_t>()).sum());
-
-    return { 
-        static_cast<double>(falsePos),
-        static_cast<double>(falseNeg),
-        static_cast<double>(falsePos + falseNeg)
-    };
+    return static_cast<double>(falsePos + falseNeg);
 }
 
-inline Array3d senseSpec(CRefXs outData, CRefXd predData, double threshold = 0.5)
+inline double accuracy(CRefXs outData, CRefXd predData, double threshold = 0.5)
 {
     lossFunValidate_(outData, predData);
     if (!(threshold > 0 && threshold < 1.0))
@@ -45,33 +40,29 @@ inline Array3d senseSpec(CRefXs outData, CRefXd predData, double threshold = 0.5
     const size_t truePos = (outData * (predData >= threshold).cast<size_t>()).sum();
     const size_t trueNeg = ((1 - outData) * (predData < threshold).cast<size_t>()).sum();
 
-    return {
-        static_cast<double>(truePos) / pos,
-        static_cast<double>(trueNeg) / neg,
-        static_cast<double>(truePos + trueNeg) / (pos + neg)
-    };
+    return static_cast<double>(truePos + trueNeg) / (pos + neg);
 }
 
-inline Array3d linLoss(CRefXs outData, CRefXd predData)
+inline double linLoss(CRefXs outData, CRefXd predData)
 {
     lossFunValidate_(outData, predData);
     const double falsePos = ((1 - outData).cast<double>() * predData).sum();
     const double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
-    return { falsePos, falseNeg, falsePos + falseNeg };
+    return falsePos + falseNeg;
 }
 
-inline Array3d logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
+inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
 {
     lossFunValidate_(outData, predData);
     if (!(gamma > 0 && gamma <= 1.0))
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     const double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     const double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
-    return { falsePos, falseNeg, falsePos + falseNeg };
+    return falsePos + falseNeg;
 }
 
 
-inline Array3d auc(CRefXs outData, CRefXd predData)
+inline double auc(CRefXs outData, CRefXd predData)
 {
     lossFunValidate_(outData, predData);
 
@@ -93,12 +84,37 @@ inline Array3d auc(CRefXs outData, CRefXd predData)
         b += y * a;
     }
     double auc = static_cast<double>(b) / (static_cast<double>(a) * static_cast<double>(sampleCount - a));
-    const double nan = numeric_limits<double>::quiet_NaN();
-    return { nan, nan, auc };
+    return auc;
 }
 
 
-inline Array3d negAuc(CRefXs outData, CRefXd predData)
+inline double aoc(CRefXs outData, CRefXd predData)
+{
+    lossFunValidate_(outData, predData);
+
+    const size_t sampleCount = outData.rows();
+
+    vector<pair<size_t, double>> tmp(sampleCount);
+    for (size_t i = 0; i < sampleCount; ++i)
+        tmp[i] = { outData[i], predData[i] };
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
+
+    size_t a = 0;
+    size_t b = 0;
+    for (auto [y, pred] : tmp) {
+        //if (y == 0)
+        //    b += a;
+        //else
+        //    a += 1;
+        a += y;
+        b += (1 - y) * a;
+    }
+    double auc = static_cast<double>(b) / (static_cast<double>(a) * static_cast<double>(sampleCount - a));
+    return auc;
+}
+
+
+inline double negAuc(CRefXs outData, CRefXd predData)
 {
     return -auc(outData, predData);
 }
@@ -113,7 +129,7 @@ public:
             throw std::invalid_argument("threshold must lie in the interval (0.0, 1.0).");
     }
 
-    Array3d operator()(CRefXs outData, CRefXd predData) const
+    double operator()(CRefXs outData, CRefXd predData) const
     {
         return errorCount(outData, predData, threshold_);
     }
@@ -130,23 +146,23 @@ private:
 };
 
 
-class SenseSpec {
+class Accuracy {
 public:
-    SenseSpec(double threshold) : threshold_(threshold)
+    Accuracy(double threshold) : threshold_(threshold)
     {
         if (!(threshold > 0 && threshold < 1.0))
             throw std::invalid_argument("threshold must lie in the interval (0.0, 1.0).");
     }
 
-    Array3d operator()(CRefXs outData, CRefXd predData) const
+    double operator()(CRefXs outData, CRefXd predData) const
     {
-        return senseSpec(outData, predData, threshold_);
+        return accuracy(outData, predData, threshold_);
     }
 
     string name() const
     {
         stringstream ss;
-        ss << "sens-spec(" << threshold_ << ")";
+        ss << "accuracy(" << threshold_ << ")";
         return ss.str();
     }
 
@@ -163,7 +179,7 @@ public:
             throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     }
 
-    Array3d operator()(CRefXs outData, CRefXd predData) const
+    double operator()(CRefXs outData, CRefXd predData) const
     {
         return logLoss(outData, predData, gamma_);
     }

@@ -20,5 +20,5 @@ ArrayXXd parallelTrainAndPredict(
 
 ArrayXd parallelTrainAndEval(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, function<Array3d(CRefXs, CRefXd)> lossFun
+    CRefXXf testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
 );
