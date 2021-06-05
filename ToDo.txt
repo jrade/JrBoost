@@ -1,11 +1,9 @@
+
 later: merge feature branch example-cleanup
 
-clean up Higgs
-	what should the train() function return?
-
-clean up Otto
-
 ================================================================================================
+
+is there any need for the fudge term in the t- and F-test?
 
 trees
 	for the time being, control with a preprocessor macro in BoostTrainer.h
@@ -80,7 +78,6 @@ Otto:
 =====================================================================
 
 U-test (with correct handling of ties)
-
 
 histogram based stumps (would speed up Otto a lot)
 

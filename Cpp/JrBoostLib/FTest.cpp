@@ -3,7 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
-#include "TTest.h"
+#include "FTest.h"
 #include "SortedIndices.h"
 
 
@@ -21,13 +21,11 @@ inline size_t divideRoundUp(size_t a, size_t b)
 }
 
 
-ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
+ArrayXf fStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
 {        
     const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
-    if((outData > 1).any())
-        throw std::invalid_argument("Outdata has values that are not 0 or 1.");
 
     ArrayXs samples;
     size_t sampleCount;
@@ -42,31 +40,35 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
             samples(i) = i;
     }
 
-    if (sampleCount < 3)
-        throw std::invalid_argument("Unable to do t-test: There must be at least three samples.");
+    size_t groupCount = 0;
+    for (size_t i : samples)
+        groupCount = std::max(groupCount, outData(i));
+    groupCount += 1;
 
+    if (groupCount < 2)
+        throw std::invalid_argument("Unable to do F-test: There must be at least two groups.");
+    if (sampleCount <= groupCount)
+        throw std::invalid_argument("Unable to do F-test: There must be more samples than groups.");
 
-    ArrayXs n = { {0, 0} };
+    ArrayXs n = ArrayXs::Zero(groupCount);
     for (size_t i : samples) {
         size_t s = outData(i);
         ++n(s);
     }
-    // n(0) + n(1) = sampleCount
+    // n.sum() == sampleCount
 
-    if (n(0) == 0)
-        throw std::invalid_argument("Unable to do t-test: First group is empty.");
-    if (n(1) == 0)
-        throw std::invalid_argument("Unable to do t-test: Second group is empty.");
+    if (n.minCoeff() == 0)
+        for (size_t i = 0; i < groupCount; ++i)
+            if (n(i) == 0)
+                throw std::invalid_argument(
+                    "Unable to do F-test: The group with index " + std::to_string(i) + " is empty."
+                );
 
-    ArrayXf t(variableCount);
+  
+    ArrayXf f(variableCount);
+    const AccType a = static_cast<AccType>(sampleCount - groupCount) / static_cast<AccType>(groupCount - 1);
+    const AccType c = static_cast<AccType>(sampleCount) * numeric_limits<AccType>::epsilon();
 
-    const AccType a = sqrt(
-        (sampleCount - AccType(2))
-        /
-        (AccType(1) / n(0) + AccType(1) / n(1))
-    );
-
-    const AccType c = sampleCount * numeric_limits<AccType>::epsilon();
 
     // one block per thread...
     size_t blockCount = omp_get_max_threads();
@@ -78,9 +80,9 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
 
 #pragma omp parallel
     {
-        StatArray mean(2, blockWidth);
+        StatArray mean(groupCount, blockWidth);
         StatArray totalMean(1, blockWidth);
-        StatArray ss(2, blockWidth);
+        StatArray ss(groupCount, blockWidth);
 
 #pragma omp for
         for (int k = 0; k < static_cast<int>(blockCount); ++k) {
@@ -88,10 +90,10 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
             const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
             Eigen::Ref<const DataArray> inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
-            Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, 2, j1 - j0));
+            Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, groupCount, j1 - j0));
             Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
-            Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
-            Eigen::Ref<ArrayXf> tBlock(t.segment(j0, j1 - j0));
+            Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, groupCount, j1 - j0));
+            Eigen::Ref<ArrayXf> fBlock(f.segment(j0, j1 - j0));
 
             meanBlock = AccType(0);
             for (size_t i: samples) {
@@ -106,71 +108,55 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
                 ssBlock.row(s) += (inDataBlock.row(i).cast<AccType>() - meanBlock.row(s)).square();
             }
 
-            totalMeanBlock = (n(0) * meanBlock.row(0) + n(1) * meanBlock.row(1)) / sampleCount;
+            totalMeanBlock = (meanBlock.colwise() * n.cast<AccType>()).colwise().sum() / sampleCount;
 
-            tBlock = (
+            fBlock = (
                 a
                 *
-                (meanBlock.row(1) - meanBlock.row(0))
+                (
+                    (meanBlock.rowwise() - totalMeanBlock.row(0)).square().colwise()
+                    *
+                    n.cast<AccType>()
+                ).colwise().sum()
                 /
                 (
-                    ssBlock.row(0) + ssBlock.row(1)
+                    ssBlock.colwise().sum()
                     +
-                    c * totalMeanBlock.square()             // fudge term
-                ).sqrt()
+                    c * totalMeanBlock.square()     // fudge term
+                )
             ).cast<float>();
         }
     }
 
-    if (!(t.abs() < numeric_limits<float>::infinity()).all()) {
+    if (!(f.abs() < numeric_limits<float>::infinity()).all()) {
         if (!(inData.abs() < numeric_limits<float>::infinity()).all())
             throw std::invalid_argument("Indata has values that are infinity or NaN.");
         else
             // The fudge term should usually prevent this from happening
-            throw std::overflow_error("Numerical overflow when calculating the t-statistic.");
+            throw std::overflow_error("Numerical overflow when calculating the F-statistic.");
     }
 
-    return t;
+    return f;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs tTestRank(
+ArrayXs fTestRank(
     Eigen::Ref<const DataArray> inData,
     CRefXs outData,
-    optional<CRefXs> optSamples,
-    TestDirection testDirection
+    optional<CRefXs> optSamples
 )
 {
-    PROFILE::PUSH(PROFILE::T_RANK);
-    const size_t sampleCount = optSamples ? optSamples->size() : static_cast<size_t>(inData.rows());
     const size_t variableCount = inData.cols();
-    const size_t ITEM_COUNT = sampleCount * variableCount;
-
-    ArrayXf t = tStatistic(inData, outData, optSamples);
-
-    switch (testDirection) {
-    case TestDirection::Up:
-        break;
-    case TestDirection::Down:
-        t = -t;
-        break;
-    case TestDirection::Any:
-        t = t.abs();
-        break;
-    default:
-        ASSERT(false);
-    }
-
+    const ArrayXf f = fStatistic(inData, outData, optSamples);
     ArrayXs ind(variableCount);
+
     sortedIndices(
-        &t(0),
-        &t(0) + variableCount,
+        &f(0),
+        &f(0) + variableCount,
         &ind(0),
         [](auto x) { return -x; }
     );
-
-    PROFILE::POP(ITEM_COUNT);
 
     return ind;
 }

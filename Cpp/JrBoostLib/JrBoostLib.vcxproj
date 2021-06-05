@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClInclude Include="EnsemblePredictor.h" />
     <ClInclude Include="FastMath.h" />
+    <ClInclude Include="FTest.h" />
     <ClInclude Include="InterruptHandler.h" />
     <ClInclude Include="ParallelTrain.h" />
     <ClInclude Include="pdqsort.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="BoostTrainer.cpp" />
     <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="EnsemblePredictor.cpp" />
+    <ClCompile Include="FTest.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

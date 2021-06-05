@@ -10,6 +10,7 @@
 #include "../JrBoostLib/Paralleltrain.h"
 #include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/TTest.h"
+#include "../JrBoostLib/FTest.h"
 #include "PyBoostOptions.h"
 #include "PyInterruptHandler.h"
 
@@ -105,6 +106,9 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     mod.def("tTestRank", &tTestRank,
         py::arg(), py::arg(), py::arg("samples") = optional<CRefXs>(), py::arg("direction") = TestDirection::Any);
+
+    mod.def("fTestRank", &fTestRank,
+        py::arg(), py::arg(), py::arg("samples") = optional<CRefXs>());
 
 
     // Profiling
