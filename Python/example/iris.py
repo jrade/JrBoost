@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import jrboost
 
-PROFILE = jrboost.PROFILE
+PROFILE = jrboost.PROFILEs
 
 #-----------------------------------------------------------------------------------------------------------------------
 

@@ -15,6 +15,10 @@
 #include "PyInterruptHandler.h"
 
 
+inline py::bytes predictorGetState(const Predictor& pred);
+template<typename T> inline shared_ptr<T> predictorSetState(const py::bytes& s);
+
+
 PYBIND11_MODULE(_jrboostext, mod)
 {
     namespace py = pybind11;
@@ -35,6 +39,7 @@ PYBIND11_MODULE(_jrboostext, mod)
     mod.def("getThreadCount", &omp_get_max_threads);
     mod.def("setThreadCount", &omp_set_num_threads);
     mod.attr("eigenVersion") = py::str(eigenVersion);
+    mod.attr("pybind11Version") = py::str(pybind11Version);
 
 
     // Predictors
@@ -42,13 +47,15 @@ PYBIND11_MODULE(_jrboostext, mod)
     py::class_<Predictor, shared_ptr<Predictor>>{ mod, "Predictor" }
         .def("variableCount", &Predictor::variableCount)
         .def("predict", &Predictor::predict)
-        .def("save", static_cast<void(Predictor::*)(const string&) const>(&Predictor::save))
-        .def_static("load", static_cast<shared_ptr<Predictor>(*)(const string&)>(&Predictor::load));
+        .def("save", py::overload_cast<const string&>(&Predictor::save, py::const_))
+        .def_static("load", py::overload_cast<const string&>(&Predictor::load));
 
     py::class_<EnsemblePredictor, shared_ptr<EnsemblePredictor>, Predictor>{ mod, "EnsemblePredictor" }
-        .def(py::init<const vector<shared_ptr<Predictor>>&>());
+        .def(py::init<const vector<shared_ptr<Predictor>>&>())
+        .def(py::pickle(&predictorGetState, &predictorSetState<EnsemblePredictor>));
 
-    py::class_<BoostPredictor, shared_ptr<BoostPredictor>, Predictor>{ mod, "BoostPredictor" };
+    py::class_<BoostPredictor, shared_ptr<BoostPredictor>, Predictor>{ mod, "BoostPredictor" }
+        .def(py::pickle(&predictorGetState, &predictorSetState<BoostPredictor>));
 
 
     // Boost trainer
@@ -132,4 +139,25 @@ PYBIND11_MODULE(_jrboostext, mod)
         .value("TEST2", PROFILE::TEST2)
         .value("TEST3", PROFILE::TEST3)
         .export_values();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+inline py::bytes predictorGetState(const Predictor& pred)
+{
+    stringstream ss;
+    ss.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+    pred.save(ss);
+    return static_cast<py::bytes>(ss.str());
+}
+
+template<typename T>
+inline shared_ptr<T> predictorSetState(const py::bytes& b)
+{
+    stringstream ss(static_cast<string>(b));
+    ss.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
+    shared_ptr<Predictor> pred = Predictor::load(ss);
+    shared_ptr<T> tPred = std::dynamic_pointer_cast<T>(pred);
+    ASSERT(tPred);
+    return tPred;
 }

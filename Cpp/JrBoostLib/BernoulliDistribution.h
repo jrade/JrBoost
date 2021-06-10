@@ -14,7 +14,7 @@ public:
 		assert(0 <= k && k <= n);
 	}
 
-	template<class R>
+	template<typename R>
 	bool operator()(R& r)
 	{
 		double a = static_cast<double>(r() - R::min());
@@ -63,7 +63,7 @@ public:
 		assert(0 <= k && k <= n);
 	}
 
-	template<class R>
+	template<typename R>
 	bool operator()(R& r)
 	{
 		uint64_t a = r() - R::min();

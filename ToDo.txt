@@ -1,9 +1,10 @@
 
+predict overload that that takes a onedim array abd return a double
+is there any need for the fudge term in the t- and F-test? 
+
+===============================================================================================
+
 later: merge feature branch example-cleanup
-
-================================================================================================
-
-is there any need for the fudge term in the t- and F-test?
 
 trees
 	for the time being, control with a preprocessor macro in BoostTrainer.h

@@ -69,9 +69,12 @@ def stratifiedRandomSplit(outData, ratio, samples = None):
             trainSamples.append(i)
             theta -= 1.0
         else:
-            testSampes.append(i)
+            testSamples.append(i)
 
-    return np.array(sorted(trainSamples)), np.array(sorted(testSamples))
+    trainSamples = np.array(sorted(trainSamples))
+    testSamples = np.array(sorted(testSamples))
+
+    return trainsamples, testSamples
 
 #-----------------------------------------------------------------------------------------------------------------------
 
