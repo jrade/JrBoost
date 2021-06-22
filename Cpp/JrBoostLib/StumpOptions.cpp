@@ -6,6 +6,13 @@
 #include "StumpOptions.h"
 
 
+void StumpOptions::setMaxDepth(size_t d)
+{
+    if (d <= 0)
+        throw std::invalid_argument("maxDepth must be positive.");
+    maxDepth_ = d;
+}
+
 void StumpOptions::setUsedSampleRatio(double r)
 {
     if (!(r >= 0.0 && r <= 1.0))
@@ -22,7 +29,7 @@ void StumpOptions::setUsedVariableRatio(double r)
 
 void StumpOptions::setTopVariableCount(size_t n)
 {
-    if (!(n > 0))
+    if (n <= 0)
         throw std::invalid_argument("topVariableCount must be positive.");
     topVariableCount_ = n;
 }
@@ -43,7 +50,7 @@ void StumpOptions::setMinRelSampleWeight(double w)
 
 void StumpOptions::setMinNodeSize(size_t n)
 {
-    if (!(n > 0))
+    if (n <= 0)
         throw std::invalid_argument("minNodeSize must be positive.");
     minNodeSize_ = n;
 }

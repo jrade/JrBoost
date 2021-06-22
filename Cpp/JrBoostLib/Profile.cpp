@@ -97,15 +97,15 @@ string PROFILE::RESULT()
                 ss << "  ";
                 ss << std::setw(5) << adjustedClockCycleCount / itemCount;
             }
-            ss << endl;
+            ss << '\n';
         }
     }
 
-    ss << endl;
-    //ss << "zero calibration: " << adjustment << endl;
+    ss << '\n';
+    //ss << "zero calibration: " << adjustment << '\n';
     ss << "profiling overhead: "
-        << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << endl;
-    ss << "slow branch: " << (100.0 * SLOW_BRANCH_COUNT) / SPLIT_ITERATION_COUNT << "%" << endl;
+        << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
+    ss << "slow branch: " << (100.0 * SLOW_BRANCH_COUNT) / SPLIT_ITERATION_COUNT << "%" << '\n';
 
     for (int id = 0; id < CLOCK_COUNT; ++id)
         clocks_[id].reset();

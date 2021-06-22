@@ -20,7 +20,7 @@ namespace pybind11::detail
         static py::handle cast(const BoostOptions& opt, py::return_value_policy, py::handle /*parent*/);
 
     private:
-        using PyBoostOptions_ = map<string, variant<bool, size_t, double>>;
+        using PyBoostOptions_ = map<string, std::variant<bool, size_t, double>>;
         static BoostOptions fromPython_(const PyBoostOptions_& param);
         static PyBoostOptions_ toPython_(const BoostOptions& opt);
     };

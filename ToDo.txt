@@ -1,25 +1,72 @@
 
-trees
-	just copy stump trainer and rename it tree trainer
-	add a depth parameter
-	dispatch based on this parameter?
+ major tasks:
+	variable importance weights
+	clean up Higgs and Otto
+	BART
+	histogram based stumps (would speed up Otto a lot)
+	gradient boost
 
-later:
-	allocate nodes with memory pool (use std::pmr::monotonic_buffer_resource)
-	also pruning
+========================================================================
 
-finally:
-	review friend declarations in class PROFILE
+Trees:
+
+	do next:
+
+		review all code
+
+		node buffers outside of splitfinders
+			sortedSamplesByNodeBuffers
+			unusedSampleBuffer
+
+		no need for split finders in static storage
+
+		sampleCountByStatus in static storage
+
+		fast distribute samples for d = 0
+
+		sampleStatus as size_t
+
+		fix profiling
+		fix iterationCount and slowBranchCount
+
+		TreePredictor::Node -> TreeNode, replace #include "TreePredictor.h" by forward declarations
+
+
+	profile and optimize
+		distributeSamples() is a bit slow
+			filter the samples first
+		is sorted active samples pruning a good idea?? test this later?
+
+	more testing
+
+	parameters:
+		decrease top variable count
+		increase cycle count
+
+	implement pruning
+				
+	implementation notes:
+		where to init sums? or carry them over?
+
+	later:
+		usedVariables per level option?
+		tree pruning
+			keep the pruning completely outside StumpTrainer
+
+	finally:
+		ditch StumpTrainer?
+			first make sure TreeTrainer with depth = 1 is as fast as StumpTrainer
+		StumpOptions -> TreeOptions
+		review friend declarations in class PROFILE
+
+	are static thread_local buffers worth the trouble?
 
 ============================================================================================
 
-predict overload that that takes a onedim array and returns a double
+predict overload that that takes a one-dim array and returns a double (use in QD Demo)
 
 is there any need for the fudge term in the t- and F-test? 
-
-===============================================================================================
-
-later: merge feature branch example-cleanup
+	How large should the fudge term be?
 
 ================================================================================================
 
@@ -44,33 +91,27 @@ Eigen:
 		compiles
 	pass Ref<const Array> by const ref?
 
-========================================================================
 
-need to move on with
-	trees
-	histogram based stumps (would speed up Otto a lot)
-	gradient boost
-	BART
+should score > bestScore be replaced by something stricter?
+	make init value of bestScore slightly larger?
 
 ========================================================================
 	
 Higgs:
-	run with LOR and median
-	plot the result
-	draw a line in the plot that marks the estimated cutoff
-	should we use a 0 cutoff?
-	implement the AMS loss function
-	run with CV - ignore the test datasets
-	AUC as optimization target
-		better cv + AUC implementation?
-	percentage threshold
+	set up to run with the original kaggle files
 
-	maybe put together three things:
-		winning contribution
-		winning contribution with xgboost replaced by jrboost
-		winning contribution with jrboost and smart training algorithm
-		winning submission is written in lisp!!
-			https://github.com/melisgl/higgsml
+	two modes:
+		cv and submitt to kaggle server
+		nested cv
+			test 3 outer and 2 inner folds
+		load function with random sampling for testing
+
+	use weights when building predictor
+
+
+	do some profiling with different numbers of train samples
+		how long does it take to load file?
+			transform to binary format?
 
 Otto:
 	run an explorative round with full dataset
@@ -86,8 +127,6 @@ Otto:
 =====================================================================
 
 U-test (with correct handling of ties)
-
-histogram based stumps (would speed up Otto a lot)
 
 gradient boost
 	read xgb paper and Friedman to check that my understanding is correct

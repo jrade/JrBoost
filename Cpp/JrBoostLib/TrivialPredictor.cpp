@@ -22,20 +22,15 @@ void TrivialPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 
 void TrivialPredictor::save_(ostream& os) const
 {
-    const uint8_t type = Trivial;
+    const int type = Trivial;
     os.put(static_cast<char>(type));
-
-    const uint8_t version = 1;
-    os.put(static_cast<char>(version));
 
     os.write(reinterpret_cast<const char*>(&y_), sizeof(y_));
 }
 
-unique_ptr<BasePredictor> TrivialPredictor::load_(istream& is)
+unique_ptr<BasePredictor> TrivialPredictor::load_(istream& is, int version)
 {
-    uint8_t version = static_cast<uint8_t>(is.get());
-    if (version != 1)
-        parseError_();
+    if (version < 2) is.get();
 
     float y;
     is.read(reinterpret_cast<char*>(&y), sizeof(y));

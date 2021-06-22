@@ -262,7 +262,7 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& op
             if (k[1] == 0 && n[1] > 0) k[1] = 1;
             usedSampleCount = k[0] + k[1];
 
-            const size_t* s = &reinterpret_cast<const RefXs&>(strata_)(0);  // Eigen bug workaround
+            const size_t* s = &strata_.coeffRef(0);
             for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
                 size_t stratum = *s;
                 ++s;

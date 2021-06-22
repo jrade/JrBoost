@@ -33,7 +33,7 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
 
     vector<shared_ptr<BoostPredictor>> pred(optCount);
     std::exception_ptr ep;
-    atomic<bool> exceptionThrown = false;
+    std::atomic<bool> exceptionThrown = false;
 
 #pragma omp parallel
     {
@@ -89,7 +89,7 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
 
     ArrayXXd predData(sampleCount, optCount);
     std::exception_ptr ep;
-    atomic<bool> exceptionThrown = false;
+    std::atomic<bool> exceptionThrown = false;
 
 #pragma omp parallel
     {
@@ -145,7 +145,7 @@ ArrayXd parallelTrainAndEval(
 
     ArrayXd scores(optCount);
     std::exception_ptr ep;
-    atomic<bool> exceptionThrown = false;
+    std::atomic<bool> exceptionThrown = false;
 
 #pragma omp parallel
     {

@@ -28,11 +28,8 @@ ArrayXd EnsemblePredictor::predict_(CRefXXf inData) const
 
 void EnsemblePredictor::save_(ostream& os) const
 {
-    const uint8_t type = Ensemble;
+    const int type = Ensemble;
     os.put(static_cast<char>(type));
-
-    const uint8_t version = 1;
-    os.put(static_cast<char>(version));
 
     const uint32_t n = static_cast<uint32_t>(predictors_.size());
     os.write(reinterpret_cast<const char*>(&n), sizeof(n));
@@ -40,16 +37,16 @@ void EnsemblePredictor::save_(ostream& os) const
         predictors_[i]->save_(os);
 }
 
-shared_ptr<Predictor> EnsemblePredictor::load_(istream& is)
+shared_ptr<Predictor> EnsemblePredictor::load_(istream& is, int version)
 {
-    uint8_t version = static_cast<uint8_t>(is.get());
-    if (version != 1)
-        parseError_();
+    if (version < 2) is.get();
 
     uint32_t n;
     is.read(reinterpret_cast<char*>(&n), sizeof(n));
+
     vector<shared_ptr<Predictor>> predictors(n);
     for (uint32_t i = 0; i < n; ++i)
-        predictors[i] = Predictor::load_(is);
+        predictors[i] = Predictor::load_(is, version);
+
     return std::make_shared<EnsemblePredictor>(predictors);
 }

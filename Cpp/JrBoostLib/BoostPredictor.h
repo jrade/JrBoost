@@ -25,7 +25,7 @@ private:
     virtual void save_(ostream& os) const;
 
     friend class Predictor;
-    static shared_ptr<Predictor> load_(istream& is);
+    static shared_ptr<Predictor> load_(istream& is, int version);
 
     size_t variableCount_;
     float c0_;

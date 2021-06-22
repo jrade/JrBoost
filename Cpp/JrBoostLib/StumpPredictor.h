@@ -15,11 +15,12 @@ public:
 private:
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
 
-    friend class BasePredictor;
-    static unique_ptr<BasePredictor> load_(istream& is);
-
     virtual void save_(ostream& os) const;
 
+    friend class BasePredictor;
+    static unique_ptr<BasePredictor> load_(istream& is, int version);
+
+private:
     uint32_t j_;
     float x_;
     float leftY_;

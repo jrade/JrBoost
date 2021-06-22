@@ -104,7 +104,7 @@ def minimizePopulation(f, grid, param):
     cycleCount = param['cycleCount']
     populationCount = param['populationCount']
     survivorCount = param['survivorCount']
-    bestCount = param.get('bestCount', 1)
+    bestCount = param['bestCount']
 
     xDict = copy.deepcopy(grid)
     k = 0

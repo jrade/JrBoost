@@ -12,17 +12,17 @@ public:
     void predict(CRefXXf inData, double c, RefXd outData) const;
 
 protected:
-    enum { Trivial = 100, Stump = 101 };
+    enum { Trivial = 100, Stump = 101, Tree = 102 };
 
     BasePredictor() = default;
 
-    static void parseError_ [[noreturn]] ();
+    static void parseError_ [[noreturn]] (istream& is);
 
 private:
     friend class BoostPredictor;
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const = 0;
     virtual void save_(ostream& os) const = 0;
-    static unique_ptr<BasePredictor> load_(istream& is);
+    static unique_ptr<BasePredictor> load_(istream& is, int version);
 
 // deleted:
     BasePredictor(const BasePredictor&) = delete;

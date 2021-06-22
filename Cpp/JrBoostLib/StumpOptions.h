@@ -12,6 +12,7 @@ public:
     StumpOptions& operator=(const StumpOptions&) = default;
     ~StumpOptions() = default;
 
+    size_t maxDepth() const { return maxDepth_; }
     double usedSampleRatio() const { return usedSampleRatio_; }
     double usedVariableRatio() const { return usedVariableRatio_; }
     size_t topVariableCount() const { return topVariableCount_; }
@@ -21,6 +22,7 @@ public:
     double minNodeWeight() const { return minNodeWeight_; }
     bool isStratified() const { return isStratified_; }
 
+    void setMaxDepth(size_t d);
     void setUsedSampleRatio(double r);
     void setUsedVariableRatio(double r);
     void setTopVariableCount(size_t n);
@@ -34,6 +36,7 @@ protected:
     double cost() const;
 
 private:
+    size_t maxDepth_{ 4 };
     double usedSampleRatio_{ 1.0 };
     double usedVariableRatio_{ 1.0 };
     size_t topVariableCount_{ numeric_limits<size_t>::max() };

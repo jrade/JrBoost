@@ -263,7 +263,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
 
 //......................................................................................................................
 
-void BoostTrainer::overflow_(const BoostOptions& opt)
+void BoostTrainer::overflow_ [[noreturn]] (const BoostOptions& opt)
 {
     double gamma = opt.gamma();
     string msg = gamma == 1.0

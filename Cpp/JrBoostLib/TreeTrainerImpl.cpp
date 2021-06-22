@@ -5,8 +5,6 @@
 #include "pch.h"
 #include "TreeTrainerImpl.h"
 #include "StumpOptions.h"
-#include "StumpPredictor.h"
-#include "TrivialPredictor.h"
 #include "pdqsort.h"
 
 
@@ -52,173 +50,109 @@ template<typename SampleIndex>
 unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
     CRefXd outData, CRefXd weights, const StumpOptions& options) const
 {
-    // validate data ...........................................................
-
-    //PROFILE::PUSH(PROFILE::VALIDATE);
-    //size_t ITEM_COUNT = sampleCount_;
-
-    //if (static_cast<size_t>(outData.rows()) != sampleCount_)
-    //    throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
-    //if (!(outData.abs() < numeric_limits<double>::infinity()).all())
-    //    throw std::invalid_argument("Train outdata has values that are infinity or NaN.");
-
-    //if (static_cast<size_t>(weights.rows()) != sampleCount_)
-    //    throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-    //if (!(weights.abs() < numeric_limits<float>::infinity()).all())
-    //    throw std::invalid_argument("Train weights have values that are infinity or NaN.");
-    //if ((weights < 0.0).any())
-    //    throw std::invalid_argument("Train weights have negative values.");
-
-
-    // zero calibration of the profiling .......................................
-
-    //PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
     PROFILE::PUSH(PROFILE::ZERO);
     size_t ITEM_COUNT = 1;
 
-
-    // initialize used sample mask .............................................
+    //PROFILE::SWITCH(ITEM_COUNT, PROFILE::VALIDATE);
+    //validateData_(outData, weights);
+    //ITEM_COUNT = sampleCount_;
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_SAMPLES);
     ITEM_COUNT = sampleCount_;
 
-    const size_t usedSampleCount = initUsedSampleMask_(options, weights);
-
-
-    // initialize used variables ...............................................
-
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_VARIABLES);
-
     const size_t candidateVariableCount = initUsedVariables_(options);
-
     ITEM_COUNT = candidateVariableCount;
 
+    vector<vector<TreePredictor::Node>> nodes(options.maxDepth() + 1);
+    nodes[0].resize(1);
 
-    // prepare for finding best split ..........................................
+    vector<size_t> sampleCountByStatus = initSampleStatus_(options, weights);
+    size_t d = 0;
 
-    const size_t minNodeSize = options.minNodeSize();
-    size_t slowBranchCount = 0;
+    while(true) {
 
-    size_t bestJ = 0;
-    float bestX = 0.0f;
-    double bestLeftY = 0.0;
-    double bestRightY = 0.0;
-    bool splitFound = false;
+        size_t parentCount = nodes[d].size();
+       
+        nodeBuilders_.resize(std::max(parentCount + 1, nodeBuilders_.size()));
+        for (size_t k = 1; k < parentCount + 1; ++k)
+            nodeBuilders_[k].reset();
 
-    // the following variables are initialized during the first iteration below
-    bool sumsInit = false;
-    double sumW = 0.0;
-    double sumWY = 0.0;
-    double bestScore = 0.0;
-    double tol = 0.0;   // estimate of the rounding off error we can expect in rightSumW towards the end of the loop
-    double minNodeWeight = 0.0;
+        for (size_t j : usedVariables_) {
 
-    for (size_t j : usedVariables_) {
+            PROFILE::SWITCH(ITEM_COUNT, PROFILE::SORTED_USED_SAMPLES);
+            initSortedSamplesByStatus_(sampleCountByStatus, j);
+            ITEM_COUNT = sampleCount_;
 
-        // initialize sorted used samples ......................................
-
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::SORTED_USED_SAMPLES);
-        ITEM_COUNT = sampleCount_;
-
-        initSortedUsedSamples_(usedSampleCount, j);
-
-
-        // initialize sums .........................................................
-
-        if (!sumsInit) {
-            PROFILE::SWITCH(ITEM_COUNT, PROFILE::SUMS);
-            ITEM_COUNT = sortedUsedSamples_.size();
-
-            std::tie(sumW, sumWY) = initSums_(outData, weights);
-            if (sumW == 0) {
-                PROFILE::POP(ITEM_COUNT);
-                return std::make_unique<TrivialPredictor>(0.0);
-            }
-
-            bestScore = sumWY * sumWY / sumW;
-            tol = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
-            minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
-
-            sumsInit = true;
+            PROFILE::SWITCH(ITEM_COUNT, PROFILE::BEST_SPLIT);
+            for (size_t k = 1; k < parentCount + 1; ++k)
+                nodeBuilders_[k].update(j, inData_, outData, weights, options);
+            ITEM_COUNT = sampleCountByStatus[1];
         }
 
+        size_t maxChildCount = 2 * parentCount;
+        nodes[d + 1].resize(maxChildCount);
+        TreePredictor::Node* pParents = &nodes[d][0];
+        TreePredictor::Node* pChildren = &nodes[d + 1][0];
 
-        // find best split .....................................................
+        TreePredictor::Node* p = pParents;
+        TreePredictor::Node* c = pChildren;
+        for (size_t k = 1; k < parentCount + 1; ++k)
+            nodeBuilders_[k].initNodes(&p, &c);
+        size_t childCount = c - pChildren;
+        nodes[d + 1].resize(childCount);
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::BEST_SPLIT);
-        ITEM_COUNT = usedSampleCount;
+        d += 1;
+        if (d == options.maxDepth() || childCount == 0) break;
 
-        double leftSumW = 0.0;
-        double leftSumWY = 0.0;
-        double rightSumW = sumW;
-        double rightSumWY = sumWY;
+        sampleCountByStatus = updateSampleStatus_(pParents, pChildren);
 
-        const auto pBegin = cbegin(sortedUsedSamples_);
-        const auto pEnd = cend(sortedUsedSamples_);
-        auto p = pBegin;
-        size_t nextI = *p;
+        //if (omp_get_thread_num() == 0) {
+        //    for (size_t n : sampleCountByStatus)
+        //        std::cout << n << ' ';
+        //    std::cout << std::endl;
+        //}
+    }
 
-        // this is where most execution time is spent ......
-            
-        while (p != pEnd - 1) {
+    nodes.resize(d + 1);
 
-            const size_t i = nextI;
-            nextI = *++p;
-            const double w = weights(i);
-            const double y = outData(i);
-            leftSumW += w;
-            rightSumW -= w;
-            leftSumWY += w * y;
-            rightSumWY -= w * y;
-            const double score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
+    //if (omp_get_thread_num() == 0)
+    //    std::cout << std::endl;
 
-            if (score <= bestScore) continue;  // usually true
 
-        //..................................................
-
-            ++slowBranchCount;
-
-            if (p < pBegin + minNodeSize
-                || p > pEnd - minNodeSize
-                || leftSumW < minNodeWeight
-                || rightSumW < minNodeWeight
-            ) continue;
-
-            const float leftX = inData_(i, j);
-            const float rightX = inData_(nextI, j);
-            const float midX = (leftX + rightX) / 2;
-    
-            if (leftX == midX) continue;
-
-            bestScore = score;
-            bestJ = j;
-            bestX = midX;
-            bestLeftY = leftSumWY / leftSumW;
-            bestRightY = rightSumWY / rightSumW;
-            splitFound = true;
-        }
+    if (omp_get_thread_num() == 0) {
+        PROFILE::SPLIT_ITERATION_COUNT += nodeBuilders_[1].iterationCount();
+        PROFILE::SLOW_BRANCH_COUNT += nodeBuilders_[1].slowBranchCount();
     }
 
     PROFILE::POP(ITEM_COUNT);
-    if (omp_get_thread_num() == 0)
-    {
-        const size_t usedVariableCount = usedVariables_.size();
-        PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;
-        PROFILE::SLOW_BRANCH_COUNT += slowBranchCount;
-    }
 
-    if (!splitFound)
-        return std::make_unique<TrivialPredictor>(sumWY / sumW);
-    
-    return std::make_unique<StumpPredictor>(bestJ, bestX, bestLeftY, bestRightY);
+    return std::make_unique<TreePredictor>(&nodes[0][0], std::move(nodes));
 };
 
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& options, CRefXd weights) const
+void TreeTrainerImpl<SampleIndex>::validateData_(CRefXd outData, CRefXd weights) const
+{
+    if (static_cast<size_t>(outData.rows()) != sampleCount_)
+        throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
+    if (!(outData.abs() < numeric_limits<double>::infinity()).all())
+        throw std::invalid_argument("Train outdata has values that are infinity or NaN.");
+
+    if (static_cast<size_t>(weights.rows()) != sampleCount_)
+        throw std::invalid_argument("Train indata and weights have different numbers of samples.");
+    if (!(weights.abs() < numeric_limits<float>::infinity()).all())
+        throw std::invalid_argument("Train weights have values that are infinity or NaN.");
+    if ((weights < 0.0).any())
+        throw std::invalid_argument("Train weights have negative values.");
+}
+
+
+template<typename SampleIndex>
+vector<size_t> TreeTrainerImpl<SampleIndex>::initSampleStatus_(const StumpOptions& options, CRefXd weights) const
 {
     size_t usedSampleCount;
-    usedSampleMask_.resize(sampleCount_);
+    sampleStatus_.resize(sampleCount_);
 
     double minSampleWeight = options.minAbsSampleWeight();
     double minRelSampleWeight = options.minRelSampleWeight();
@@ -240,7 +174,7 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& opt
             if (k == 0) k = 1;
             usedSampleCount = k;
 
-            for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
+            for (auto p = begin(sampleStatus_); p != end(sampleStatus_); ++p) {
                 bool b = BernoulliDistribution(k, n) (rne_);
                 *p = b;
                 k -= b;
@@ -262,8 +196,8 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& opt
             if (k[1] == 0 && n[1] > 0) k[1] = 1;
             usedSampleCount = k[0] + k[1];
 
-            const size_t* s = &reinterpret_cast<const RefXs&>(strata_)(0);  // Eigen bug workaround
-            for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
+            const size_t* s = &strata_.coeffRef(0);
+            for (auto p = begin(sampleStatus_); p != end(sampleStatus_); ++p) {
                 size_t stratum = *s;
                 ++s;
                 bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne_);
@@ -284,7 +218,7 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& opt
             tmpSamples_.resize(sampleCount_);
             auto p = begin(tmpSamples_);
             for (size_t i = 0; i < sampleCount_; ++i) {
-                usedSampleMask_[i] = 0;
+                sampleStatus_[i] = 0;
                 bool b = weights(i) >= minSampleWeight;
                 *p = static_cast<SampleIndex>(i);
                 p += b;
@@ -298,7 +232,7 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& opt
 
             for (SampleIndex i : tmpSamples_) {
                 bool b = BernoulliDistribution(k, n) (rne_);
-                usedSampleMask_[i] = b;
+                sampleStatus_[i] = b;
                 k -= b;
                 --n;
             }
@@ -314,7 +248,7 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& opt
                 *p = static_cast<SampleIndex>(i);
                 p += b;
                 n[stratum] += b;
-                usedSampleMask_[i] = 0;
+                sampleStatus_[i] = 0;
             }
             tmpSamples_.resize(p - begin(tmpSamples_));
 
@@ -328,14 +262,14 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedSampleMask_(const StumpOptions& opt
             for (size_t i : tmpSamples_) {
                 size_t stratum = strata_[i];
                 bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne_);
-                usedSampleMask_[i] = b;
+                sampleStatus_[i] = b;
                 k[stratum] -= b;
                 --n[stratum];
             }
         }
     }
 
-    return usedSampleCount;
+    return { sampleCount_ - usedSampleCount, usedSampleCount };
 }
 
 
@@ -369,36 +303,52 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(const StumpOptions& opti
 
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCount, size_t j) const
+void TreeTrainerImpl<SampleIndex>::initSortedSamplesByStatus_(const vector<size_t>& sampleCountByStatus, size_t j) const
 {
-    sortedUsedSamples_.resize(usedSampleCount);
+    size_t maxStatus = sampleCountByStatus.size();
 
-    auto p0 = cbegin(sortedSamples_[j]);
-    auto q0 = begin(sortedUsedSamples_);
-    auto q1 = end(sortedUsedSamples_);
-    auto m = cbegin(usedSampleMask_);
+    vector<vector<SampleIndex>::iterator> sortedSamplesByStatus(maxStatus);
+    for (size_t s = 0; s < maxStatus; ++s) {
+        vector<SampleIndex>& sortedSamples = nodeBuilders_[s].sortedSamples();
+        sortedSamples.resize(sampleCountByStatus[s]);
+        sortedSamplesByStatus[s] = begin(sortedSamples);
+    }
 
+    auto p = begin(sortedSamplesByStatus);
+    auto r = cbegin(sampleStatus_);
+    auto q0 = cbegin(sortedSamples_[j]);
+    auto q1 = cend(sortedSamples_[j]);
     while (q0 != q1) {
-        SampleIndex i = *p0;
-        *q0 = i;
-        ++p0;
-        q0 += m[i];
+        SampleIndex i = *(q0++);
+        *(p[r[i]]++) = i;
     }
 }
 
 
 template<typename SampleIndex>
-pair<double, double> TreeTrainerImpl<SampleIndex>::initSums_(const CRefXd& outData, const CRefXd& weights) const
+vector<size_t> TreeTrainerImpl<SampleIndex>::updateSampleStatus_(
+    const TreePredictor::Node* parentNodes, const TreePredictor::Node* childNodes
+) const
 {
-    double sumW = 0.0;
-    double sumWY = 0.0;
-    for (size_t i : sortedUsedSamples_) {
-        double w = weights(i);
-        double y = outData(i);
-        sumW += w;
-        sumWY += w * y;
+    uint8_t* pSampleStatus = &sampleStatus_[0];
+
+    for (size_t i = 0; i < sampleCount_; ++i) {
+        uint8_t s = pSampleStatus[i];
+        if (s == 0) continue;
+        const TreePredictor::Node* node = parentNodes + s - 1;
+        if (node->isLeaf)
+            pSampleStatus[i] = 0;
+        else {
+            node = (inData_(i, node->j) < node->x) ? node->leftChild : node->rightChild;
+            pSampleStatus[i] = static_cast<uint8_t>(node - childNodes + 1);
+        }
     }
-    return std::make_pair(sumW, sumWY);
+
+    size_t maxStatus = *std::max_element(cbegin(sampleStatus_), cend(sampleStatus_));
+    vector<size_t> sampleCountByStatus(maxStatus + 1, 0);
+    for (uint8_t s : sampleStatus_)
+        ++sampleCountByStatus[s];
+    return sampleCountByStatus;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -6,31 +6,38 @@
 #include "BasePredictor.h"
 #include "TrivialPredictor.h"
 #include "StumpPredictor.h"
+#include "TreePredictor.h"
 
 
 void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
 {
     PROFILE::PUSH(PROFILE::STUMP_PREDICT);
+
     predict_(inData, c, outData);
+
     size_t sampleCount = inData.rows();
     PROFILE::POP(sampleCount);
 }
 
-
-unique_ptr<BasePredictor> BasePredictor::load_(istream& is)
+unique_ptr<BasePredictor> BasePredictor::load_(istream& is, int version)
 {
-    uint8_t type = static_cast<uint8_t>(is.get());
-    switch (type) {
-    case Trivial:
-        return TrivialPredictor::load_(is);
-    case Stump:
-        return StumpPredictor::load_(is);
-    default:
-        parseError_();
-    }
+    int type = is.get();
+    if (type == Trivial)
+        return TrivialPredictor::load_(is, version);
+    if (type == Stump)
+        return StumpPredictor::load_(is, version);
+    if (version >= 2 && type == Tree)
+        return TreePredictor::load_(is,version);
+    parseError_(is);
 }
 
-void BasePredictor::parseError_()
+void BasePredictor::parseError_ [[noreturn]] (istream& is)
 {
-    throw std::runtime_error("Not a valid JrBoost predictor file.");
+    string msg = "Not a valid JrBoost predictor file.";
+
+    int64_t pos = is.tellg();
+    if (pos != -1)
+        msg += "\n(Parsing error after " + std::to_string(pos) + " bytes)";
+
+    throw std::runtime_error(msg);
 }

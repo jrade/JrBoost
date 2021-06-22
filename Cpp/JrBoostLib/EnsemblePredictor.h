@@ -19,7 +19,7 @@ private:
     virtual void save_(ostream& os) const;
 
     friend class Predictor;
-    static shared_ptr<Predictor> load_(istream& is);
+    static shared_ptr<Predictor> load_(istream& is, int version);
 
     vector<shared_ptr<Predictor>> predictors_;
 };

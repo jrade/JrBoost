@@ -37,11 +37,8 @@ ArrayXd BoostPredictor::predict_(CRefXXf inData) const
 
 void BoostPredictor::save_(ostream& os) const
 {
-    const uint8_t type = Boost;
+    const int type = Boost;
     os.put(static_cast<char>(type));
-
-    const uint8_t version = 1;
-    os.put(static_cast<char>(version));
 
     const uint32_t variableCount = static_cast<uint32_t>(variableCount_);
     os.write(reinterpret_cast<const char*>(&variableCount), sizeof(variableCount));
@@ -54,11 +51,9 @@ void BoostPredictor::save_(ostream& os) const
         basePredictors_[i]->save_(os);
 }
 
-shared_ptr<Predictor> BoostPredictor::load_(istream& is)
+shared_ptr<Predictor> BoostPredictor::load_(istream& is, int version)
 {
-    uint8_t version = static_cast<uint8_t>(is.get());
-    if (version != 1)
-        parseError_();
+    if (version < 2) is.get();
 
     uint32_t variableCount;
     float c0;
@@ -71,7 +66,7 @@ shared_ptr<Predictor> BoostPredictor::load_(istream& is)
     is.read(reinterpret_cast<char*>(&n), sizeof(n));
     vector<unique_ptr<BasePredictor>> basePredictors(n);
     for (uint32_t i = 0; i < n; ++i)
-        basePredictors[i] = BasePredictor::load_(is);
+        basePredictors[i] = BasePredictor::load_(is, version);
 
     return std::make_shared<BoostPredictor>(variableCount, c0, c1, std::move(basePredictors));
 }

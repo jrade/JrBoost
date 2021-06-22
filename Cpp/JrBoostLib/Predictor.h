@@ -22,14 +22,16 @@ protected:
 
     Predictor() = default;
 
-    static void parseError_ [[noreturn]] ();
+    static void parseError_ [[noreturn]] (istream& s);
 
 private:
-    virtual void save_(ostream& os) const = 0;
-
     friend class EnsemblePredictor;
+
     virtual ArrayXd predict_(CRefXXf inData) const = 0;
-    static shared_ptr<Predictor> load_(istream& is);
+
+    static const int currentVersion_ = 2;
+    virtual void save_(ostream& os) const = 0;
+    static shared_ptr<Predictor> load_(istream& is, int version);
     
 // deleted:
     Predictor(const Predictor&) = delete;

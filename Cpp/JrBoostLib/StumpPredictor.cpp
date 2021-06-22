@@ -28,11 +28,8 @@ void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 
 void StumpPredictor::save_(ostream& os) const
 {
-    const uint8_t type = Stump;
+    const int type = Stump;
     os.put(static_cast<char>(type));
-
-    const uint8_t version = 1;
-    os.put(static_cast<char>(version));
 
     os.write(reinterpret_cast<const char*>(&j_), sizeof(j_));
     os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
@@ -40,11 +37,9 @@ void StumpPredictor::save_(ostream& os) const
     os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));
 }
 
-unique_ptr<BasePredictor> StumpPredictor::load_(istream& is)
+unique_ptr<BasePredictor> StumpPredictor::load_(istream& is, int version)
 {
-    uint8_t version = static_cast<uint8_t>(is.get());
-    if (version != 1)
-        parseError_();
+    if (version < 2) is.get();
 
     uint32_t j;
     float x;
@@ -54,5 +49,6 @@ unique_ptr<BasePredictor> StumpPredictor::load_(istream& is)
     is.read(reinterpret_cast<char*>(&x), sizeof(x));
     is.read(reinterpret_cast<char*>(&leftY), sizeof(leftY));
     is.read(reinterpret_cast<char*>(&rightY), sizeof(rightY));
+
     return std::make_unique<StumpPredictor>(j, x, leftY, rightY);
 }

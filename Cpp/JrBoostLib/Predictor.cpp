@@ -25,6 +25,11 @@ ArrayXd Predictor::predict(CRefXXf inData) const
     return pred;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+
+// File format versions:
+// 1 - original version
+// 2 - added tree predictors, simplified version handling
 
 void Predictor::save(const string& filePath) const
 {
@@ -37,8 +42,7 @@ void Predictor::save(const string& filePath) const
 void Predictor::save(ostream& os) const
 {
     os.write("JRBOOST", 7);
-    const uint8_t version = 1;
-    os.put(static_cast<char>(version));
+    os.put(static_cast<char>(currentVersion_));
     save_(os);
     os.put('!');
 }
@@ -58,35 +62,37 @@ shared_ptr<Predictor> Predictor::load(istream& is)
     if (memcmp(sig, "JRBOOST", 7) != 0)
         throw std::runtime_error("Not a JrBoost predictor file.");
 
-    uint8_t version = static_cast<uint8_t>(is.get());
+    int version = is.get();
     if (version < 1)
-        parseError_();
-    if (version > 1)
+        parseError_(is);
+    if (version > currentVersion_)
         throw std::runtime_error("Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
-    
-    shared_ptr<Predictor> pred = load_(is);
+
+    shared_ptr<Predictor> pred = load_(is, version);
 
     if (is.get() != '!')
-        parseError_();
+        parseError_(is);
 
     return pred;
 }
 
-shared_ptr<Predictor> Predictor::load_(istream& is)
+shared_ptr<Predictor> Predictor::load_(istream& is, int version)
 {
-    uint8_t type = static_cast<uint8_t>(is.get());
-    switch (type) {
-    case Boost:
-        return BoostPredictor::load_(is);
-    case Ensemble:
-        return EnsemblePredictor::load_(is);
-    default:
-        parseError_();
-    }
+    int type = is.get();
+    if (type == Boost)
+        return BoostPredictor::load_(is, version);
+    if (type == Ensemble)
+        return EnsemblePredictor::load_(is, version);
+    parseError_(is);
 }
 
-void Predictor::parseError_()
+void Predictor::parseError_ [[noreturn]]  (istream& is)
 {
-    throw std::runtime_error("Not a valid JrBoost predictor file.");
-}
+    string msg = "Not a valid JrBoost predictor file.";
 
+    int64_t pos = is.tellg();
+    if (pos != -1)
+        msg += "\n(Parsing error after " + std::to_string(pos) + " bytes)";
+
+    throw std::runtime_error(msg);
+}

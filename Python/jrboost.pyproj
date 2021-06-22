@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId />
-    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -21,6 +21,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="example\higgs.py" />
+    <Compile Include="example\higgs2.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="example\iris.py" />
     <Compile Include="example\otto.py" />
     <Compile Include="jrboost\_jrboost.py" />

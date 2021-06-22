@@ -7,6 +7,7 @@
 
 #include "AGRandom.h"
 #include "BernoulliDistribution.h"
+#include "NodeBuilder.h"
 
 class StumpOptions;
 class BasePredictor;
@@ -45,12 +46,16 @@ private:
         VeryFastBernoulliDistribution
     >::type;
 
+private:
     vector<vector<SampleIndex>> createSortedSamples_() const;
-    size_t initUsedSampleMask_(const StumpOptions& opt, CRefXd weights) const;
+    void validateData_(CRefXd outData, CRefXd weights) const;
+    vector<size_t> initSampleStatus_(const StumpOptions& opt, CRefXd weights) const;
     size_t initUsedVariables_(const StumpOptions& opt) const;
-    void initSortedUsedSamples_(size_t usedSampleCount, size_t j) const;
-    pair<double, double> initSums_(const CRefXd& outData, const CRefXd& weights) const;
+    void initSortedSamplesByStatus_(const vector<size_t>& sampleCountByStatus, size_t j) const;
 
+    vector<size_t> updateSampleStatus_(const TreePredictor::Node* parentNodes, const TreePredictor::Node* childNodes) const;
+
+private:
     const CRefXXf inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
@@ -60,16 +65,17 @@ private:
     const size_t stratum0Count_;
     const size_t stratum1Count_;
 
+private:
     inline static thread_local RandomNumberEngine_ rne_;
-    inline static thread_local vector<uint8_t> usedSampleMask_;
+    inline static thread_local vector<uint8_t> sampleStatus_;
     inline static thread_local vector<size_t> usedVariables_;
     inline static thread_local vector<SampleIndex> tmpSamples_;
-    inline static thread_local vector<SampleIndex> sortedUsedSamples_;
+    inline static thread_local vector<NodeBuilder<SampleIndex>> nodeBuilders_;
 
     inline static thread_local struct ThreadLocalInit_ {
         ThreadLocalInit_() {
             std::random_device rd;
             rne_.seed(rd);
         }
-    } threadLocalInit_{};
+    } threadLocalInit_;
 };
