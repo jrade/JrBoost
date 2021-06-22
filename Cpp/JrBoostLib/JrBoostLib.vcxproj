@@ -106,6 +106,8 @@
     <ClInclude Include="StumpOptions.h" />
     <ClInclude Include="StumpTrainer.h" />
     <ClInclude Include="StumpTrainerImpl.h" />
+    <ClInclude Include="TreeTrainer.h" />
+    <ClInclude Include="TreeTrainerImpl.h" />
     <ClInclude Include="TrivialPredictor.h" />
     <ClInclude Include="TTest.h" />
   </ItemGroup>
@@ -127,6 +129,8 @@
     <ClCompile Include="StumpOptions.cpp" />
     <ClCompile Include="StumpTrainer.cpp" />
     <ClCompile Include="StumpTrainerImpl.cpp" />
+    <ClCompile Include="TreeTrainer.cpp" />
+    <ClCompile Include="TreeTrainerImpl.cpp" />
     <ClCompile Include="TrivialPredictor.cpp" />
     <ClCompile Include="TTest.cpp" />
   </ItemGroup>

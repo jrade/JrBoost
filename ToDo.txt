@@ -1,18 +1,25 @@
 
-predict overload that that takes a onedim array abd return a double
+trees
+	just copy stump trainer and rename it tree trainer
+	add a depth parameter
+	dispatch based on this parameter?
+
+later:
+	allocate nodes with memory pool (use std::pmr::monotonic_buffer_resource)
+	also pruning
+
+finally:
+	review friend declarations in class PROFILE
+
+============================================================================================
+
+predict overload that that takes a onedim array and returns a double
+
 is there any need for the fudge term in the t- and F-test? 
 
 ===============================================================================================
 
 later: merge feature branch example-cleanup
-
-trees
-	for the time being, control with a preprocessor macro in BoostTrainer.h
-		later add a dispatcher (based on tree depth parameter)
-
-	allocate nodes with memory pool (use std::pmr::monotonic_buffer_resource)
-
-	also pruning
 
 ================================================================================================
 

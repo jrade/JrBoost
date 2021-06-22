@@ -48,6 +48,7 @@ private:
     static StaticStack<CLOCK_ID, 1000> clockIndexStack_;
 
     template<typename SampleIndex> friend class StumpTrainerImpl;
+    template<typename SampleIndex> friend class TreeTrainerImpl;
     static uint64_t SPLIT_ITERATION_COUNT;
     static uint64_t SLOW_BRANCH_COUNT;
 };

@@ -80,6 +80,12 @@
     <ClInclude Include="FTest.h">
       <Filter>Extra</Filter>
     </ClInclude>
+    <ClInclude Include="TreeTrainerImpl.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainer.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="StumpOptions.cpp">
@@ -127,6 +133,12 @@
     </ClCompile>
     <ClCompile Include="FTest.cpp">
       <Filter>Extra</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerImpl.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainer.cpp">
+      <Filter>Base Trainer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

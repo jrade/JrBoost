@@ -4,9 +4,18 @@
 
 #pragma once
 
+#define USE_TREE_TRAINER 1
+
 class BoostOptions;
 class BoostPredictor;
+
+#if USE_TREE_TRAINER
+class TreeTrainer;
+using BaseTrainer = TreeTrainer;
+#else
 class StumpTrainer;
+using BaseTrainer = StumpTrainer;
+#endif
 
 
 class BoostTrainer {
@@ -34,6 +43,6 @@ private:
     const ArrayXs rawOutData_;
     const ArrayXd outData_;
     const optional<ArrayXd> weights_;
-    const shared_ptr<StumpTrainer> baseTrainer_;
+    const shared_ptr<BaseTrainer> baseTrainer_;
     const double lor0_;
 };
