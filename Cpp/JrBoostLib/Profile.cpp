@@ -89,7 +89,7 @@ string PROFILE::RESULT()
         double adjustedClockCycleCount = clockCycleCount - adjustment * callCount;
 
         if (callCount != 0) {
-            ss << std::setw(24) << std::left << name << std::right;
+            ss << std::setw(30) << std::left << name << std::right;
             ss << std::setw(8) << std::fixed << std::setprecision(0) << 1e-6 * adjustedClockCycleCount;
             ss << "  ";
             ss << std::setw(4) << std::setprecision(1) << 100.0 * adjustedClockCycleCount / totalAdjustedClockCycleCount << "%";

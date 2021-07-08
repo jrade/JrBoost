@@ -167,7 +167,7 @@ def formatBoostParam(boostParam):
     usr = boostParam['usedSampleRatio']
     uvr = boostParam['usedVariableRatio']
     mns = boostParam['minNodeSize']
-    return f'ic = {ic}  eta = {eta:.4f}  md = {md}, usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
+    return f'ic = {ic}  eta = {eta:.4f}  md = {md} usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
 
 def formatTime(t):
     h = int(t / 3600)

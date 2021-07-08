@@ -18,7 +18,7 @@ ArrayXd EnsemblePredictor::predict_(CRefXXf inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
-    size_t n = predictors_.size();
+    size_t n = size(predictors_);
     for (size_t k = 0; k < n; ++k)
         pred += predictors_[k]->predict_(inData);
     pred /= static_cast<double>(n);
@@ -31,7 +31,7 @@ void EnsemblePredictor::save_(ostream& os) const
     const int type = Ensemble;
     os.put(static_cast<char>(type));
 
-    const uint32_t n = static_cast<uint32_t>(predictors_.size());
+    const uint32_t n = static_cast<uint32_t>(size(predictors_));
     os.write(reinterpret_cast<const char*>(&n), sizeof(n));
     for (uint32_t i = 0; i < n; ++i)
         predictors_[i]->save_(os);

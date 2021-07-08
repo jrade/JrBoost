@@ -4,7 +4,7 @@
 
 #pragma once
 
-class StumpOptions;
+class TreeOptions;
 class TreeTrainerImplBase;
 class BasePredictor;
 
@@ -15,7 +15,7 @@ public:
     TreeTrainer(CRefXXf inData, CRefXs strata);
     ~TreeTrainer() = default;
 
-    unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
+    unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const;
 
 // deleted:
     TreeTrainer(const TreeTrainer&) = delete;

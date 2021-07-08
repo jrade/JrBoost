@@ -5,12 +5,12 @@
 #pragma once
 
 
-class StumpOptions {
+class TreeOptions {
 public:   
-    StumpOptions() = default;
-    StumpOptions(const StumpOptions&) = default;
-    StumpOptions& operator=(const StumpOptions&) = default;
-    ~StumpOptions() = default;
+    TreeOptions() = default;
+    TreeOptions(const TreeOptions&) = default;
+    TreeOptions& operator=(const TreeOptions&) = default;
+    ~TreeOptions() = default;
 
     size_t maxDepth() const { return maxDepth_; }
     double usedSampleRatio() const { return usedSampleRatio_; }
@@ -36,7 +36,7 @@ protected:
     double cost() const;
 
 private:
-    size_t maxDepth_{ 4 };
+    size_t maxDepth_{ 1 };
     double usedSampleRatio_{ 1.0 };
     double usedVariableRatio_{ 1.0 };
     size_t topVariableCount_{ numeric_limits<size_t>::max() };

@@ -7,16 +7,16 @@
 
 #include "AGRandom.h"
 #include "BernoulliDistribution.h"
-#include "NodeBuilder.h"
+#include "TreePredictor.h"
 
-class StumpOptions;
+class TreeOptions;
 class BasePredictor;
 
 
 class TreeTrainerImplBase {
 public:
     virtual ~TreeTrainerImplBase() = default;
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const = 0;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const = 0;
 
 protected:
     TreeTrainerImplBase() = default;
@@ -35,7 +35,7 @@ public:
     TreeTrainerImpl(CRefXXf inData, CRefXs strata);
     virtual ~TreeTrainerImpl() = default;
 
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const StumpOptions& options) const;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const;
 
 private:
     using RandomNumberEngine_ = splitmix;
@@ -48,12 +48,18 @@ private:
 
 private:
     vector<vector<SampleIndex>> createSortedSamples_() const;
-    void validateData_(CRefXd outData, CRefXd weights) const;
-    vector<size_t> initSampleStatus_(const StumpOptions& opt, CRefXd weights) const;
-    size_t initUsedVariables_(const StumpOptions& opt) const;
-    void initSortedSamplesByStatus_(const vector<size_t>& sampleCountByStatus, size_t j) const;
 
-    vector<size_t> updateSampleStatus_(const TreePredictor::Node* parentNodes, const TreePredictor::Node* childNodes) const;
+private:
+    void validateData_(CRefXd outData, CRefXd weights) const;
+    size_t initUsedVariables_(const TreeOptions& opt) const;
+    size_t initSampleMask_(const TreeOptions& opt, CRefXd weights) const;
+    void initOrderedSamples_(size_t j, size_t usedSampleCount) const;
+    void updateOrderedSamples_(
+        size_t j,
+        const vector<TreePredictor::Node>& nodes,
+        const vector<size_t>& sampleCountByParentNode,
+        const vector<size_t>& sampleCountByChildNode
+    ) const;
 
 private:
     const CRefXXf inData_;
@@ -67,10 +73,10 @@ private:
 
 private:
     inline static thread_local RandomNumberEngine_ rne_;
-    inline static thread_local vector<uint8_t> sampleStatus_;
     inline static thread_local vector<size_t> usedVariables_;
+    inline static thread_local vector<char> sampleMask_;
+    inline static thread_local vector<vector<SampleIndex>> orderedSamples_;
     inline static thread_local vector<SampleIndex> tmpSamples_;
-    inline static thread_local vector<NodeBuilder<SampleIndex>> nodeBuilders_;
 
     inline static thread_local struct ThreadLocalInit_ {
         ThreadLocalInit_() {

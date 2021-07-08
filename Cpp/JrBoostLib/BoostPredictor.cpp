@@ -27,7 +27,7 @@ ArrayXd BoostPredictor::predict_(CRefXXf inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Constant(sampleCount, static_cast<double>(c0_));
-    size_t n = basePredictors_.size();
+    size_t n = size(basePredictors_);
     for (size_t k = 0; k < n; ++k)
         basePredictors_[k]->predict_(inData, static_cast<double>(c1_), pred);
     pred = 1.0 / (1.0 + (-pred).exp());
@@ -45,7 +45,7 @@ void BoostPredictor::save_(ostream& os) const
     os.write(reinterpret_cast<const char*>(&c0_), sizeof(c0_));
     os.write(reinterpret_cast<const char*>(&c1_), sizeof(c1_));
 
-    const uint32_t n = static_cast<uint32_t>(basePredictors_.size());
+    const uint32_t n = static_cast<uint32_t>(size(basePredictors_));
     os.write(reinterpret_cast<const char*>(&n), sizeof(n));
     for (uint32_t i = 0; i < n; ++i)
         basePredictors_[i]->save_(os);

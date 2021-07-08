@@ -8,58 +8,53 @@
 
 ========================================================================
 
-Trees:
+trees:
+
+	how does the old tree trainer behave on the work computer?????
 
 	do next:
 
-		review all code
+		there are severel possible implementations of tree building
 
-		node buffers outside of splitfinders
-			sortedSamplesByNodeBuffers
-			unusedSampleBuffer
+			dynamically updated datastructure:
+				A. sample state (UNUSED = 0, node index offset by 1)
+				B. sample state (UNUSED = (SampleIndex)-1, node index), filtered ordered samples
+				C. filtered and groups ordered samples
+				Notes: C can ot be updated inplace so requires more memory
 
-		no need for split finders in static storage
+			node builders can be online or batch
 
-		sampleCountByStatus in static storage
+			do we need to test all combinations?????
 
-		fast distribute samples for d = 0
+			test A, B and C with batch builders
+		
 
-		sampleStatus as size_t
+		ditch the stumps and clean up
+			TreeOptions -> TreeOptions
+				review friend declarations in class PROFILE
+				make a permanent commit (it's about time)
 
-		fix profiling
-		fix iterationCount and slowBranchCount
-
-		TreePredictor::Node -> TreeNode, replace #include "TreePredictor.h" by forward declarations
-
-
-	profile and optimize
-		distributeSamples() is a bit slow
-			filter the samples first
-		is sorted active samples pruning a good idea?? test this later?
-
-	more testing
-
-	parameters:
-		decrease top variable count
-		increase cycle count
-
-	implement pruning
+		tweak the cost function?
 				
-	implementation notes:
-		where to init sums? or carry them over?
-
-	later:
-		usedVariables per level option?
 		tree pruning
-			keep the pruning completely outside StumpTrainer
 
-	finally:
-		ditch StumpTrainer?
-			first make sure TreeTrainer with depth = 1 is as fast as StumpTrainer
-		StumpOptions -> TreeOptions
-		review friend declarations in class PROFILE
+	..........................................................
 
-	are static thread_local buffers worth the trouble?
+	more efficient storage of usedSortedSamples? (by variable index instead of by variable)		
+		would not work with a (yet to be implemented) select variables by level mode
+
+	further optimizations:
+		carry over sums?
+
+	how to use tree trainer:
+		decrease top variable count?
+		increase cycle count?
+	
+	features to add:
+		usedVariables per level option (may be expensive)
+
+	code simplification:
+		are static thread_local buffers worth the trouble?
 
 ============================================================================================
 

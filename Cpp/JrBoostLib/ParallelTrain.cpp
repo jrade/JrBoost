@@ -21,7 +21,7 @@
 
 vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
 {
-    const size_t optCount = opt.size();
+    const size_t optCount = size(opt);
 
     vector<size_t> optIndicesSortedByCost(optCount);
     sortedIndices(
@@ -34,13 +34,14 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
     vector<shared_ptr<BoostPredictor>> pred(optCount);
     std::exception_ptr ep;
     std::atomic<bool> exceptionThrown = false;
+    std::atomic<int> i0 = 0;
 
 #pragma omp parallel
     {
-#pragma omp for nowait schedule(dynamic)
-        for (int i = 0; i < static_cast<int>(optCount); ++i) {
-
-            if (exceptionThrown) continue;
+        while (true) {
+            if (exceptionThrown) break;
+            size_t i = i0++;
+            if (i >= size(opt)) break;
 
             try {
                 if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
@@ -77,7 +78,7 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
         throw std::invalid_argument("Test indata has 0 samples.");
 
     const size_t sampleCount = testInData.rows();
-    const size_t optCount = opt.size();
+    const size_t optCount = size(opt);
 
     vector<size_t> optIndicesSortedByCost(optCount);
     sortedIndices(
@@ -90,13 +91,14 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
     ArrayXXd predData(sampleCount, optCount);
     std::exception_ptr ep;
     std::atomic<bool> exceptionThrown = false;
+    std::atomic<int> i0 = 0;
 
 #pragma omp parallel
     {
-#pragma omp for nowait schedule(dynamic)
-        for (int i = 0; i < static_cast<int>(optCount); ++i) {
-
-            if (exceptionThrown) continue;
+        while (true) {
+            if (exceptionThrown) break;
+            size_t i = i0++;
+            if (i >= size(opt)) break;
 
             try {
                 if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
@@ -133,7 +135,7 @@ ArrayXd parallelTrainAndEval(
     CRefXXf testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
 )
 {
-    size_t optCount = opt.size();
+    size_t optCount = size(opt);
 
     vector<size_t> optIndicesSortedByCost(optCount);
     sortedIndices(
@@ -146,13 +148,14 @@ ArrayXd parallelTrainAndEval(
     ArrayXd scores(optCount);
     std::exception_ptr ep;
     std::atomic<bool> exceptionThrown = false;
+    std::atomic<int> i0 = 0;
 
 #pragma omp parallel
     {
-#pragma omp for nowait schedule(dynamic)
-        for (int i = 0; i < static_cast<int>(optCount); ++i) {
-
-            if (exceptionThrown) continue;
+        while (true) {
+            if (exceptionThrown) break;
+            size_t i = i0++;
+            if (i >= size(opt)) break;
 
             try {
                 if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
@@ -175,6 +178,7 @@ ArrayXd parallelTrainAndEval(
         } // don't wait here ...
 
         PROFILE::PUSH(PROFILE::THREAD_SYNCH);
+
     } // ... but here so we can measure the wait time
     PROFILE::POP();
 

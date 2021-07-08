@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="StumpOptions.h">
+    <ClInclude Include="TreeOptions.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
     <ClInclude Include="BoostOptions.h">
@@ -9,12 +9,6 @@
     </ClInclude>
     <ClInclude Include="BoostTrainer.h">
       <Filter>Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="StumpTrainerImpl.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="StumpTrainer.h">
-      <Filter>Base Trainer</Filter>
     </ClInclude>
     <ClInclude Include="StaticStack.h">
       <Filter>Profiling</Filter>
@@ -94,7 +88,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="StumpOptions.cpp">
+    <ClCompile Include="TreeOptions.cpp">
       <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="BoostOptions.cpp">
@@ -102,12 +96,6 @@
     </ClCompile>
     <ClCompile Include="BoostTrainer.cpp">
       <Filter>Trainer</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpTrainerImpl.cpp">
-      <Filter>Base Trainer</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpTrainer.cpp">
-      <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="Profile.cpp">
       <Filter>Profiling</Filter>

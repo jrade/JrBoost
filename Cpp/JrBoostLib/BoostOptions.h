@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "StumpOptions.h"
+#include "TreeOptions.h"
 
 
-class BoostOptions : public StumpOptions {
+class BoostOptions : public TreeOptions {
 public:
     BoostOptions() = default;
     BoostOptions(const BoostOptions&) = default;

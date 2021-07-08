@@ -4,13 +4,24 @@
 
 #include "pch.h"
 #include "NodeBuilder.h"
-#include "StumpOptions.h"
+#include "TreeOptions.h"
 #include "TrivialPredictor.h"
 
 
 template<typename SampleIndex>
-void NodeBuilder<SampleIndex>::reset()
+void NodeBuilder<SampleIndex>::reset(CRefXXf inData, CRefXd outData, CRefXd weights, const TreeOptions & options)
 {
+    inData_.~CRefXXf();
+    new(&inData_) CRefXXf(inData);
+
+    outData_.~CRefXd();
+    new(&outData_) CRefXd(outData);
+
+    weights_.~CRefXd();
+    new(&weights_) CRefXd(weights);
+
+    options_ = &options;
+
     sumsInit_ = false;
     splitFound_ = false;
     iterationCount_ = 0;
@@ -19,103 +30,110 @@ void NodeBuilder<SampleIndex>::reset()
 
 
 template<typename SampleIndex>
-void NodeBuilder<SampleIndex>::update(
-    size_t j, CRefXXf inData, CRefXd outData, CRefXd weights, const StumpOptions& options)
+void NodeBuilder<SampleIndex>::update(size_t j, const SampleIndex* samplesBegin, const SampleIndex* samplesEnd)
 {
-    const size_t usedSampleCount = sortedSamples_.size();
-    const size_t minNodeSize = options.minNodeSize();
-
     if (!sumsInit_) {
-        initSums_(outData, weights, options);
+        initSums_(samplesBegin, samplesEnd);
         sumsInit_ = true;
     }
 
     if (sumW_ == 0) return;
 
+    // optimizations
+    double bestScore = bestScore_;
+    const double* pWeights = &weights_.coeffRef(0);
+    const double* pOutData = &outData_.coeffRef(0);
 
-    // find best split .....................................................
+    const size_t sampleCount = samplesEnd - samplesBegin;
+    const size_t minNodeSize = options_->minNodeSize();
 
     double leftSumW = 0.0;
     double leftSumWY = 0.0;
     double rightSumW = sumW_;
     double rightSumWY = sumWY_;
 
-    const auto pBegin = cbegin(sortedSamples_);
-    const auto pEnd = cend(sortedSamples_);
-    auto p = pBegin;
+    const SampleIndex* p = samplesBegin;
     size_t nextI = *p;
 
     // this is where most execution time is spent ......
 
-    iterationCount_ += usedSampleCount;
+    iterationCount_ += sampleCount;
+    size_t slowBranchCount = 0;
 
-    while (p != pEnd - 1) {
+    while (p != samplesEnd - 1) {
 
         const size_t i = nextI;
         nextI = *++p;
-        const double w = weights(i);
-        const double y = outData(i);
+        const double w = pWeights[i];
+        const double y = pOutData[i];
         leftSumW += w;
         rightSumW -= w;
         leftSumWY += w * y;
         rightSumWY -= w * y;
         const double score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
 
-        if (score <= bestScore_) continue;  // usually true
+        if (score <= bestScore) continue;  // usually true
 
     //..................................................
 
-        ++slowBranchCount_;
+        ++slowBranchCount;
 
-        if (p < pBegin + minNodeSize
-            || p > pEnd - minNodeSize
+        if (p < samplesBegin + minNodeSize
+            || p > samplesEnd - minNodeSize
             || leftSumW < minNodeWeight_
             || rightSumW < minNodeWeight_
             ) continue;
 
-        const float leftX = inData(i, j);
-        const float rightX = inData(nextI, j);
+        const float leftX = inData_(i, j);
+        const float rightX = inData_(nextI, j);
         const float midX = (leftX + rightX) / 2;
 
         if (leftX == midX) continue;
 
         splitFound_ = true;
-        bestScore_ = score;
+        bestScore = score;
         bestJ_ = j;
         bestX_ = midX;
         bestLeftY_ = leftSumWY / leftSumW;
         bestRightY_ = rightSumWY / rightSumW;
+        bestLeftSampleCount_ = p - samplesBegin;
     }
+
+    bestScore_ = bestScore;
+    bestRightSampleCount_ = sampleCount - bestLeftSampleCount_;
+    slowBranchCount_ += slowBranchCount;
 }
 
 
 template<typename SampleIndex>
-void NodeBuilder<SampleIndex>::initSums_(const CRefXd& outData, const CRefXd& weights, const StumpOptions& options)
+void NodeBuilder<SampleIndex>::initSums_(const SampleIndex* samplesBegin, const SampleIndex* samplesEnd)
 {
-    const size_t usedSampleCount = sortedSamples_.size();
+    const size_t usedSampleCount = samplesEnd - samplesBegin;
 
     PROFILE::PUSH(PROFILE::SUMS);
     size_t ITEM_COUNT = usedSampleCount;
 
     sumW_ = 0.0;
     sumWY_ = 0.0;
-    for (size_t i : sortedSamples_) {
-        double w = weights(i);
-        double y = outData(i);
+    for (auto p = samplesBegin; p != samplesEnd; ++p) {
+        const size_t i = *p;
+        double w = weights_(i);
+        double y = outData_(i);
         sumW_ += w;
         sumWY_ += w * y;
     }
 
     bestScore_ = sumWY_ * sumWY_ / sumW_;
     tol_ = sumW_ * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
-    minNodeWeight_ = std::max<double>(options.minNodeWeight(), tol_);
+    minNodeWeight_ = std::max<double>(options_->minNodeWeight(), tol_);
 
     PROFILE::POP(ITEM_COUNT);
 }
 
 
 template<typename SampleIndex>
-void NodeBuilder<SampleIndex>::initNodes(TreePredictor::Node** parent, TreePredictor::Node** child) const
+void NodeBuilder<SampleIndex>::initNodes(
+    TreePredictor::Node** parent, TreePredictor::Node** child, size_t** childSampleCount) const
 {
     if (!splitFound_) {
         (*parent)->isLeaf = true;
@@ -130,11 +148,15 @@ void NodeBuilder<SampleIndex>::initNodes(TreePredictor::Node** parent, TreePredi
         (*child)->isLeaf = true;
         (*child)->y = static_cast<float>(bestLeftY_);
         ++*child;
+        **childSampleCount = bestLeftSampleCount_;
+        ++*childSampleCount;
 
         (*parent)->rightChild = *child;
         (*child)->isLeaf = true;
         (*child)->y = static_cast<float>(bestRightY_);
         ++*child;
+        **childSampleCount = bestRightSampleCount_;
+        ++*childSampleCount;
     }
 
     ++*parent;

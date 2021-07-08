@@ -6,11 +6,7 @@
 #include "BoostTrainer.h"
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
-#if USE_TREE_TRAINER
 #include "TreeTrainer.h"
-#else
-#include "StumpTrainer.h"
-#endif
 #include "BasePredictor.h"
 #include "FastMath.h"
 
@@ -23,7 +19,7 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 },
     weights_{ std::move(weights) },
     lor0_{ calculateLor0_() },
-    baseTrainer_{ std::make_shared<BaseTrainer>(inData_, rawOutData_) }
+    baseTrainer_{ std::make_shared<TreeTrainer>(inData_, rawOutData_) }
 {
     PROFILE::PUSH(PROFILE::BOOST_INIT);
 
