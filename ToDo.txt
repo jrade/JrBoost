@@ -1,4 +1,83 @@
 
+
+
+Leukeima external vaidation, 10 reps x 5 folds, laptop:
+
+........................................................
+
+A:
+
+main                            -nan(ind)  -nan(ind)%
+  t-rank                        -nan(ind)  -nan(ind)%  -nan(ind)
+  boost init                    -nan(ind)  -nan(ind)%
+    init sorted samples         -nan(ind)  -nan(ind)%  -nan(ind)
+  boost train                   -nan(ind)  -nan(ind)%  -nan(ind)
+    stump train                 -nan(ind)  -nan(ind)%  -nan(ind)
+      sums                      -nan(ind)  -nan(ind)%
+     tree predict               -nan(ind)  -nan(ind)%  -nan(ind)
+    thread synch                -nan(ind)  -nan(ind)%
+  boost predict                 -nan(ind)  -nan(ind)%  -nan(ind)
+
+profiling overhead: -nan(ind)%
+slow branch: -nan(ind)%
+
+0:06:32
+
+.......................................................
+
+C:
+
+main                               11058   0.7%
+  t-rank                           13775   0.9%    3.1
+  boost init                          63   0.0%
+    init sorted samples             2215   0.1%   18.9
+  boost train                      27607   1.8%   21.3
+    stump train                    31800   2.1%
+      used variables                7902   0.5%   16.9
+      init sample status           36795   2.4%   28.4  <------
+      init used sorted samples    187822  12.5%    4.7  <-----
+      update sample status         20401   1.4%   20.4
+      update used sorted samples   95528   6.4%    4.6
+      init ordered samples        249529  16.6%   12.5
+      update node builder         510728  34.0%   15.7  <----
+      sums                          5382   0.4%    6.2
+     tree predict                  29267   1.9%   22.6
+    thread synch                  263355  17.5%
+  boost predict                     9338   0.6%  29255.4
+
+profiling overhead: 14.1%
+slow branch: 9.7%
+
+0:14:20
+
+................................................................................................
+
+D:
+
+main                               10664   0.9%
+  t-rank                           13116   1.1%    2.9
+  boost init                          61   0.0%
+    init sorted samples             2137   0.2%   18.2
+  boost train                      28232   2.5%   20.2
+    stump train                    35355   3.1%
+      used variables                8415   0.7%   15.9
+      init sample mask             33678   2.9%   24.1  <------
+      init ordered samples        111864   9.7%    2.4  <------
+      update ordered samples      160983  14.0%    7.9
+      update node builder         490722  42.7%   14.9  <------
+      sums                          5645   0.5%    6.3
+     tree predict                  29977   2.6%   21.4
+    thread synch                  208215  18.1%
+  boost predict                     9269   0.8%  26821.8
+
+profiling overhead: 1.4%
+slow branch: 10.6%
+
+0:09:44
+
+
+============================================================
+
  major tasks:
 	variable importance weights
 	clean up Higgs and Otto
@@ -8,39 +87,35 @@
 
 ========================================================================
 
+TreeTrainer implementations:
+  A. stumps
+  B. sample state (UNUSED = 0, node index offset by 1)
+  C. sample state (UNUSED = (SampleIndex)-1, node index), filtered ordered samples
+  D. filtered and grouped ordered samples
+
+
 trees:
+	now:
+		micro optimizations
+			more branch-free code
+		avoid accessing thread local vectors in inner loops in initSampleStatus() / initSampleMask() and other places
+		clean up profiling code
+		general code review
 
-	how does the old tree trainer behave on the work computer?????
-
-	do next:
-
-		there are severel possible implementations of tree building
-
-			dynamically updated datastructure:
-				A. sample state (UNUSED = 0, node index offset by 1)
-				B. sample state (UNUSED = (SampleIndex)-1, node index), filtered ordered samples
-				C. filtered and groups ordered samples
-				Notes: C can ot be updated inplace so requires more memory
-
-			node builders can be online or batch
-
-			do we need to test all combinations?????
-
-			test A, B and C with batch builders
-		
-
-		ditch the stumps and clean up
-			TreeOptions -> TreeOptions
-				review friend declarations in class PROFILE
-				make a permanent commit (it's about time)
-
-		tweak the cost function?
-				
+	this week:
 		tree pruning
+
+	later:
+		test other parallellization strategy
+			try D with a more finegrained paralllellization
+			if this works, restructure to get the largest possible 
+					for(size_t j: usedVariables) { .... }
+				block
+		resurrect TreeBuilderB by backporting from TreeBuilderC	
 
 	..........................................................
 
-	more efficient storage of usedSortedSamples? (by variable index instead of by variable)		
+	more efficient storage of usedSortedSamples, orderedSamples_ etc? (by variable index instead of by variable)		
 		would not work with a (yet to be implemented) select variables by level mode
 
 	further optimizations:

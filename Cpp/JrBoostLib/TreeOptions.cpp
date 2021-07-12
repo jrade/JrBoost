@@ -69,6 +69,5 @@ void TreeOptions::setIsStratified(bool b)
 
 double TreeOptions::cost() const
 {
-    //return usedVariableRatio_ * topVariableCount_;
     return usedVariableRatio_ * topVariableCount_ * usedSampleRatio_ * maxDepth_;
 }

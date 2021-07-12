@@ -108,6 +108,11 @@
     <ClInclude Include="TreePredictor.h" />
     <ClInclude Include="TreeTrainer.h" />
     <ClInclude Include="TreeTrainerImpl.h" />
+    <ClInclude Include="TreeTrainerImplA.h" />
+    <ClInclude Include="TreeTrainerImplB.h" />
+    <ClInclude Include="TreeTrainerImplC.h" />
+    <ClInclude Include="TreeTrainerImplD.h" />
+    <ClInclude Include="TreeTrainerImplBase.h" />
     <ClInclude Include="TrivialPredictor.h" />
     <ClInclude Include="TTest.h" />
   </ItemGroup>
@@ -130,7 +135,10 @@
     <ClCompile Include="TreeOptions.cpp" />
     <ClCompile Include="TreePredictor.cpp" />
     <ClCompile Include="TreeTrainer.cpp" />
-    <ClCompile Include="TreeTrainerImpl.cpp" />
+    <ClCompile Include="TreeTrainerImplA.cpp" />
+    <ClCompile Include="TreeTrainerImplB.cpp" />
+    <ClCompile Include="TreeTrainerImplC.cpp" />
+    <ClCompile Include="TreeTrainerImplD.cpp" />
     <ClCompile Include="TrivialPredictor.cpp" />
     <ClCompile Include="TTest.cpp" />
   </ItemGroup>

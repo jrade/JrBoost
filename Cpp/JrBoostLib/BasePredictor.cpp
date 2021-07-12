@@ -11,7 +11,7 @@
 
 void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
 {
-    PROFILE::PUSH(PROFILE::STUMP_PREDICT);
+    PROFILE::PUSH(PROFILE::TREE_PREDICT);
 
     predict_(inData, c, outData);
 

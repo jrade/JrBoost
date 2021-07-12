@@ -14,8 +14,11 @@
 
 // In each iteration of the loop we build a classifier with one set of options
 // Differents sets of options can take very different time.
-// To ensure that the OMP threads are balanced we use dynamical scheduling and we sort the options objects
+// To ensure that the OMP threads are balanced we sort the options objects
 // from the most time-consuming to the least.
+// Note that we can not use 
+//      #pragma omp for schedule(dynamic)
+// because it is not guarangeed to process the elements in order
 
 //----------------------------------------------------------------------------------------------------------------------
 

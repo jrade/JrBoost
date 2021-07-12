@@ -148,15 +148,19 @@ void NodeBuilder<SampleIndex>::initNodes(
         (*child)->isLeaf = true;
         (*child)->y = static_cast<float>(bestLeftY_);
         ++*child;
-        **childSampleCount = bestLeftSampleCount_;
-        ++*childSampleCount;
+        if (childSampleCount) {
+            **childSampleCount = bestLeftSampleCount_;
+            ++* childSampleCount;
+        }
 
         (*parent)->rightChild = *child;
         (*child)->isLeaf = true;
         (*child)->y = static_cast<float>(bestRightY_);
         ++*child;
-        **childSampleCount = bestRightSampleCount_;
-        ++*childSampleCount;
+        if (childSampleCount) {
+            **childSampleCount = bestRightSampleCount_;
+            ++* childSampleCount;
+        }
     }
 
     ++*parent;

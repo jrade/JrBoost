@@ -74,7 +74,7 @@
     <ClInclude Include="FTest.h">
       <Filter>Extra</Filter>
     </ClInclude>
-    <ClInclude Include="TreeTrainerImpl.h">
+    <ClInclude Include="TreeTrainerImplD.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
     <ClInclude Include="TreeTrainer.h">
@@ -84,6 +84,21 @@
       <Filter>Base Predictor</Filter>
     </ClInclude>
     <ClInclude Include="NodeBuilder.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerImpl.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerImplBase.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerImplA.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerImplC.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerImplB.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
   </ItemGroup>
@@ -128,7 +143,7 @@
     <ClCompile Include="FTest.cpp">
       <Filter>Extra</Filter>
     </ClCompile>
-    <ClCompile Include="TreeTrainerImpl.cpp">
+    <ClCompile Include="TreeTrainerImplD.cpp">
       <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="TreeTrainer.cpp">
@@ -138,6 +153,15 @@
       <Filter>Base Predictor</Filter>
     </ClCompile>
     <ClCompile Include="NodeBuilder.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerImplA.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerImplC.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerImplB.cpp">
       <Filter>Base Trainer</Filter>
     </ClCompile>
   </ItemGroup>

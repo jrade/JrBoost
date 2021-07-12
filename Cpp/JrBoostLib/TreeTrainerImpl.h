@@ -5,83 +5,9 @@
 
 #pragma once
 
-#include "AGRandom.h"
-#include "BernoulliDistribution.h"
-#include "TreePredictor.h"
-
-class TreeOptions;
-class BasePredictor;
-
-
-class TreeTrainerImplBase {
-public:
-    virtual ~TreeTrainerImplBase() = default;
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const = 0;
-
-protected:
-    TreeTrainerImplBase() = default;
-
-// deleted:
-    TreeTrainerImplBase(const TreeTrainerImplBase&) = delete;
-    TreeTrainerImplBase& operator=(const TreeTrainerImplBase&) = delete;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
+#include "TreeTrainerImplA.h"
+#include "TreeTrainerImplC.h"
+#include "TreeTrainerImplD.h"
 
 template<typename SampleIndex>
-class TreeTrainerImpl : public TreeTrainerImplBase 
-{
-public:
-    TreeTrainerImpl(CRefXXf inData, CRefXs strata);
-    virtual ~TreeTrainerImpl() = default;
-
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const;
-
-private:
-    using RandomNumberEngine_ = splitmix;
-
-    using BernoulliDistribution = typename std::conditional<
-        sizeof(SampleIndex) == 8,
-        FastBernoulliDistribution,
-        VeryFastBernoulliDistribution
-    >::type;
-
-private:
-    vector<vector<SampleIndex>> createSortedSamples_() const;
-
-private:
-    void validateData_(CRefXd outData, CRefXd weights) const;
-    size_t initUsedVariables_(const TreeOptions& opt) const;
-    size_t initSampleMask_(const TreeOptions& opt, CRefXd weights) const;
-    void initOrderedSamples_(size_t j, size_t usedSampleCount) const;
-    void updateOrderedSamples_(
-        size_t j,
-        const vector<TreePredictor::Node>& nodes,
-        const vector<size_t>& sampleCountByParentNode,
-        const vector<size_t>& sampleCountByChildNode
-    ) const;
-
-private:
-    const CRefXXf inData_;
-    const size_t sampleCount_;
-    const size_t variableCount_;
-    const vector<vector<SampleIndex>> sortedSamples_;
-
-    const CRefXs strata_;
-    const size_t stratum0Count_;
-    const size_t stratum1Count_;
-
-private:
-    inline static thread_local RandomNumberEngine_ rne_;
-    inline static thread_local vector<size_t> usedVariables_;
-    inline static thread_local vector<char> sampleMask_;
-    inline static thread_local vector<vector<SampleIndex>> orderedSamples_;
-    inline static thread_local vector<SampleIndex> tmpSamples_;
-
-    inline static thread_local struct ThreadLocalInit_ {
-        ThreadLocalInit_() {
-            std::random_device rd;
-            rne_.seed(rd);
-        }
-    } threadLocalInit_;
-};
+using TreeTrainerImpl = TreeTrainerImplD<SampleIndex>;
