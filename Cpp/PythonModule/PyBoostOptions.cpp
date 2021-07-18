@@ -69,6 +69,8 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setMinNodeWeight(std::get<double>(value));
             else if (key == "isStratified")
                 opt.setIsStratified(std::get<bool>(value));
+            else if (key == "pruneFactor")
+                opt.setPruneFactor(std::get<double>(value));
             else {
                 string msg = "The key '" + key + "' is not a valid boost parameters key.";
                 throw std::invalid_argument(msg);
@@ -114,6 +116,7 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["minNodeSize"] = opt.minNodeSize();
     pyOpt["minNodeWeight"] = opt.minNodeWeight();
     pyOpt["isStratified"] = opt.isStratified();
+    pyOpt["pruneFactor"] = opt.pruneFactor();
 
     return pyOpt;
 }

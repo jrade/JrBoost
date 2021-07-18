@@ -72,6 +72,7 @@ PYBIND11_MODULE(_jrboostext, mod)
     mod.def("parallelTrain", &parallelTrain);
     mod.def("parallelTrainAndPredict", &parallelTrainAndPredict);
     mod.def("parallelTrainAndEval", &parallelTrainAndEval, py::call_guard<py::gil_scoped_release>());
+    mod.def("parallelTrainAndEvalWeighted", &parallelTrainAndEvalWeighted, py::call_guard<py::gil_scoped_release>());
 
     // parallelTrainAndEval() makes callbacks from multi-threaded code.
     // These callbacks may be to Python functions that need to acquire the GIL.
@@ -80,28 +81,26 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     // Loss functions
 
-    mod.def("errorCount", &errorCount, py::arg(), py::arg(), py::arg("threshold") = 0.5);
-    mod.def("accuracy", &accuracy, py::arg(), py::arg(), py::arg("threshold") = 0.5);
     mod.def("linLoss", &linLoss);
+    mod.def("linLossWeighted", &linLossWeighted);
     mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.1);
+    mod.def("logLossWeighted", &logLossWeighted, py::arg(), py::arg(), py::arg(), py::arg("gamma") = 0.1);
     mod.def("auc", &auc);
+    mod.def("aucWeighted", &aucWeighted);
     mod.def("aoc", &aoc);
+    mod.def("aocWeighted", &aocWeighted);
     mod.def("negAuc", &negAuc);
-
-    py::class_<ErrorCount>{ mod, "ErrorCount" }
-        .def(py::init<double>())
-        .def("__call__", &ErrorCount::operator())
-        .def_property_readonly("name", &ErrorCount::name);
-
-    py::class_<Accuracy>{ mod, "Accuracy" }
-        .def(py::init<double>())
-        .def("__call__", &Accuracy::operator())
-        .def_property_readonly("name", &Accuracy::name);
+    mod.def("negAucWeighted", &negAucWeighted);
 
     py::class_<LogLoss>{ mod, "LogLoss" }
         .def(py::init<double>())
         .def("__call__", &LogLoss::operator())
         .def_property_readonly("name", &LogLoss::name);
+
+    py::class_<LogLossWeighted>{ mod, "LogLossWeighted" }
+        .def(py::init<double>())
+        .def("__call__", &LogLossWeighted::operator())
+        .def_property_readonly("name", &LogLossWeighted::name);
 
 
     // Statistical tests

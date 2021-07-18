@@ -67,6 +67,15 @@ void TreeOptions::setIsStratified(bool b)
     isStratified_ = b;
 }
 
+void TreeOptions::setPruneFactor(double p)
+{
+    if (!(p >= 0.0 && p <= 1.0))
+        throw std::invalid_argument("pruneFactor must lie in the interval [0.0, 1.0].");
+    pruneFactor_ = p;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 double TreeOptions::cost() const
 {
     return usedVariableRatio_ * topVariableCount_ * usedSampleRatio_ * maxDepth_;

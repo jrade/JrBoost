@@ -17,31 +17,7 @@ inline void lossFunValidate_(CRefXs outData, CRefXd predData)
         throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
 }
 
-
-inline double errorCount(CRefXs outData, CRefXd predData, double threshold = 0.5)
-{
-    lossFunValidate_(outData, predData);
-    if (!(threshold > 0 && threshold < 1.0))
-        throw std::invalid_argument("threshold must lie in the interval (0.0, 1.0).");
-
-    const size_t falsePos = (((1 - outData) * (predData >= threshold).cast<size_t>()).sum());
-    const size_t falseNeg = ((outData * (predData < threshold).cast<size_t>()).sum());
-    return static_cast<double>(falsePos + falseNeg);
-}
-
-inline double accuracy(CRefXs outData, CRefXd predData, double threshold = 0.5)
-{
-    lossFunValidate_(outData, predData);
-    if (!(threshold > 0 && threshold < 1.0))
-        throw std::invalid_argument("threshold must lie in the interval (0.0, 1.0).");
-
-    const  size_t pos = outData.sum();
-    const size_t neg = (1 - outData).sum();
-    const size_t truePos = (outData * (predData >= threshold).cast<size_t>()).sum();
-    const size_t trueNeg = ((1 - outData) * (predData < threshold).cast<size_t>()).sum();
-
-    return static_cast<double>(truePos + trueNeg) / (pos + neg);
-}
+//----------------------------------------------------------------------------------------------------------------------
 
 inline double linLoss(CRefXs outData, CRefXd predData)
 {
@@ -50,6 +26,16 @@ inline double linLoss(CRefXs outData, CRefXd predData)
     const double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
     return falsePos + falseNeg;
 }
+
+inline double linLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
+{
+    lossFunValidate_(outData, predData);
+    const double falsePos = (weights * (1 - outData).cast<double>() * predData).sum();
+    const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData)).sum();
+    return falsePos + falseNeg;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
 {
@@ -61,6 +47,65 @@ inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
     return falsePos + falseNeg;
 }
 
+inline double logLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights, double gamma = 0.1)
+{
+    lossFunValidate_(outData, predData);
+    if (!(gamma > 0 && gamma <= 1.0))
+        throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
+    const double falsePos = (weights * (1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
+    const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
+    return falsePos + falseNeg;
+}
+
+class LogLoss {
+public:
+    LogLoss(double gamma) : gamma_(gamma)
+    {
+        if (!(gamma > 0 && gamma <= 1.0))
+            throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
+    }
+
+    double operator()(CRefXs outData, CRefXd predData) const
+    {
+        return logLoss(outData, predData, gamma_);
+    }
+
+    string name() const
+    {
+        stringstream ss;
+        ss << "log-loss(" << gamma_ << ")";
+        return ss.str();
+    }
+
+private:
+    const double gamma_;
+};
+
+class LogLossWeighted {
+public:
+    LogLossWeighted(double gamma) : gamma_(gamma)
+    {
+        if (!(gamma > 0 && gamma <= 1.0))
+            throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
+    }
+
+    double operator()(CRefXs outData, CRefXd predData, CRefXd weights) const
+    {
+        return logLossWeighted(outData, predData, weights, gamma_);
+    }
+
+    string name() const
+    {
+        stringstream ss;
+        ss << "log-loss-w(" << gamma_ << ")";
+        return ss.str();
+    }
+
+private:
+    const double gamma_;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 
 inline double auc(CRefXs outData, CRefXd predData)
 {
@@ -87,6 +132,33 @@ inline double auc(CRefXs outData, CRefXd predData)
     return auc;
 }
 
+inline double aucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
+{
+    lossFunValidate_(outData, predData);
+
+    const size_t sampleCount = outData.rows();
+
+    vector<tuple<size_t, double, double>> tmp(sampleCount);
+    for (size_t i = 0; i < sampleCount; ++i)
+        tmp[i] = { outData[i], predData[i], weights[i] };
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+
+    double a = 0.0;
+    double b = 0.0;
+    double totalWeight = 0.0;
+
+    for (auto [y, pred, w] : tmp) {
+        //if (y == 0)
+        //    a += w;
+        //else
+        //    b += w * a;
+        a += w - y * w;
+        b += (y * w) * a;
+        totalWeight += w;
+    }
+    double auc = b / (a * (totalWeight - a));
+    return auc;
+}
 
 inline double aoc(CRefXs outData, CRefXd predData)
 {
@@ -113,84 +185,40 @@ inline double aoc(CRefXs outData, CRefXd predData)
     return auc;
 }
 
+inline double aocWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
+{
+    lossFunValidate_(outData, predData);
+
+    const size_t sampleCount = outData.rows();
+
+    vector<tuple<size_t, double, double>> tmp(sampleCount);
+    for (size_t i = 0; i < sampleCount; ++i)
+        tmp[i] = { outData[i], predData[i], weights[i] };
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+
+    double a = 0.0;
+    double b = 0.0;
+    double totalWeight = 0.0;
+
+    for (auto [y, pred, w] : tmp) {
+        //if (y == 0)
+        //    b += w * a;
+        //else
+        //    a += w;
+        a += y * w;
+        b += (w - y * w) * a;
+        totalWeight += w;
+    }
+    double auc = b / (a * (totalWeight - a));
+    return auc;
+}
 
 inline double negAuc(CRefXs outData, CRefXd predData)
 {
     return -auc(outData, predData);
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-
-class ErrorCount {
-public:
-    ErrorCount(double threshold) : threshold_(threshold)
-    {
-        if (!(threshold > 0 && threshold < 1.0))
-            throw std::invalid_argument("threshold must lie in the interval (0.0, 1.0).");
-    }
-
-    double operator()(CRefXs outData, CRefXd predData) const
-    {
-        return errorCount(outData, predData, threshold_);
-    }
-
-    string name() const
-    {
-        stringstream ss;
-        ss << "err-count(" << threshold_ << ")";
-        return ss.str();
-    }
-
-private:
-    const double threshold_;
-};
-
-
-class Accuracy {
-public:
-    Accuracy(double threshold) : threshold_(threshold)
-    {
-        if (!(threshold > 0 && threshold < 1.0))
-            throw std::invalid_argument("threshold must lie in the interval (0.0, 1.0).");
-    }
-
-    double operator()(CRefXs outData, CRefXd predData) const
-    {
-        return accuracy(outData, predData, threshold_);
-    }
-
-    string name() const
-    {
-        stringstream ss;
-        ss << "accuracy(" << threshold_ << ")";
-        return ss.str();
-    }
-
-private:
-    const double threshold_;
-};
-
-
-class LogLoss {
-public:
-    LogLoss(double gamma) : gamma_(gamma)
-    {
-        if (!(gamma > 0 && gamma <= 1.0))
-            throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
-    }
-
-    double operator()(CRefXs outData, CRefXd predData) const
-    {
-        return logLoss(outData, predData, gamma_);
-    }
-
-    string name() const
-    {
-        stringstream ss;
-        ss << "log-loss(" << gamma_ << ")";
-        return ss.str();
-    }
-
-private:
-    const double gamma_;
-};
+inline double negAucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
+{
+    return -aucWeighted(outData, predData, weights);
+}

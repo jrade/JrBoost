@@ -100,6 +100,7 @@ void NodeBuilder<SampleIndex>::update(size_t j, const SampleIndex* samplesBegin,
     }
 
     bestScore_ = bestScore;
+
     bestRightSampleCount_ = sampleCount - bestLeftSampleCount_;
     slowBranchCount_ += slowBranchCount;
 }
@@ -150,7 +151,7 @@ void NodeBuilder<SampleIndex>::initNodes(
         ++*child;
         if (childSampleCount) {
             **childSampleCount = bestLeftSampleCount_;
-            ++* childSampleCount;
+            ++*childSampleCount;
         }
 
         (*parent)->rightChild = *child;
@@ -159,8 +160,12 @@ void NodeBuilder<SampleIndex>::initNodes(
         ++*child;
         if (childSampleCount) {
             **childSampleCount = bestRightSampleCount_;
-            ++* childSampleCount;
+            ++*childSampleCount;
         }
+
+        double bestGain = bestScore_ - sumWY_ * sumWY_ / sumW_;
+        ASSERT(bestGain > 0);
+        (*parent)->gain = static_cast<float>(bestGain);
     }
 
     ++*parent;

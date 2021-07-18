@@ -21,6 +21,7 @@ public:
     size_t minNodeSize() const { return minNodeSize_; }
     double minNodeWeight() const { return minNodeWeight_; }
     bool isStratified() const { return isStratified_; }
+    double pruneFactor() const { return pruneFactor_; }
 
     void setMaxDepth(size_t d);
     void setUsedSampleRatio(double r);
@@ -31,6 +32,7 @@ public:
     void setMinNodeSize(size_t n);
     void setMinNodeWeight(double w);
     void setIsStratified(bool b);
+    void setPruneFactor(double p);
 
 protected:
     double cost() const;
@@ -45,4 +47,5 @@ private:
     size_t minNodeSize_{ 1 };
     double minNodeWeight_{ 0.0 };
     bool isStratified_{ true };
+    double pruneFactor_{ 0.0 };
 };

@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95f4afab-ebd4-4c56-b9f6-385012fbe83c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>example\iris.py</StartupFile>
+    <StartupFile>example\higgs.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -21,9 +21,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="example\higgs.py" />
-    <Compile Include="example\higgs2.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="example\higgs_old.py" />
+    <Compile Include="example\higgs_quick.py" />
     <Compile Include="example\iris.py" />
     <Compile Include="example\otto.py" />
     <Compile Include="jrboost\_jrboost.py" />

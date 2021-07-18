@@ -22,6 +22,7 @@ public:
         float x;
         Node* leftChild;
         Node* rightChild;
+        float gain;
     };
 
 public:
@@ -32,6 +33,7 @@ public:
     {}
  
     virtual ~TreePredictor() = default;
+
 
 private:
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
@@ -48,4 +50,14 @@ private:
 private:
     const Node* const root_;
     const std::any nodeContainer_;
+
+
+public:
+    static void prune(Node* node, float pruneFactor);
+
+private:
+    static float maxGain_(const Node* node);
+    static void pruneImpl_(Node* node, float pruneLimit);
 };
+
+

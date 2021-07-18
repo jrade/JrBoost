@@ -1,146 +1,122 @@
+new GitHub login method
+	https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
 
+========================================================================================================================
 
+Tree builder:
 
-Leukeima external vaidation, 10 reps x 5 folds, laptop:
+	implementations:
 
-........................................................
+		A. stumps
+		B. sample state (UNUSED = 0, node index offset by 1), no filtering [not implemented yet]
+		C. sample state (UNUSED = (SampleIndex)-1, node index), filtered ordered samples
+		D. filtered and grouped ordered samples
 
-A:
+		Implement B (the most cache efficient one)
+			Do it by cloning and mutating C
+			Implement B/D hybrid scheme: run B until number of samples has dropped to some percentage, then D
 
-main                            -nan(ind)  -nan(ind)%
-  t-rank                        -nan(ind)  -nan(ind)%  -nan(ind)
-  boost init                    -nan(ind)  -nan(ind)%
-    init sorted samples         -nan(ind)  -nan(ind)%  -nan(ind)
-  boost train                   -nan(ind)  -nan(ind)%  -nan(ind)
-    stump train                 -nan(ind)  -nan(ind)%  -nan(ind)
-      sums                      -nan(ind)  -nan(ind)%
-     tree predict               -nan(ind)  -nan(ind)%  -nan(ind)
-    thread synch                -nan(ind)  -nan(ind)%
-  boost predict                 -nan(ind)  -nan(ind)%  -nan(ind)
+		Which one to use?
+			Test cases:
+				Leukemia, nested CV, population optimization
+				Higgs, full dataset, no CV, population optimization
+			Also verify that B/C/D with depth 1 is as fast as A
 
-profiling overhead: -nan(ind)%
-slow branch: -nan(ind)%
-
-0:06:32
-
-.......................................................
-
-C:
-
-main                               11058   0.7%
-  t-rank                           13775   0.9%    3.1
-  boost init                          63   0.0%
-    init sorted samples             2215   0.1%   18.9
-  boost train                      27607   1.8%   21.3
-    stump train                    31800   2.1%
-      used variables                7902   0.5%   16.9
-      init sample status           36795   2.4%   28.4  <------
-      init used sorted samples    187822  12.5%    4.7  <-----
-      update sample status         20401   1.4%   20.4
-      update used sorted samples   95528   6.4%    4.6
-      init ordered samples        249529  16.6%   12.5
-      update node builder         510728  34.0%   15.7  <----
-      sums                          5382   0.4%    6.2
-     tree predict                  29267   1.9%   22.6
-    thread synch                  263355  17.5%
-  boost predict                     9338   0.6%  29255.4
-
-profiling overhead: 14.1%
-slow branch: 9.7%
-
-0:14:20
-
-................................................................................................
-
-D:
-
-main                               10664   0.9%
-  t-rank                           13116   1.1%    2.9
-  boost init                          61   0.0%
-    init sorted samples             2137   0.2%   18.2
-  boost train                      28232   2.5%   20.2
-    stump train                    35355   3.1%
-      used variables                8415   0.7%   15.9
-      init sample mask             33678   2.9%   24.1  <------
-      init ordered samples        111864   9.7%    2.4  <------
-      update ordered samples      160983  14.0%    7.9
-      update node builder         490722  42.7%   14.9  <------
-      sums                          5645   0.5%    6.3
-     tree predict                  29977   2.6%   21.4
-    thread synch                  208215  18.1%
-  boost predict                     9269   0.8%  26821.8
-
-profiling overhead: 1.4%
-slow branch: 10.6%
-
-0:09:44
-
-
-============================================================
-
- major tasks:
-	variable importance weights
-	clean up Higgs and Otto
-	BART
-	histogram based stumps (would speed up Otto a lot)
-	gradient boost
-
-========================================================================
-
-TreeTrainer implementations:
-  A. stumps
-  B. sample state (UNUSED = 0, node index offset by 1)
-  C. sample state (UNUSED = (SampleIndex)-1, node index), filtered ordered samples
-  D. filtered and grouped ordered samples
-
-
-trees:
-	now:
+	Minor things:
+		decrease default gamma (in log loss) from 0.1 to 0.001?
 		micro optimizations
 			more branch-free code
 		avoid accessing thread local vectors in inner loops in initSampleStatus() / initSampleMask() and other places
-		clean up profiling code
 		general code review
+		more efficient storage of usedSortedSamples, orderedSamples_ etc? (by variable index instead of by variable)		
+			would not work with a (yet to be implemented) select variables by level mode
+		code simplification:
+			are static thread_local buffers worth the trouble?
 
-	this week:
-		tree pruning
+	Finally:
+		Clean up profiling
+		remove obsolete friend declarations
 
-	later:
-		test other parallellization strategy
-			try D with a more finegrained paralllellization
-			if this works, restructure to get the largest possible 
-					for(size_t j: usedVariables) { .... }
-				block
-		resurrect TreeBuilderB by backporting from TreeBuilderC	
+------------------------------------------------------------------------------------------------------------------------
 
-	..........................................................
+Higgs:
 
-	more efficient storage of usedSortedSamples, orderedSamples_ etc? (by variable index instead of by variable)		
-		would not work with a (yet to be implemented) select variables by level mode
+	feature engineering
+		read paper appendix A, then appendix B
+		look at winning submission
 
-	further optimizations:
-		carry over sums?
-
-	how to use tree trainer:
-		decrease top variable count?
-		increase cycle count?
+	seems weighted logLoss and weighted AUC both work as target functions
+	seems there is no need to normaize the weights
 	
-	features to add:
-		usedVariables per level option (may be expensive)
+	more robust AMS cutoff fitting (testing every possible cutoff may lead to overfitting, apply some smoothing?)
+	population optimization parameters (generator approach)
+	repetition count
 
-	code simplification:
-		are static thread_local buffers worth the trouble?
+	minGain feature
+	forward and backward pruning
+	drop useless variables?
 
-============================================================================================
+	cross-validation for fitting hyper parameters and AMS cutoff
+		only use the data files train.csv and test.csv from Kaggle competition
+		trainer that works with sample subset
 
-predict overload that that takes a one-dim array and returns a double (use in QD Demo)
+	look at final version of my Kaggle code
+	look at winning submissions, paper, code at https://github.com/melisgl/higgsml
+	look at other publicly available submissions
+		
+	do some profiling
+		how does it scale with number of cores (using the full dataset)
+		what takes so much time at the end?
 
-is there any need for the fudge term in the t- and F-test? 
-	How large should the fudge term be?
+	compare with the xgbost higgs example:
+		speed, accuracy?
 
-================================================================================================
+	how does higgs.py find jrboost when importing it?
 
-possible optimizations
+------------------------------------------------------------------------------------------------------------------------
+
+Pruning and variable importance weights:
+
+	implement variable importance weights
+		also for stubs
+		validate with ALL data
+
+	prune using prune factor times root gain or prune factor times max gain?
+	
+	review and test the prune code 
+
+	where should the prune functions be?
+
+	save and load gain in classifier file (increment file format version number)
+
+------------------------------------------------------------------------------------------------------------------------
+
+major tasks:
+	other parallellization schemes
+	improved Otto
+	gradient boost (Friedman and xgb papers)
+		first and second order boost with any gamma
+	BART
+	histogram based tree builder (would speed up Otto a lot)
+	multinomial predictors
+
+features to add:
+	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
+	used variable subset by level option (may be expensive)
+	predict overload that takes a one-dim array and returns a double (use in QD Demo)
+	multiple inData and multiple variable counts (to handle feature engineering etc.)
+	set seed (to make the build process deterministic)
+
+minor things:
+	example files should not be part of jrboost package
+	get rid of all fastExp code
+	is there any need for the fudge term in the t- and F-test? 
+		How large should the fudge term be?
+	documentation of regularized logit boost
+	U-test (with correct handling of ties)
+	review handling of rounding off errors towards end when splitting nodes (look in old code)
+
+possible optimizations:
 	test PGO again
 	test narrower type for strata
 	float or double for outdata and weights?
@@ -149,39 +125,15 @@ possible optimizations
 		select fastest implementation dynamically depending on sample count etc.
 		maybe do this as a separate stump trainer class
 
-documentation of regularized logit boost
-
-new GitHub login method
-	https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+========================================================================================================================
 
 Eigen:
 	read Eigen 3.4 docs
 	report that
 			ArrayXf a = {0, 4, 5};
 		compiles
-	pass Ref<const Array> by const ref?
 
-
-should score > bestScore be replaced by something stricter?
-	make init value of bestScore slightly larger?
-
-========================================================================
-	
-Higgs:
-	set up to run with the original kaggle files
-
-	two modes:
-		cv and submitt to kaggle server
-		nested cv
-			test 3 outer and 2 inner folds
-		load function with random sampling for testing
-
-	use weights when building predictor
-
-
-	do some profiling with different numbers of train samples
-		how long does it take to load file?
-			transform to binary format?
+------------------------------------------------------------------------------------------------------------------------
 
 Otto:
 	run an explorative round with full dataset
@@ -194,16 +146,7 @@ Otto:
 
 	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
 
-=====================================================================
-
-U-test (with correct handling of ties)
-
-gradient boost
-	read xgb paper and Friedman to check that my understanding is correct
-
-extended algorithms:
-	first and second order boost
-	alpha-beta boost with beta loss
+------------------------------------------------------------------------------------------------------------------------
 
 review use of integer and floating point data types
 	use int64_t as default integer type?
@@ -217,28 +160,7 @@ stump train strategy:
 	this might be faster when usedSampleCount is small i.e. when we do weight filtering and most weights are small
 	use pdq-sort (https://github.com/orlp/pdqsort) when sorting
 
-multiple inData and multiple variableCount (to handle feature engineering etc.)
-
-----------------------------------------------------------------------
-
-low prio:
-	look in the old stub (or rather tree) builder code and see how I avoided rounding off errors towards the end
-	L2-penalty (lambda) or L1-penalty (alpha)
-
-	test accuracy of fast math
-		1. improved fast math with smarter (x + 1) ^ (gamma-2)
-		2. update the Gist with fastLog and fastPow
-		3. plot min and max rel error of fastPow as a function of gamma
-			let x range over 2 ** -n to 2 **n; seems the exact form of curve depends a little on on
-			send a mail to Nic with the results
-
-	better error messages when converting arguments to BoostTrainer::train
-
-	profiling system that distinguishes between time in parallellized and non-parallellized code
-
-	multinomial classification
-
-======================================================================================
+------------------------------------------------------------------------------------------------------------------------
 	
 Eigen issues:
 	no select with two constants
@@ -246,7 +168,7 @@ Eigen issues:
 			second argument should be CRefXs, but that leads to problems ...
 	is BoostTrainer::trainAda_ slower with Eigen 3.4 than with Eigen 3.3.9?
 
-======================================================================================
+========================================================================================================================
 
 Notes:
 

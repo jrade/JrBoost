@@ -22,3 +22,8 @@ ArrayXd parallelTrainAndEval(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
     CRefXXf testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
 );
+
+ArrayXd parallelTrainAndEvalWeighted(
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
+    CRefXXf testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
+);

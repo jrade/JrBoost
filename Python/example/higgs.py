@@ -2,135 +2,182 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import random, time
+import datetime, math, os, random, time
 import numpy as np
 import pandas as pd
-import util, optimize_grid, optimize_dynamic
 import jrboost
 
 PROFILE = jrboost.PROFILE
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-cvParam = {
-    'threadCount': 4,
+param = {
+    'threadCount': os.cpu_count() - 2,
     'profile': True,
-    'trainFraction' : 0.001,
-
-    'optimizeFun': optimize_dynamic.optimize,
-    'lossFun': jrboost.negAuc,
-
-    'boostParamValues': {
-        'iterationCount': [1000],
-        'eta':  [0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
-        'usedSampleRatio': [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0],
-        'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        'minNodeSize': [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000],
-        'minSampleWeight': [0.000001],
-    },
-
-    'bestOptionCount': 10,
-    'bagSize': 1,
-
-    'populationCount': 100,
-    'survivorCount': 50,
-    'cycleCount': 10,
+    'trainFraction': 1.0,
 }
 
-print(cvParam)
-print()
+trainParam = {
 
+    'minimizeAlgorithm': jrboost.minimizePopulation,
+    #'lossFun': jrboost.negAucWeighted,
+    'lossFun': jrboost.LogLossWeighted(0.001),
+    #'lossFun': lambda a, b, c: -optimalCutoff(a, b, c)[1],
+
+    'boostParamGrid': {
+        #'minRelSampleWeight': [0.001],          #??????????????????????????+
+        'iterationCount': [1000],
+        'eta':  [0.005, 0.007, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1],
+        'usedSampleRatio': [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+        'maxDepth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        'minNodeSize': [1, 2, 3, 5, 7, 10, 15, 20, 30, 50, 100, 150, 200],
+        #'pruneFactor': [0.0, 0.1, 0.2, 0.5],
+    },
+
+    'minimizeParam': {
+        'populationCount': 100,
+        'survivorCount': 50,
+        'cycleCount': 2,
+        'bestCount': 10,
+    }
+}
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main():
+def main(foo):
 
-    threadCount = cvParam['threadCount']
-    profile = cvParam['profile']
-    trainFraction = cvParam.get('trainFraction', None)
-    optimizeFun = cvParam['optimizeFun']
-    lossFun = cvParam['lossFun']
+    trainParam['lossFun'] = foo
 
-    jrboost.setProfile(profile)
-    jrboost.setNumThreads(threadCount)
-    print(f'{threadCount} threads\n')
+    logFilePath = f'../Log {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.txt'
+    with open(logFilePath, 'w', 1) as logFile:
+        def log(msg = ''): print(msg); logFile.write(msg + '\n')
 
-    (trainInDataFrame, trainOutDataSeries, trainWeightSeries,
-        testInDataFrame, testOutDataSeries,
-        validationInDataFrame, validationOutDataSeries) = loadData(trainFrac = trainFraction)
+        log(f'Parameters: {param}\n')
+        log(f'Training parameters:{trainParam}\n')
 
-    trainSamples = trainInDataFrame.index
-    testSamples = testInDataFrame.index
-    validationSamples = validationInDataFrame.index
+        threadCount = param['threadCount']
+        profile = param['profile']
+        trainFraction = param.get('trainFraction', None)
 
-    trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
-    trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint64)
-    trainWeights = trainWeightSeries.to_numpy(dtype = np.float32)
-    testInData = testInDataFrame.to_numpy(dtype = np.float32)
-    testOutData = testOutDataSeries.to_numpy(dtype = np.uint64)
-    validationInData = validationInDataFrame.to_numpy(dtype = np.float32)
-    validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint64)
+        jrboost.setThreadCount(threadCount)
 
-    # make sure that total weight is the same for background and signal events
-    trainWeights[trainOutData == 0] /= np.sum(trainWeights[trainOutData == 0])
-    trainWeights[trainOutData == 1] /= np.sum(trainWeights[trainOutData == 1])
-    # normalize so largest weight is 1
-    trainWeights /= np.max(trainWeights)
+        (trainInDataFrame, trainOutDataSeries, trainWeightSeries,
+            testInDataFrame, testOutDataSeries, testWeightSeries,
+            validationInDataFrame, validationOutDataSeries, validationWeightSeries
+        ) = loadData(trainFrac = trainFraction)
 
-    print(f'{len(trainSamples)} train samples, {len(testSamples)} test samples, {len(validationSamples)} validation samples\n')
+        trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
+        trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint64)
+        trainWeights = trainWeightSeries.to_numpy(dtype = np.float64)
+        testInData = testInDataFrame.to_numpy(dtype = np.float32)
+        testOutData = testOutDataSeries.to_numpy(dtype = np.uint64)
+        testWeights = testWeightSeries.to_numpy(dtype = np.float64)
+        validationInData = validationInDataFrame.to_numpy(dtype = np.float32)
+        validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint64)
+        validationWeights = validationWeightSeries.to_numpy(dtype = np.float64)
+ 
+        log(pd.DataFrame(
+            index = ['Train', 'Test', 'Validation'],
+            columns = ['Total', 'Neg.', 'Pos.', 'Pos. Ratio', 'Weight'],
+            data = [
+                [len(trainOutData), (1 - trainOutData).sum(), trainOutData.sum(), trainOutData.sum() / len(trainOutData), trainWeightSeries.sum()],
+                [len(testOutData), (1 - testOutData).sum(), testOutData.sum(), testOutData.sum() / len(testOutData), testWeightSeries.sum()],
+                [len(validationOutData), (1 - validationOutData).sum(), validationOutData.sum(), validationOutData.sum() / len(validationOutData), validationWeightSeries.sum()],
+            ]
+        ).to_string() + '\n')
 
-    #...............................................................................
+        # train predictor ..........................................................
 
-    t = -time.time()
-    PROFILE.PUSH(PROFILE.MAIN)
-    #predOutDataFrame = pd.DataFrame(index = testSamples, columns = labels, dtype = np.uint64)
+        t = -time.time()
+        if profile: PROFILE.START()
 
+        predictor, cutoff, msg = train(
+            trainInData, trainOutData, trainWeights,
+           testInData, testOutData, testWeights)
+        log(msg + '\n')
+
+        t += time.time()
+        if profile: log(PROFILE.STOP() + '\n')
+        log(formatTime(t) + '\n')
+
+        log(f'cutoff = {cutoff}\n')
+
+        # score ...................................................................
+
+        testPredData = predictor.predict(testInData)
+        score = amsScore(testOutData, testPredData, testWeights, cutoff)
+        log(f'test AMS = {score}')
+
+        validationPredData = predictor.predict(validationInData)
+        score = amsScore(validationOutData, validationPredData, validationWeights, cutoff)
+        log(f'validation AMS = {score}')
+
+        # create and save  .........................................................
+
+
+        testPredDataSeries = pd.Series(index = testOutDataSeries.index, data = testPredData)
+        validationPredDataSeries = pd.Series(index = validationOutDataSeries.index, data = validationPredData)
+        submissionPredDataSeries = pd.concat((testPredDataSeries, validationPredDataSeries)).sort_index()
+        submissionPredData = submissionPredDataSeries.to_numpy()
+        submissionPredRank = rank(submissionPredData) + 1
+        submissionPredClass = np.where(submissionPredData >= cutoff, 's', 'b')
+
+        submissionDataFrame = pd.DataFrame(
+            index = submissionPredDataSeries.index,
+            data = { 'RankOrder': submissionPredRank, 'Class': submissionPredClass, }
+        )
+        submissionDataFrame.to_csv('../../Higgs Submission.csv', sep = ',')
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def train(trainInData, trainOutData, trainWeights, testInData, testOutData, testWeights):
+
+    optimizeFun = trainParam['minimizeAlgorithm']
+    lossFun = trainParam['lossFun']
+
+    # determine the best hyperparameters
+    boostParamGrid = trainParam['boostParamGrid']
+    minimizeParam = trainParam['minimizeParam']
     bestOptList = optimizeFun(
-        cvParam,
-        lambda optionList: trainAndEval(
-            trainInData, trainOutData, trainWeights, testInData, testOutData, optionList, lossFun)
+        lambda optionList: evaluateBoostParam(
+            trainInData, trainOutData, trainWeights, testInData, testOutData, testWeights, optionList, lossFun),
+        boostParamGrid,
+        minimizeParam
     )
-                                                      
-    print(formatOptions(bestOptList[0]))
+    msg = formatOptions(bestOptList[0])
 
-    predOutData = trainAndPredict(trainInData, trainOutData, validationInData, bestOptList)
+    # build predictor
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+    predictor = jrboost.EnsemblePredictor(jrboost.parallelTrain(trainer, bestOptList))
 
-    estSignalRatio = sum(trainOutData) / len(trainOutData)
-    estCutoff = np.quantile(predOutData, 1.0 - estSignalRatio)
+    predOutData = predictor.predict(testInData)
 
-    print(f'threshold = {estCutoff}')
-   
-    PROFILE.POP()
-    t += time.time()
-    PROFILE.PRINT()
-    print(util.formatTime(t))
-    print()
-    print()
+    estCutoff, _ = optimalCutoff(testOutData, predOutData, testWeights)
 
-    submission = pd.DataFrame(
-        index = validationSamples,
-        data = {
-            'P': predOutData,
-            'RankOrder': ranks(predOutData) + 1,
-            'Class': np.where(predOutData > estCutoff, 's', 'b')
-        }
-    )
-    submission.to_csv('Higgs Submission.csv', sep = ',')
+    #estSignalRatio = sum(trainOutData) / len(trainOutData)
+    #estCutoff = np.quantile(predOutData, 1.0 - estSignalRatio)
 
-    print("Done!")
+    return predictor, estCutoff, msg
 
-#-----------------------------------------------------------------------------------------------------------------------
 
-def ranks(data):
-    temp = data.argsort()
-    ranks1 = np.empty_like(temp)
-    ranks1[temp] = np.arange(len(temp))
-    return ranks1
+def evaluateBoostParam(
+    trainInData, trainOutData, trainWeights,
+    testInData, testOutData, testWeights,
+    optionList, lossFun
+):
+    optionCount = len(optionList)
+    loss = np.zeros((optionCount,))
 
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+    loss =  jrboost.parallelTrainAndEvalWeighted(trainer, optionList, testInData, testOutData, testWeights, lossFun)
+    return loss
+
+#-----------------------------------------------------------------------------------------------
 
 def loadData(trainFrac = None):
 
-    dataFilePath = 'C:/Users/Rade/Documents/Data Analysis/Kaggle/Higgs Challenge/Data/atlas-higgs-challenge-2014-v2.csv'
+    dataFilePath = 'C:/Data/Higgs/atlas-higgs-challenge-2014-v2.csv'
     dataFrame = pd.read_csv(dataFilePath, sep = ',', index_col = 0)
 
     trainSamples = dataFrame.index[dataFrame['KaggleSet'] == 't']
@@ -145,60 +192,112 @@ def loadData(trainFrac = None):
 
     outDataSeries = pd.Series(index = dataFrame.index, data = 0)
     outDataSeries[dataFrame['Label'] == 's'] = 1
-    weightSeries = dataFrame['Weight']
-    inDataFrame = dataFrame.drop(['Label', 'Weight', 'KaggleSet'], axis = 1)
+    weightSeries = dataFrame['KaggleWeight']
+    inDataFrame = dataFrame.drop(['Label', 'Weight', 'KaggleSet', 'KaggleWeight'], axis = 1)
 
     trainInDataFrame = inDataFrame.loc[trainSamples, :]
     trainOutDataSeries = outDataSeries[trainSamples]
     trainWeightSeries = weightSeries[trainSamples]
+
     testInDataFrame = inDataFrame.loc[testSamples, :]
     testOutDataSeries = outDataSeries[testSamples]
+    testWeightSeries = weightSeries[testSamples]
+
     validationInDataFrame = inDataFrame.loc[validationSamples, :]
     validationOutDataSeries = outDataSeries[validationSamples]
+    validationWeightSeries = weightSeries[validationSamples]
 
     return (
         trainInDataFrame, trainOutDataSeries, trainWeightSeries,
-        testInDataFrame, testOutDataSeries,
-        validationInDataFrame, validationOutDataSeries
+        testInDataFrame, testOutDataSeries, testWeightSeries,
+        validationInDataFrame, validationOutDataSeries, validationWeightSeries
     )
-    
+  
+#-----------------------------------------------------------------------------------------------------------------------
 
 def formatOptions(opt):
-    eta = opt.eta
-    usr = opt.usedSampleRatio
-    uvr = opt.usedVariableRatio
-    mns = opt.minNodeSize
-    return f'eta = {eta:.2f}  usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
-
+    eta = opt['eta']
+    usr = opt.get('usedSampleRatio', 1.0)
+    uvr = opt.get('usedVariableRatio', 1.0)
+    mns = opt.get('minNodeSize', 1)
+    md = opt.get('maxDepth', 1)
+    pf = opt.get('pruneFactor', 0.0)
+    return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}  pf = {pf}'
 
 def formatScore(score, precision = 4):
     return '(' + ', '.join((f'{x:.{precision}f}' for x in score)) + ')'
 
-
-def trainAndEval(
-    trainInData, trainOutData, trainWeights,
-    testInData, testOutData,
-    optionList, lossFun
-):
-    optionCount = len(optionList)
-    loss = np.zeros((optionCount,))
-
-    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
-    loss =  trainer.trainAndEval(testInData, testOutData, optionList, lossFun)
-    return loss
-
-
-def trainAndPredict(trainInData, trainOutData, validationInData, bestOptList):
-
-    predOutDataList = []
-    trainer = jrboost.BoostTrainer(trainInData, trainOutData)
-    for opt in bestOptList:
-        predictor = trainer.train(opt)
-        predOutDataList.append(predictor.predict(validationInData))
-    predOutData = np.median(np.array(predOutDataList), axis = 0)
-    return predOutData
+def formatTime(t):
+    h = int(t / 3600)
+    t -= 3600 * h;
+    m = int(t / 60)
+    t -= 60 * m
+    s = int(t)
+    return f'{h}:{m:02}:{s:02}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+def rank(data):
+    temp = data.argsort()
+    ranks1 = np.empty_like(temp)
+    ranks1[temp] = np.arange(len(temp))
+    return ranks1
 
-main()
+#-----------------------------------------------------------------------------------------------------------------------
+
+def _amsScoreImpl(s, b):
+
+    b_r = 10.0
+    return math.sqrt( 2.0 * (
+		(s + b + b_r) 
+        * math.log (1.0 + s / (b + b_r)) 
+        - s
+	))
+
+
+def amsScore(outData, predData, weights, cutoff):
+    truePos = np.sum(outData * (predData >= cutoff) * weights)
+    trueNeg = np.sum((1 - outData) * (predData >= cutoff) * weights)
+    return _amsScoreImpl(truePos, trueNeg)
+
+
+def optimalCutoff(outData, predData, weights):
+
+    truePos = 0.0
+    falsePos = 0.0
+    a = sorted(list(zip(outData, predData, weights)), key = lambda x: -x[1])
+
+    bestScore = _amsScoreImpl(truePos, falsePos)
+    bestI = -1
+
+    for i, (outValue, _, weight) in enumerate(a):
+
+        if outValue:
+            truePos += weight
+        else:
+            falsePos += weight
+
+        score = _amsScoreImpl(truePos, falsePos)
+        if score <= bestScore: continue
+
+        if i != len(a) - 1 and a[i][1] == a[i + 1][1]: continue
+
+        bestScore = score
+        bestI = i
+   
+    if bestI == -1:
+        bestCutoff = 1.0
+    elif bestI == len(a) - 1:
+        bestCutoff = 0.0
+    else:
+        bestCutoff = (a[bestI][1] + a[bestI + 1][1]) / 2.0 
+
+    return bestCutoff, bestScore
+
+#---------------------------------------------------------------------------------------------
+
+#main()
+
+main(jrboost.negAucWeighted)
+main(jrboost.LogLossWeighted(0.001))
+main(lambda a, b, c: -optimalCutoff(a, b, c)[1])

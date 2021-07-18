@@ -74,7 +74,7 @@ def stratifiedRandomSplit(outData, ratio, samples = None):
     trainSamples = np.array(sorted(trainSamples))
     testSamples = np.array(sorted(testSamples))
 
-    return trainsamples, testSamples
+    return trainSamples, testSamples
 
 #-----------------------------------------------------------------------------------------------------------------------
 

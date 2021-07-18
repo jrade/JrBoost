@@ -189,3 +189,65 @@ ArrayXd parallelTrainAndEval(
 
     return scores;
 }
+
+ArrayXd parallelTrainAndEvalWeighted(
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
+    CRefXXf testInData, CRefXs testOutData, CRefXd testWeights,  function<double(CRefXs, CRefXd, CRefXd)> lossFun
+)
+{
+    size_t optCount = size(opt);
+
+    vector<size_t> optIndicesSortedByCost(optCount);
+    sortedIndices(
+        cbegin(opt),
+        cend(opt),
+        begin(optIndicesSortedByCost),
+        [](const auto& opt) { return -opt.cost(); }
+    );
+
+    ArrayXd scores(optCount);
+    std::exception_ptr ep;
+    std::atomic<bool> exceptionThrown = false;
+    std::atomic<int> i0 = 0;
+
+#pragma omp parallel
+    {
+        while (true) {
+            if (exceptionThrown) break;
+            size_t i = i0++;
+            if (i >= size(opt)) break;
+
+            try {
+                if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
+                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
+
+                size_t j = optIndicesSortedByCost[i];
+                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);    // may also throw
+                ArrayXd predData = pred->predict(testInData);
+                scores(j) = lossFun(testOutData, predData, testWeights);
+            }
+
+            catch (const std::exception&) {
+#pragma omp critical
+                if (!exceptionThrown) {
+                    ep = std::current_exception();
+                    exceptionThrown = true;
+                }
+            }
+
+            std::cout << ((i + 1) % 10 == 0 ? '0' : '.');
+
+        } // don't wait here ...
+
+        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
+
+    } // ... but here so we can measure the wait time
+    PROFILE::POP();
+
+    std::cout << std::endl;
+
+    if (exceptionThrown) std::rethrow_exception(ep);
+
+    return scores;
+}
+

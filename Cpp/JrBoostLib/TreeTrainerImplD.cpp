@@ -144,7 +144,9 @@ unique_ptr<BasePredictor> TreeTrainerImplD<SampleIndex>::train(
         PROFILE::SLOW_BRANCH_COUNT += NodeBuilder<SampleIndex>::slowBranchCount();
     }
 
-    return std::make_unique<TreePredictor>(&nodes[0][0], move(nodes));
+    TreePredictor::Node* root = &nodes[0][0];
+    TreePredictor::prune(root, static_cast<float>(options.pruneFactor()));
+    return std::make_unique<TreePredictor>(root, move(nodes));
 };
 
 

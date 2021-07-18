@@ -105,7 +105,6 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
         double* pAdjWeights = &adjWeights(0);
         for (size_t j = 0; j < sampleCount; ++j)
             pAdjWeights[j] = exp(-pF[j] * pOutData[j]);
-
         if (weights_)
             adjWeights *= (*weights_);
         if (!(adjWeights < numeric_limits<float>::infinity()).all())

@@ -95,3 +95,28 @@ TreePredictor::Node* TreePredictor::load_(istream& is, Node* node)
         return load_(is, node->rightChild);
     }
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+void TreePredictor::prune(Node* node, float pruneFactor)
+{
+    if (pruneFactor == 0) return;
+    //float pruneLimit = pruneFactor * maxGain_(node);
+    float pruneLimit = pruneFactor * node->gain;
+    pruneImpl_(node, pruneLimit);
+}
+
+float TreePredictor::maxGain_(const Node* node)
+{
+    if (node->isLeaf) return 0.0f;
+    return std::max(node->gain, std::max(maxGain_(node->leftChild), maxGain_(node->rightChild)));
+}
+
+void TreePredictor::pruneImpl_(Node* node, float pruneLimit)
+{
+    if (node->isLeaf) return;
+    pruneImpl_(node->leftChild, pruneLimit);
+    pruneImpl_(node->rightChild, pruneLimit);
+    if (node->leftChild->isLeaf && node->rightChild->isLeaf && node->gain < pruneLimit)
+        node->isLeaf = true;
+}
