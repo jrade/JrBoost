@@ -27,10 +27,6 @@ ArrayXd Predictor::predict(CRefXXf inData) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-// File format versions:
-// 1 - original version
-// 2 - added tree predictors, simplified version handling
-
 void Predictor::save(const string& filePath) const
 {
     ofstream ofs;

@@ -32,6 +32,7 @@ public:
         MAIN, 
         T_RANK, BOOST_INIT, STUMP_INIT, BOOST_TRAIN, STUMP_TRAIN,
             /*VALIDATE,*/
+            INIT_TREE,
             USED_VARIABLES,
             INIT_SAMPLE_MASK,
             INIT_SAMPLE_STATUS,
@@ -42,6 +43,7 @@ public:
             INIT_ORDERED_SAMPLES_C,
             UPDATE_ORDERED_SAMPLES,
             UPDATE_NODE_BUILDER,
+            UPDATE_TREE,
             SUMS,
         TREE_PREDICT,
         THREAD_SYNCH, BOOST_PREDICT,
@@ -59,10 +61,14 @@ private:
     static const string names_[CLOCK_COUNT];
     static StaticStack<CLOCK_ID, 1000> clockIndexStack_;
 
+    template<typename SampleIndex> friend class TreeTrainerImpl;
+
+    template<typename SampleIndex> friend class StumpTrainerImpl;
     template<typename SampleIndex> friend class TreeTrainerImplA;
     template<typename SampleIndex> friend class TreeTrainerImplB;
     template<typename SampleIndex> friend class TreeTrainerImplC;
     template<typename SampleIndex> friend class TreeTrainerImplD;
+
     static uint64_t SPLIT_ITERATION_COUNT;
     static uint64_t SLOW_BRANCH_COUNT;
 };
@@ -76,6 +82,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "  boost train",
     "    stump train",            
 //  "      validate",
+    "      init tree",
     "      used variables",
     "      init sample mask",
     "      init sample status",
@@ -86,6 +93,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "      init ordered samples",
     "      update ordered samples",
     "      update node builder",
+    "      update tree",
     "      sums",
     "     tree predict",
     "    thread synch",

@@ -6,6 +6,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E7537CA6-817B-42AE-95BE-7345836D8986}"
 	ProjectSection(SolutionItems) = preProject
 		License.txt = License.txt
+		Profile.txt = Profile.txt
 		ToDo.txt = ToDo.txt
 	EndProjectSection
 EndProject

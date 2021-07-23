@@ -7,7 +7,6 @@
 
 #include "AGRandom.h"
 #include "BernoulliDistribution.h"
-#include "TreeNode.h"
 #include "TreeTrainerImplBase.h"
 
 class TreeOptions;
@@ -16,33 +15,16 @@ class BasePredictor;
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-class TreeTrainerImpl : public TreeTrainerImplBase 
+class StumpTrainerImpl : public TreeTrainerImplBase 
 {
 public:
-    TreeTrainerImpl(CRefXXf inData, CRefXs strata);
-    virtual ~TreeTrainerImpl() = default;
+    StumpTrainerImpl(CRefXXf inData, CRefXs strata);
+    virtual ~StumpTrainerImpl() = default;
 
     virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const;
 
 private:
     using RandomNumberEngine_ = splitmix;
-
-    struct SplitData {
-        bool isInit;
-        double sumW;
-        double sumWY;
-        double minNodeWeight;
-
-        bool splitFound;
-        double score;
-        size_t j;
-        float x;
-        double leftY;
-        double rightY;
-
-        size_t iterationCount;
-        size_t slowBranchCount;
-    };
 
     using BernoulliDistribution = typename std::conditional<
         sizeof(SampleIndex) == 8,
@@ -53,14 +35,9 @@ private:
     vector<vector<SampleIndex>> createSortedSamples_() const;
     void validateData_(CRefXd outData, CRefXd weights) const;
     size_t initUsedVariables_(const TreeOptions& opt) const;
-    void initSampleStatus_(const TreeOptions& opt, CRefXd weights) const;
-    void updateSampleStatus_(const vector<TreeNode>& parentNodes, const vector<TreeNode>& childNodes) const;
-    void initOrderedSamples_(size_t j) const;
-    void initOrderedSamplesFast_(size_t j) const;
-    void updateSplit_(
-        SplitData* splitData, CRefXd outData, CRefXd weights, const TreeOptions& options,
-        const SampleIndex* usedSamples, size_t usedSampleCount, size_t j) const;
-    void updateTree_(vector<TreeNode>& parentNodes, vector<TreeNode>& childNodes) const;
+    size_t initUsedSampleMask_(const TreeOptions& opt, CRefXd weights) const;
+    void initSortedUsedSamples_(size_t usedSampleCount, size_t j) const;
+    pair<double, double> initSums_(const CRefXd& outData, const CRefXd& weights) const;
 
     const CRefXXf inData_;
     const size_t sampleCount_;
@@ -72,11 +49,8 @@ private:
 
     inline static thread_local RandomNumberEngine_ rne_;
     inline static thread_local vector<size_t> usedVariables_;
-    inline static thread_local vector<SampleIndex> sampleStatus_;
-    inline static thread_local vector<size_t> sampleCountByStatus_;
+    inline static thread_local vector<uint8_t> usedSampleMask_;
     inline static thread_local vector<SampleIndex> sampleBuffer_;
-    inline static thread_local vector<SplitData> splitData_;
-    inline static thread_local vector<vector<TreeNode>> nodes_;
 
     inline static thread_local struct ThreadLocalInit_ {
         ThreadLocalInit_() {
@@ -85,6 +59,3 @@ private:
         }
     } threadLocalInit_{};
 };
-
-
-

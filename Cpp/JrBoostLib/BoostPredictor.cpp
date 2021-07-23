@@ -18,7 +18,7 @@ BoostPredictor::BoostPredictor(
     variableCount_(variableCount),
     c0_{ static_cast<float>(c0) },
     c1_{ static_cast<float>(c1) },
-    basePredictors_{ std::move(basePredictors) }
+    basePredictors_{ move(basePredictors) }
 {
 }
 
@@ -68,5 +68,5 @@ shared_ptr<Predictor> BoostPredictor::load_(istream& is, int version)
     for (uint32_t i = 0; i < n; ++i)
         basePredictors[i] = BasePredictor::load_(is, version);
 
-    return std::make_shared<BoostPredictor>(variableCount, c0, c1, std::move(basePredictors));
+    return std::make_shared<BoostPredictor>(variableCount, c0, c1, move(basePredictors));
 }

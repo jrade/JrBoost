@@ -100,6 +100,7 @@ string PROFILE::RESULT()
             ss << '\n';
         }
     }
+    ss << std::setw(40) << std::fixed << std::setprecision(0) << 1e-6 * totalAdjustedClockCycleCount << '\n';;
 
     ss << '\n';
     //ss << "zero calibration: " << adjustment << '\n';

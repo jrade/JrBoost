@@ -22,7 +22,7 @@ trainParam = {
 
     'boostParamGrid': {
         'iterationCount': [1000],
-        'eta':  [0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3],
+        'eta':  [0.001, 0.0015, 0.002, 0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'usedVariableRatio': [0.25, 0.5, 0.75, 1.0],
         'minNodeSize': [1],
@@ -163,11 +163,11 @@ def evaluateBoostParam(boostParamList, inData, outData):
 def formatBoostParam(boostParam):
     ic = boostParam['iterationCount']
     eta  = boostParam['eta']
-    md = boostParam['maxDepth']
+    md = boostParam.get('maxDepth', 1)
     usr = boostParam['usedSampleRatio']
     uvr = boostParam['usedVariableRatio']
     mns = boostParam['minNodeSize']
-    return f'ic = {ic}  eta = {eta:.4f}  md = {md} usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
+    return f'ic = {ic}  eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
 
 def formatTime(t):
     h = int(t / 3600)

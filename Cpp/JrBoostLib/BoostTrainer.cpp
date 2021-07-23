@@ -112,10 +112,10 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
         basePred->predict(inData_, eta, F);
-        basePredictors[i] = std::move(basePred);
+        basePredictors[i] = move(basePred);
     }
 
-    return std::make_shared<BoostPredictor>(variableCount_, lor0_, 2 * eta, std::move(basePredictors));
+    return std::make_shared<BoostPredictor>(variableCount_, lor0_, 2 * eta, move(basePredictors));
 }
 
 //......................................................................................................................
@@ -181,10 +181,10 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
         basePred->predict(inData_, eta, F);
-        basePredictors[i] = std::move(basePred);
+        basePredictors[i] = move(basePred);
     }
 
-    return std::make_shared<BoostPredictor>(variableCount_, lor0_, eta, std::move(basePredictors));
+    return std::make_shared<BoostPredictor>(variableCount_, lor0_, eta, move(basePredictors));
 }
 
 //......................................................................................................................
@@ -250,10 +250,10 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
         basePred->predict(inData_, eta, F);
-        basePredictors[i] = std::move(basePred);
+        basePredictors[i] = move(basePred);
     }
 
-    return std::make_shared<BoostPredictor>(variableCount_, lor0_, (1.0 + gamma) * eta, std::move(basePredictors));
+    return std::make_shared<BoostPredictor>(variableCount_, lor0_, (1.0 + gamma) * eta, move(basePredictors));
 }
 
 //......................................................................................................................

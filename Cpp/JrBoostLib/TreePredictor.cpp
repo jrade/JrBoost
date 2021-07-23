@@ -4,13 +4,14 @@
 
 #include "pch.h"
 #include "TreePredictor.h"
+#include "TreeNode.h"
 
 
 void TreePredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 {
     const size_t sampleCount = inData.rows();
     for (size_t i = 0; i < sampleCount; ++i) {
-        const Node* node = root_;
+        const TreeNode* node = root_;
         while (!node->isLeaf)
             node = (inData(i, node->j) < node->x) ? node->leftChild : node->rightChild;
         outData(i) += c * node->y;
@@ -24,7 +25,7 @@ void TreePredictor::save_(ostream& os) const
     const int type = Tree;
     os.put(static_cast<char>(type));
 
-    size_t nodeCount = nodeCount_();
+    size_t nodeCount = count(root_);
     os.write(reinterpret_cast<const char*>(&nodeCount), sizeof(nodeCount));
 
     save_(os, root_);
@@ -32,7 +33,7 @@ void TreePredictor::save_(ostream& os) const
 
 // saves a subtree in depth-first order
 
-void TreePredictor::save_(ostream& os, const Node* node) const
+void TreePredictor::save_(ostream& os, const TreeNode* node) const
 {
     os.put(static_cast<char>(node->isLeaf));
     if (node->isLeaf)
@@ -40,31 +41,22 @@ void TreePredictor::save_(ostream& os, const Node* node) const
     else {
         os.write(reinterpret_cast<const char*>(&node->j), sizeof(node->j));
         os.write(reinterpret_cast<const char*>(&node->x), sizeof(node->x));
+        os.write(reinterpret_cast<const char*>(&node->gain), sizeof(node->gain));
         save_(os, node->leftChild);
         save_(os, node->rightChild);
     }
 }
 
-size_t TreePredictor::nodeCount_() const { return nodeCount_(root_); }
-
-size_t TreePredictor::nodeCount_(const Node* node)
-{
-    if (node->isLeaf)
-        return 1;
-    else
-        return 1 + nodeCount_(node->leftChild) + nodeCount_(node->rightChild);
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<BasePredictor> TreePredictor::load_(istream& is, int /*version*/)
+unique_ptr<BasePredictor> TreePredictor::load_(istream& is, int version)
 {
     size_t nodeCount;
     is.read(reinterpret_cast<char*>(&nodeCount), sizeof(nodeCount));
-    vector<Node> nodes = vector<Node>(nodeCount);
+    vector<TreeNode> nodes = vector<TreeNode>(nodeCount);
 
-    Node* root = &(nodes.front());
-    Node* node = load_(is, root);
+    TreeNode* root = &(nodes.front());
+    TreeNode* node = load_(is, root, version);
     if (node != &(nodes.back()) + 1)
         parseError_(is);
 
@@ -76,7 +68,7 @@ unique_ptr<BasePredictor> TreePredictor::load_(istream& is, int /*version*/)
 // the nodes are stored contiguously with the first node at 'node'
 // returns a pointer to one past the last node 
 
-TreePredictor::Node* TreePredictor::load_(istream& is, Node* node)
+TreeNode* TreePredictor::load_(istream& is, TreeNode* node, int version)
 {
     int isLeaf = is.get();
     if (isLeaf != 0 && isLeaf != 1)
@@ -90,33 +82,10 @@ TreePredictor::Node* TreePredictor::load_(istream& is, Node* node)
     else {
         is.read(reinterpret_cast<char*>(&node->j), sizeof(node->j));
         is.read(reinterpret_cast<char*>(&node->x), sizeof(node->x));
+        if (version >= 3)
+            is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));
         node->leftChild = node + 1;
-        node->rightChild = load_(is, node->leftChild);
-        return load_(is, node->rightChild);
+        node->rightChild = load_(is, node->leftChild, version);
+        return load_(is, node->rightChild, version);
     }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-
-void TreePredictor::prune(Node* node, float pruneFactor)
-{
-    if (pruneFactor == 0) return;
-    //float pruneLimit = pruneFactor * maxGain_(node);
-    float pruneLimit = pruneFactor * node->gain;
-    pruneImpl_(node, pruneLimit);
-}
-
-float TreePredictor::maxGain_(const Node* node)
-{
-    if (node->isLeaf) return 0.0f;
-    return std::max(node->gain, std::max(maxGain_(node->leftChild), maxGain_(node->rightChild)));
-}
-
-void TreePredictor::pruneImpl_(Node* node, float pruneLimit)
-{
-    if (node->isLeaf) return;
-    pruneImpl_(node->leftChild, pruneLimit);
-    pruneImpl_(node->rightChild, pruneLimit);
-    if (node->leftChild->isLeaf && node->rightChild->isLeaf && node->gain < pruneLimit)
-        node->isLeaf = true;
 }

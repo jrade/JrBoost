@@ -114,18 +114,22 @@ void NodeBuilder<SampleIndex>::initSums_(const SampleIndex* samplesBegin, const 
     PROFILE::PUSH(PROFILE::SUMS);
     size_t ITEM_COUNT = usedSampleCount;
 
-    sumW_ = 0.0;
-    sumWY_ = 0.0;
+    double sumW = 0.0;
+    double sumWY = 0.0;
+    const double* pWeights = &weights_.coeffRef(0);
+    const double* pOutData = &outData_.coeffRef(0);
     for (auto p = samplesBegin; p != samplesEnd; ++p) {
         const size_t i = *p;
-        double w = weights_(i);
-        double y = outData_(i);
-        sumW_ += w;
-        sumWY_ += w * y;
+        double w = pWeights[i];
+        double y = pOutData[i];
+        sumW += w;
+        sumWY += w * y;
     }
 
-    bestScore_ = sumWY_ * sumWY_ / sumW_;
-    tol_ = sumW_ * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
+    sumW_ = sumW;
+    sumWY_ = sumWY;
+    bestScore_ = sumWY * sumWY / sumW;
+    tol_ = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
     minNodeWeight_ = std::max<double>(options_->minNodeWeight(), tol_);
 
     PROFILE::POP(ITEM_COUNT);
@@ -134,7 +138,7 @@ void NodeBuilder<SampleIndex>::initSums_(const SampleIndex* samplesBegin, const 
 
 template<typename SampleIndex>
 void NodeBuilder<SampleIndex>::initNodes(
-    TreePredictor::Node** parent, TreePredictor::Node** child, size_t** childSampleCount) const
+    TreeNode** parent, TreeNode** child, size_t** childSampleCount) const
 {
     if (!splitFound_) {
         (*parent)->isLeaf = true;

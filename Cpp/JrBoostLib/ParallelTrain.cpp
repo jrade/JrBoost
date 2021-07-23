@@ -47,11 +47,11 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
             if (i >= size(opt)) break;
 
             try {
-                if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
+                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
+                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
 
                 size_t j = optIndicesSortedByCost[i];
-                pred[j] = trainer.train(opt[j]);    // may also throw
+                pred[j] = trainer.train(opt[j]);
             }
 
             catch (const std::exception&) {
@@ -104,11 +104,11 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
             if (i >= size(opt)) break;
 
             try {
-                if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
+                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
+                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
 
                 size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);    // may also throw
+                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
                 predData.col(j) = pred->predict(testInData);
             }
 
@@ -161,11 +161,11 @@ ArrayXd parallelTrainAndEval(
             if (i >= size(opt)) break;
 
             try {
-                if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
+                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
+                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
 
                 size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);    // may also throw
+                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
                 ArrayXd predData = pred->predict(testInData);
                 scores(j) = lossFun(testOutData, predData);
             }
@@ -218,11 +218,11 @@ ArrayXd parallelTrainAndEvalWeighted(
             if (i >= size(opt)) break;
 
             try {
-                if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
+                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
+                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
 
                 size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);    // may also throw
+                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
                 ArrayXd predData = pred->predict(testInData);
                 scores(j) = lossFun(testOutData, predData, testWeights);
             }

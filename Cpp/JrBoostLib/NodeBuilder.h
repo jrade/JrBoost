@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "TreePredictor.h"
+#include "TreeNode.h"
 
 class TreeOptions;
 
@@ -23,7 +23,7 @@ public:
 
     void reset(CRefXXf inData, CRefXd outData, CRefXd weights, const TreeOptions& options);
     void update(size_t j, const SampleIndex* samplesBegin, const SampleIndex* samplesEnd);
-    void initNodes(TreePredictor::Node** parent, TreePredictor::Node** child, size_t** childSampleCount = nullptr) const;
+    void initNodes(TreeNode** parent, TreeNode** child, size_t** childSampleCount = nullptr) const;
 
     static size_t iterationCount() { return iterationCount_; }
     static size_t slowBranchCount() { return slowBranchCount_; }

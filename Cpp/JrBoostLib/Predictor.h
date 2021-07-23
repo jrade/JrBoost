@@ -29,7 +29,12 @@ private:
 
     virtual ArrayXd predict_(CRefXXf inData) const = 0;
 
-    static const int currentVersion_ = 2;
+    // File format versions:
+    // 1 - original version
+    // 2 - added tree predictors, simplified version handling
+    // 3 - added gain to stump and tree predictors
+    static const int currentVersion_ = 3;
+
     virtual void save_(ostream& os) const = 0;
     static shared_ptr<Predictor> load_(istream& is, int version);
     

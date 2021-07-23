@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95f4afab-ebd4-4c56-b9f6-385012fbe83c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>example\higgs.py</StartupFile>
+    <StartupFile>example\iris.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -31,6 +31,13 @@
   <ItemGroup>
     <Folder Include="jrboost" />
     <Folder Include="example\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Cpp\PythonModule\PythonModule.vcxproj">
+      <Name>PythonModule</Name>
+      <Project>{6aff45f6-cda5-4746-b867-2618feae16b4}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

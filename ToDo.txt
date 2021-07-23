@@ -3,39 +3,46 @@ new GitHub login method
 
 ========================================================================================================================
 
-Tree builder:
+TreeBuilderImpl:
 
-	implementations:
+	general code review and cleanup
+		mark all static thread local members with the prefix tl
+			avoid accessing them directly
+		replace sampleCountByStatus_ by orderedSampleIndex_
+		if we allowed depth = 0 (and why shouldn't we?), then root would not get properly initialized
 
-		A. stumps
-		B. sample state (UNUSED = 0, node index offset by 1), no filtering [not implemented yet]
-		C. sample state (UNUSED = (SampleIndex)-1, node index), filtered ordered samples
-		D. filtered and grouped ordered samples
+	do some more profiling
 
-		Implement B (the most cache efficient one)
-			Do it by cloning and mutating C
-			Implement B/D hybrid scheme: run B until number of samples has dropped to some percentage, then D
+	The current implementation of TreeBuilderImpl is cache memory efficient
+		Put together a modified CPU friendly implementation
+			Borrow from TreeTarinerImplD
+		Combine them in a single train function?
+		Control which one to use using a flag
+	
+	Profiling cases (both on notebook and stationary PC)
+		Leukemia build-and-validate
+		higgs.py and higgs_quick.py
 
-		Which one to use?
-			Test cases:
-				Leukemia, nested CV, population optimization
-				Higgs, full dataset, no CV, population optimization
-			Also verify that B/C/D with depth 1 is as fast as A
+	Discard TreeTrainerImplB, TreeTrainerImplC and TreeTrainerImplD
+		Keep StumpTrainerImpl for the record
+		Remove obsolete friend declarations
+
+	Clean up profiling
+
+	Later:
+		test pruning again
+		low/high memory hybrid scheme for TreeBuilderImpl?
 
 	Minor things:
-		decrease default gamma (in log loss) from 0.1 to 0.001?
-		micro optimizations
+		Trick to reduce rounding off errors towards the end
+			calculate right sums as total - left instead of doing it incrementally
+			then we should have right sum == 0.0 at the end (assert this?)
+		micro optimizationss
 			more branch-free code
-		avoid accessing thread local vectors in inner loops in initSampleStatus() / initSampleMask() and other places
-		general code review
 		more efficient storage of usedSortedSamples, orderedSamples_ etc? (by variable index instead of by variable)		
 			would not work with a (yet to be implemented) select variables by level mode
 		code simplification:
 			are static thread_local buffers worth the trouble?
-
-	Finally:
-		Clean up profiling
-		remove obsolete friend declarations
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -43,12 +50,15 @@ Higgs:
 
 	feature engineering
 		read paper appendix A, then appendix B
-		look at winning submission
+		look at winning (and other) submissions
 
-	seems weighted logLoss and weighted AUC both work as target functions
-	seems there is no need to normaize the weights
+	target loss functions (for fitting hyper parameters):
+		AUC:      3.7372 -> 3.7403
+		AMS:      3.7340 -> 3.7342
+		ll(1e-3): 3.7156 -> 3.7073
 	
 	more robust AMS cutoff fitting (testing every possible cutoff may lead to overfitting, apply some smoothing?)
+	also: test simple cutoff again
 	population optimization parameters (generator approach)
 	repetition count
 
@@ -71,23 +81,7 @@ Higgs:
 	compare with the xgbost higgs example:
 		speed, accuracy?
 
-	how does higgs.py find jrboost when importing it?
-
-------------------------------------------------------------------------------------------------------------------------
-
-Pruning and variable importance weights:
-
-	implement variable importance weights
-		also for stubs
-		validate with ALL data
-
-	prune using prune factor times root gain or prune factor times max gain?
-	
-	review and test the prune code 
-
-	where should the prune functions be?
-
-	save and load gain in classifier file (increment file format version number)
+	how does higgs.py find jrboost when importing it? (this ís a bit of a mystery)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -108,13 +102,15 @@ features to add:
 	set seed (to make the build process deterministic)
 
 minor things:
-	example files should not be part of jrboost package
+	decrease default gamma (in log loss) from 0.1 to 0.001?
 	get rid of all fastExp code
 	is there any need for the fudge term in the t- and F-test? 
 		How large should the fudge term be?
 	documentation of regularized logit boost
 	U-test (with correct handling of ties)
 	review handling of rounding off errors towards end when splitting nodes (look in old code)
+	smarter interrup handler
+		The other threads also need to be stopped, test with Higgs
 
 possible optimizations:
 	test PGO again

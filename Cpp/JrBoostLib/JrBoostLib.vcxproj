@@ -104,6 +104,8 @@
     <ClInclude Include="SortedIndices.h" />
     <ClInclude Include="StaticStack.h" />
     <ClInclude Include="StumpPredictor.h" />
+    <ClInclude Include="StumpTrainerImpl.h" />
+    <ClInclude Include="TreeNode.h" />
     <ClInclude Include="TreeOptions.h" />
     <ClInclude Include="TreePredictor.h" />
     <ClInclude Include="TreeTrainer.h" />
@@ -132,9 +134,12 @@
     <ClCompile Include="Predictor.cpp" />
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="StumpPredictor.cpp" />
+    <ClCompile Include="StumpTrainerImpl.cpp" />
+    <ClCompile Include="TreeNode.cpp" />
     <ClCompile Include="TreeOptions.cpp" />
     <ClCompile Include="TreePredictor.cpp" />
     <ClCompile Include="TreeTrainer.cpp" />
+    <ClCompile Include="TreeTrainerImpl.cpp" />
     <ClCompile Include="TreeTrainerImplA.cpp" />
     <ClCompile Include="TreeTrainerImplB.cpp" />
     <ClCompile Include="TreeTrainerImplC.cpp" />

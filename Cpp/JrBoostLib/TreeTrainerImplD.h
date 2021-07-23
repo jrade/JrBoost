@@ -7,7 +7,7 @@
 
 #include "AGRandom.h"
 #include "BernoulliDistribution.h"
-#include "TreePredictor.h"
+#include "TreeNode.h"
 #include "TreeTrainerImplBase.h"
 
 class TreeOptions;
@@ -43,7 +43,7 @@ private:
     void initOrderedSamples_(size_t j, size_t usedSampleCount) const;
     void updateOrderedSamples_(
         size_t j,
-        const vector<TreePredictor::Node>& nodes,
+        const vector<TreeNode>& nodes,
         const vector<size_t>& sampleCountByParentNode,
         const vector<size_t>& sampleCountByChildNode
     ) const;

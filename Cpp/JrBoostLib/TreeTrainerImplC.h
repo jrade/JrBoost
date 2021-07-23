@@ -7,7 +7,7 @@
 
 #include "AGRandom.h"
 #include "BernoulliDistribution.h"
-#include "TreePredictor.h"
+#include "TreeNode.h"
 #include "TreeTrainerImplBase.h"
 
 class TreeOptions;
@@ -45,7 +45,7 @@ private:
     void initSampleStatus_(const TreeOptions& opt, CRefXd weights) const;
     void initUsedSortedSamples_(size_t j) const;
 
-    void updateSampleStatus_(const TreePredictor::Node* parentNodes, const TreePredictor::Node* childNodes) const;
+    void updateSampleStatus_(const TreeNode* parentNodes, const TreeNode* childNodes) const;
     void updateUsedSortedSamples_(size_t j) const;
     void initOrderedSamples_(size_t j, const vector<size_t>& sampleCountByNode) const;
 

@@ -101,6 +101,12 @@
     <ClInclude Include="TreeTrainerImplB.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
+    <ClInclude Include="StumpTrainerImpl.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeNode.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TreeOptions.cpp">
@@ -163,6 +169,15 @@
     </ClCompile>
     <ClCompile Include="TreeTrainerImplB.cpp">
       <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="StumpTrainerImpl.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerImpl.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeNode.cpp">
+      <Filter>Base Predictor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -5,9 +5,20 @@
 #include "pch.h"
 #include "TreeTrainerImplD.h"
 #include "NodeBuilder.h"
+#include "StumpPredictor.h"
 #include "TreeOptions.h"
+#include "TreePredictor.h"
+#include "TrivialPredictor.h"
 #include "pdqsort.h"
 
+
+static size_t depth_(const TreeNode* node)
+{
+    if (node->isLeaf) return 0;
+    return 1 + std::max(depth_(node->leftChild), depth_(node->rightChild));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
 TreeTrainerImplD<SampleIndex>::TreeTrainerImplD(CRefXXf inData, CRefXs strata) :
@@ -76,16 +87,14 @@ unique_ptr<BasePredictor> TreeTrainerImplD<SampleIndex>::train(
 
 
     // create the root
-    vector<vector<TreePredictor::Node>> nodes(options.maxDepth() + 1);
+    vector<vector<TreeNode>> nodes(options.maxDepth() + 1);
     nodes[0].resize(1);
-
     vector<NodeBuilder<SampleIndex>> nodeBuilders;
 
-    for(size_t d = 0;; ++d) {
+    for (size_t d = 0;; ++d) {
 
         size_t parentCount = size(nodes[d]);
-        TreePredictor::Node* pParents = data(nodes[d]);
-
+        TreeNode* pParents = data(nodes[d]);
 
         // find best splits
 
@@ -111,12 +120,12 @@ unique_ptr<BasePredictor> TreeTrainerImplD<SampleIndex>::train(
         size_t maxChildCount = 2 * parentCount;
         nodes[d + 1].resize(maxChildCount);
         vector<size_t> sampleCountByChildNode(maxChildCount);
-        TreePredictor::Node* pChildren = data(nodes[d + 1]);
+        TreeNode* pChildren = data(nodes[d + 1]);
 
         // update parent and init child nodes
 
-        TreePredictor::Node* p = pParents;
-        TreePredictor::Node* c = pChildren;
+        TreeNode* p = pParents;
+        TreeNode* c = pChildren;
         size_t* n = data(sampleCountByChildNode);
         for (size_t k = 0; k < parentCount; ++k)
             nodeBuilders[k].initNodes(&p, &c, &n);
@@ -136,7 +145,7 @@ unique_ptr<BasePredictor> TreeTrainerImplD<SampleIndex>::train(
         }
         PROFILE::POP(ITEM_COUNT);
 
-        sampleCountByParentNode = std::move(sampleCountByChildNode);
+        sampleCountByParentNode = move(sampleCountByChildNode);
     }
 
     if (omp_get_thread_num() == 0) {
@@ -144,9 +153,18 @@ unique_ptr<BasePredictor> TreeTrainerImplD<SampleIndex>::train(
         PROFILE::SLOW_BRANCH_COUNT += NodeBuilder<SampleIndex>::slowBranchCount();
     }
 
-    TreePredictor::Node* root = &nodes[0][0];
-    TreePredictor::prune(root, static_cast<float>(options.pruneFactor()));
-    return std::make_unique<TreePredictor>(root, move(nodes));
+    TreeNode* root = &nodes[0][0];
+
+    if (options.pruneFactor() != 0.0)
+        prune(root, static_cast<float>(options.pruneFactor() * root->gain));
+
+    //size_t d = depth_(root);
+    //if (d == 0)
+    //    return std::make_unique<TrivialPredictor>(root->y);
+    //else if (d == 1)
+    //    return std::make_unique<StumpPredictor>(root->j, root->x, root->leftChild->y, root->rightChild->y);
+    //else
+        return std::make_unique<TreePredictor>(root, move(nodes));
 };
 
 
@@ -344,7 +362,7 @@ void TreeTrainerImplD<SampleIndex>::initOrderedSamples_(size_t j, size_t usedSam
 template<typename SampleIndex>
 void TreeTrainerImplD<SampleIndex>::updateOrderedSamples_(
     size_t j,
-    const vector<TreePredictor::Node>& nodes,
+    const vector<TreeNode>& nodes,
     const vector<size_t>& sampleCountByParentNode,
     const vector<size_t>& sampleCountByChildNode
 ) const
@@ -360,7 +378,7 @@ void TreeTrainerImplD<SampleIndex>::updateOrderedSamples_(
     size_t childNodeIndex = 0;
     for (size_t parentNodeIndex = 0; parentNodeIndex < parentNodeCount; ++parentNodeIndex) {
 
-        const TreePredictor::Node* parentNode = &nodes[parentNodeIndex];
+        const TreeNode* parentNode = &nodes[parentNodeIndex];
 
         if (parentNode->isLeaf) {
             p += sampleCountByParentNode[parentNodeIndex];

@@ -6,11 +6,12 @@
 #include "StumpPredictor.h"
 
 
-StumpPredictor::StumpPredictor(size_t j, float x, double leftY, double rightY) :
-    j_{ static_cast<uint32_t>(j) },
+StumpPredictor::StumpPredictor(uint32_t j, float x, float leftY, float rightY, float gain) :
+    j_{ j },
     x_{ x },
-    leftY_{ static_cast<float>(leftY) },
-    rightY_{ static_cast<float>(rightY) }
+    leftY_{ leftY },
+    rightY_{ rightY },
+    gain_{ gain }
 {
     ASSERT(std::isfinite(x) && std::isfinite(leftY) && std::isfinite(rightY));
 }
@@ -35,6 +36,7 @@ void StumpPredictor::save_(ostream& os) const
     os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
     os.write(reinterpret_cast<const char*>(&leftY_), sizeof(leftY_));
     os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));
+    os.write(reinterpret_cast<const char*>(&gain_), sizeof(gain_));
 }
 
 unique_ptr<BasePredictor> StumpPredictor::load_(istream& is, int version)
@@ -45,10 +47,13 @@ unique_ptr<BasePredictor> StumpPredictor::load_(istream& is, int version)
     float x;
     float leftY;
     float rightY;
+    float gain;
     is.read(reinterpret_cast<char*>(&j), sizeof(j));
     is.read(reinterpret_cast<char*>(&x), sizeof(x));
     is.read(reinterpret_cast<char*>(&leftY), sizeof(leftY));
     is.read(reinterpret_cast<char*>(&rightY), sizeof(rightY));
+    if (version >= 3)
+        is.read(reinterpret_cast<char*>(&gain), sizeof(gain));
 
-    return std::make_unique<StumpPredictor>(j, x, leftY, rightY);
+    return std::make_unique<StumpPredictor>(j, x, leftY, rightY, gain);
 }
