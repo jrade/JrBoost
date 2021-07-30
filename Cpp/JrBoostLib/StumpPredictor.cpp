@@ -16,7 +16,6 @@ StumpPredictor::StumpPredictor(uint32_t j, float x, float leftY, float rightY, f
     ASSERT(std::isfinite(x) && std::isfinite(leftY) && std::isfinite(rightY));
 }
 
-
 void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 {
     const size_t sampleCount = inData.rows();
@@ -26,6 +25,10 @@ void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
     }
 }
 
+void StumpPredictor::variableWeights_(vector<double>& weights, double c) const
+{
+    weights[j_] += c * gain_;
+}
 
 void StumpPredictor::save_(ostream& os) const
 {

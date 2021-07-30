@@ -21,6 +21,7 @@ protected:
 private:
     friend class BoostPredictor;
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const = 0;
+    virtual void variableWeights_(vector<double>& weights, double c) const = 0;
     virtual void save_(ostream& os) const = 0;
     static unique_ptr<BasePredictor> load_(istream& is, int version);
 

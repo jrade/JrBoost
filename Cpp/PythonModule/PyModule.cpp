@@ -47,6 +47,7 @@ PYBIND11_MODULE(_jrboostext, mod)
     py::class_<Predictor, shared_ptr<Predictor>>{ mod, "Predictor" }
         .def("variableCount", &Predictor::variableCount)
         .def("predict", &Predictor::predict)
+        .def("variableWeights", &Predictor::variableWeights)
         .def("save", py::overload_cast<const string&>(&Predictor::save, py::const_))
         .def_static("load", py::overload_cast<const string&>(&Predictor::load));
 

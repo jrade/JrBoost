@@ -25,6 +25,14 @@ ArrayXd Predictor::predict(CRefXXf inData) const
     return pred;
 }
 
+vector<double> Predictor::variableWeights() const
+{
+    vector<double> weights;
+    weights.assign(variableCount(), 0.0);
+    variableWeights_(weights, 1.0);
+    return weights;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 void Predictor::save(const string& filePath) const

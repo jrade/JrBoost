@@ -12,20 +12,17 @@ size_t count(const TreeNode* node)
     return 1 + count(node->leftChild) + count(node->rightChild);
 }
 
-
 size_t depth(const TreeNode* node)
 {
     if (node->isLeaf) return 0;
     return 1 + std::max(depth(node->leftChild), depth(node->rightChild));
 }
 
-
 float maxGain(const TreeNode* node)
 {
     if (node->isLeaf) return 0.0f;
     return std::max(node->gain, std::max(maxGain(node->leftChild), maxGain(node->rightChild)));
 }
-
 
 void prune(TreeNode* node, float pruneLimit)
 {
@@ -36,21 +33,7 @@ void prune(TreeNode* node, float pruneLimit)
         node->isLeaf = true;
 }
 
-
-//TreeNode* cloneDepthFirstImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
-//{
-//    bool isLeaf = sourceNode->isLeaf;
-//    targetNode->isLeaf = isLeaf;
-//    targetNode->y = sourceNode->y;
-//    if (isLeaf) return targetNode + 1;
-//
-//    targetNode->j = sourceNode->j;
-//    targetNode->x = sourceNode->x;
-//    targetNode->gain = sourceNode->gain;
-//    targetNode->leftChild = targetNode + 1;
-//    targetNode->rightChild = cloneDepthFirstImpl_(sourceNode->leftChild, targetNode->leftChild);
-//    return cloneDepthFirstImpl_(sourceNode->rightChild, targetNode->rightChild);
-//}
+//----------------------------------------------------------------------------------------------------------------------
 
 TreeNode* cloneDepthFirstImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
 {
@@ -61,7 +44,6 @@ TreeNode* cloneDepthFirstImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
     return cloneDepthFirstImpl_(sourceNode->rightChild, targetNode->rightChild);
 }
 
-
 pair<TreeNode*, vector<TreeNode>> cloneDepthFirst(const TreeNode* sourceNode)
 {
     size_t n = count(sourceNode);
@@ -70,7 +52,6 @@ pair<TreeNode*, vector<TreeNode>> cloneDepthFirst(const TreeNode* sourceNode)
     cloneDepthFirstImpl_(sourceNode, targetNode);
     return std::make_pair(targetNode, move(targetNodes));
 }
-
 
 pair<TreeNode*, vector<TreeNode>> cloneBreadthFirst(const TreeNode* sourceNode)
 {

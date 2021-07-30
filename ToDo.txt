@@ -6,24 +6,25 @@ new GitHub login method
 TreeBuilderImpl:
 
 	general code review and cleanup
+		replace sampleCountByStatus_ by orderedSampleIndex_
+			index with 0 = first node (no need to index any unused samples)
 		mark all static thread local members with the prefix tl
 			avoid accessing them directly
-		replace sampleCountByStatus_ by orderedSampleIndex_
-		if we allowed depth = 0 (and why shouldn't we?), then root would not get properly initialized
+		if we allowed depth = 0 (and why wouldn't we?), then root would not get properly initialized
 
 	do some more profiling
 
 	The current implementation of TreeBuilderImpl is cache memory efficient
 		Put together a modified CPU friendly implementation
-			Borrow from TreeTarinerImplD
+			Borrow from TreeTrainerImplD
 		Combine them in a single train function?
-		Control which one to use using a flag
+		Control which one to use with a flag
 	
 	Profiling cases (both on notebook and stationary PC)
 		Leukemia build-and-validate
 		higgs.py and higgs_quick.py
 
-	Discard TreeTrainerImplB, TreeTrainerImplC and TreeTrainerImplD
+	Discard TreeTrainerImplB, TreeTrainerImplC, TreeTrainerImplD and NodeBuilder
 		Keep StumpTrainerImpl for the record
 		Remove obsolete friend declarations
 
@@ -87,30 +88,36 @@ Higgs:
 
 major tasks:
 	other parallellization schemes
-	improved Otto
+	improved Otto example
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
 	BART
-	histogram based tree builder (would speed up Otto a lot)
+	histogram-based tree builder (would speed up Otto a lot)
 	multinomial predictors
 
 features to add:
+	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
 	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 	used variable subset by level option (may be expensive)
 	predict overload that takes a one-dim array and returns a double (use in QD Demo)
 	multiple inData and multiple variable counts (to handle feature engineering etc.)
-	set seed (to make the build process deterministic)
+	set seed (to make the training process deterministic)
+	U-test (with correct handling of ties)
 
 minor things:
+	Rename the jrboost.py project Python, move it up one step in the solution explorer hierarchy
 	decrease default gamma (in log loss) from 0.1 to 0.001?
+	Predictor::_predict should work on an existing vector instead of returning a new vector each time
 	get rid of all fastExp code
 	is there any need for the fudge term in the t- and F-test? 
 		How large should the fudge term be?
 	documentation of regularized logit boost
-	U-test (with correct handling of ties)
 	review handling of rounding off errors towards end when splitting nodes (look in old code)
 	smarter interrup handler
 		The other threads also need to be stopped, test with Higgs
+	clang code formatting
+	what is the correct way of adding terms when calculating variable weights?
+	variable weights as ArrayXd instead of vector<double>
 
 possible optimizations:
 	test PGO again

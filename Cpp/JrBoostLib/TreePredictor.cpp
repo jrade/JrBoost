@@ -20,6 +20,21 @@ void TreePredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
+void TreePredictor::variableWeights_(vector<double>& weights, double c) const
+{
+    variableWeights_(weights, c, root_);
+}
+
+void TreePredictor::variableWeights_(vector<double>& weights, double c, const TreeNode* node) const
+{
+    if (node->isLeaf) return;
+    weights[node->j] += c * node->gain;
+    variableWeights_(weights, c, node->leftChild);
+    variableWeights_(weights, c, node->rightChild);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
 void TreePredictor::save_(ostream& os) const
 {
     const int type = Tree;

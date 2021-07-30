@@ -34,6 +34,12 @@ ArrayXd BoostPredictor::predict_(CRefXXf inData) const
     return pred;
 }
 
+void BoostPredictor::variableWeights_(vector<double>& weights, double c) const
+{
+    size_t n = size(basePredictors_);
+    for (size_t k = 0; k < n; ++k)
+        basePredictors_[k]->variableWeights_(weights, c * c1_);
+}
 
 void BoostPredictor::save_(ostream& os) const
 {
