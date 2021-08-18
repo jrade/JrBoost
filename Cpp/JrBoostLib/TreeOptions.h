@@ -20,6 +20,7 @@ public:
     double minRelSampleWeight() const { return minRelSampleWeight_; }
     size_t minNodeSize() const { return minNodeSize_; }
     double minNodeWeight() const { return minNodeWeight_; }
+    double minGain() const { return minGain_; }
     bool isStratified() const { return isStratified_; }
     double pruneFactor() const { return pruneFactor_; }
 
@@ -31,6 +32,7 @@ public:
     void setMinRelSampleWeight(double w);
     void setMinNodeSize(size_t n);
     void setMinNodeWeight(double w);
+    void setMinGain(double g);
     void setIsStratified(bool b);
     void setPruneFactor(double p);
 
@@ -46,6 +48,7 @@ private:
     double minRelSampleWeight_{ 0.0 };
     size_t minNodeSize_{ 1 };
     double minNodeWeight_{ 0.0 };
+    double minGain_{ 0.0 };
     bool isStratified_{ true };
     double pruneFactor_{ 0.0 };
 };

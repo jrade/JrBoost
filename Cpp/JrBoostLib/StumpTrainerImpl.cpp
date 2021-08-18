@@ -114,7 +114,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
                 return std::make_unique<TrivialPredictor>(0.0);
             }
 
-            bestScore = sumWY * sumWY / sumW;
+            bestScore = sumWY * sumWY / sumW + options.minGain();
             tol = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
             minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
 

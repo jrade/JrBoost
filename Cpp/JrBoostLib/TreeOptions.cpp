@@ -62,6 +62,13 @@ void TreeOptions::setMinNodeWeight(double w)
     minNodeWeight_ = w;
 }
 
+void TreeOptions::setMinGain(double g)
+{
+    if (!(g >= 0))
+        throw std::invalid_argument("minGain must be nonnegative.");
+    minGain_ = g;
+}
+
 void TreeOptions::setIsStratified(bool b)
 {
     isStratified_ = b;

@@ -67,6 +67,8 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setMinNodeSize(std::get<size_t>(value));
             else if (key == "minNodeWeight")
                 opt.setMinNodeWeight(std::get<double>(value));
+            else if (key == "minGain")
+                opt.setMinGain(std::get<double>(value));
             else if (key == "isStratified")
                 opt.setIsStratified(std::get<bool>(value));
             else if (key == "pruneFactor")
@@ -115,6 +117,7 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["minRelSampleWeight"] = opt.minRelSampleWeight();
     pyOpt["minNodeSize"] = opt.minNodeSize();
     pyOpt["minNodeWeight"] = opt.minNodeWeight();
+    pyOpt["minGain"] = opt.minGain();
     pyOpt["isStratified"] = opt.isStratified();
     pyOpt["pruneFactor"] = opt.pruneFactor();
 

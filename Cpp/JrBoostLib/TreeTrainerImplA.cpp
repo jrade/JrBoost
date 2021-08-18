@@ -360,7 +360,7 @@ void TreeTrainerImplA<SampleIndex>::updateSplit_(
         }
         splitData->sumW = sumW;
         splitData->sumWY = sumWY;
-        splitData->score = sumWY * sumWY / sumW;
+        splitData->score = sumWY * sumWY / sumW + options.minGain();
         double tol = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
         splitData->minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
 

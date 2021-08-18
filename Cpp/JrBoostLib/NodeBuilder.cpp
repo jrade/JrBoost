@@ -128,7 +128,7 @@ void NodeBuilder<SampleIndex>::initSums_(const SampleIndex* samplesBegin, const 
 
     sumW_ = sumW;
     sumWY_ = sumWY;
-    bestScore_ = sumWY * sumWY / sumW;
+    bestScore_ = sumWY * sumWY / sumW + options_->minGain();
     tol_ = sumW * sqrt(static_cast<double>(usedSampleCount)) * numeric_limits<double>::epsilon() / 2;
     minNodeWeight_ = std::max<double>(options_->minNodeWeight(), tol_);
 
