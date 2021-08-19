@@ -3,53 +3,84 @@ new GitHub login method
 
 ========================================================================================================================
 
+separate outer and inner thread counts
+
+	thread local data:
+
+		// written by outer threads only (no synch)
+		inline static thread_local RandomNumberEngine_ tlRne_;
+
+		// written by outer threads and read by inner threads (synch at beginning of block)
+		inline static thread_local vector<size_t> tlUsedVariables_;
+		inline static thread_local vector<SampleIndex> tlSampleStatus_;
+		inline static thread_local vector<vector<TreeNode>> tlTree_;
+		inline static thread_local vector<size_t> tlSampleCountByParentNode_;
+		inline static thread_local vector<size_t> tlSampleCountByChildNode_;
+
+		// written by outer threads and written by inner threads (synch at beginning and end of block)
+		inline static thread_local vector<Split> tlSplits_;
+
+		// written by inner threads only (no synch)
+		inline static thread_local vector<vector<SampleIndex>> tlOrderedSamplesByVariable_;
+		inline static thread_local vector<typename std::span<SampleIndex>::iterator> tlOrderedSampleIndex_;
+
+		// written both outer threads and separately (no data sharing) by inner threads (no synch)
+		inline static thread_local vector<SampleIndex> tlSampleBuffer_;
+
+	one possible design:
+		replace thread local static by static vectors indexed by thread id?
+			how do we manage their sizes?
+			keep track of both outer and inner thread id
+
+	another possible design:
+		separate otl and itl members
+		have the shared as both otl and itl and do a handover at the beginning and end of the inner parallel region
+		easier to implement based on current code
+
+
+Profiling cases (both on notebook and stationary PC)
+	Leukemia build-and-validate
+	higgs.py and higgs_quick.py
+
 TreeBuilderImpl:
 
-	general code review and cleanup
-		replace sampleCountByStatus_ by orderedSampleIndex_
-			index with 0 = first node (no need to index any unused samples)
-		mark all static thread local members with the prefix tl
-			avoid accessing them directly
-		if we allowed depth = 0 (and why wouldn't we?), then root would not get properly initialized
+	clean up the init/update ordered samples functions
 
-	do some more profiling
+	profile the two implementations
+		compare the detaled profile logs
+		is the alt implementation faster?
 
-	The current implementation of TreeBuilderImpl is cache memory efficient
-		Put together a modified CPU friendly implementation
-			Borrow from TreeTrainerImplD
-		Combine them in a single train function?
-		Control which one to use with a flag
-	
-	Profiling cases (both on notebook and stationary PC)
-		Leukemia build-and-validate
-		higgs.py and higgs_quick.py
+		profiling cases:
+			TCGA500 validiate (12h on desktop)
+			higgs (?? on desktop)
 
-	Discard TreeTrainerImplB, TreeTrainerImplC, TreeTrainerImplD and NodeBuilder
-		Keep StumpTrainerImpl for the record
-		Remove obsolete friend declarations
+	continue cleaning up the initOrderedSamples functions
 
-	Clean up profiling
+	other implementations:
+		resurrect filtered ordered samples implementation (filter once or for each level?)
+			could in fact be the best implementation
 
-	Later:
-		test pruning again
-		low/high memory hybrid scheme for TreeBuilderImpl?
+	notes:
+		the alt implementation can not be used with variables per level
+		the alt implementtaion should not be used with depth 1 (would waste a lot of memory)
 
-	Minor things:
-		Trick to reduce rounding off errors towards the end
-			calculate right sums as total - left instead of doing it incrementally
-			then we should have right sum == 0.0 at the end (assert this?)
-		micro optimizationss
-			more branch-free code
-		more efficient storage of usedSortedSamples, orderedSamples_ etc? (by variable index instead of by variable)		
-			would not work with a (yet to be implemented) select variables by level mode
-		code simplification:
-			are static thread_local buffers worth the trouble?
+classifier compactification
+
+Minor things:
+	test pruning again (also with abs limit)
+	Trick to reduce rounding off errors towards the end
+		calculate right sums as total - left instead of doing it incrementally
+		then we should have right right sum == 0.0 at the end (assert this?)
+	are static thread_local buffers worth the trouble? some of them? profile
+	if we allowed depth = 0 (and why wouldn't we?), then root would not get properly initialized
+	let split class find the splits??
+		can also update the tree - see the TreeBuilderAlt / NodeBuilder code
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Higgs:
 
-	feature engineering
+	feature engineerings
 		read paper appendix A, then appendix B
 		look at winning (and other) submissions
 
@@ -87,7 +118,6 @@ Higgs:
 ------------------------------------------------------------------------------------------------------------------------
 
 major tasks:
-	other parallellization schemes
 	improved Otto example
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma

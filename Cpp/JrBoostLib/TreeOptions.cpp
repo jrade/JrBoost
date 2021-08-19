@@ -81,6 +81,11 @@ void TreeOptions::setPruneFactor(double p)
     pruneFactor_ = p;
 }
 
+void TreeOptions::setAltImplementation(bool b)
+{
+    altImplementation_ = b;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 double TreeOptions::cost() const

@@ -27,6 +27,7 @@ boostParam = {
     'usedVariableRatio': 0.3,
     'maxDepth': 8,
     'minNodeSize': 300,
+    #'altImplementation': True,
 }
 
 print(param)

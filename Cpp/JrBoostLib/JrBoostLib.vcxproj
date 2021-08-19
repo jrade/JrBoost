@@ -85,7 +85,6 @@
     <ClInclude Include="FastMath.h" />
     <ClInclude Include="FTest.h" />
     <ClInclude Include="InterruptHandler.h" />
-    <ClInclude Include="NodeBuilder.h" />
     <ClInclude Include="ParallelTrain.h" />
     <ClInclude Include="pdqsort.h" />
     <ClInclude Include="BasePredictor.h" />
@@ -110,10 +109,6 @@
     <ClInclude Include="TreePredictor.h" />
     <ClInclude Include="TreeTrainer.h" />
     <ClInclude Include="TreeTrainerImpl.h" />
-    <ClInclude Include="TreeTrainerImplA.h" />
-    <ClInclude Include="TreeTrainerImplB.h" />
-    <ClInclude Include="TreeTrainerImplC.h" />
-    <ClInclude Include="TreeTrainerImplD.h" />
     <ClInclude Include="TreeTrainerImplBase.h" />
     <ClInclude Include="TrivialPredictor.h" />
     <ClInclude Include="TTest.h" />
@@ -125,7 +120,6 @@
     <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="EnsemblePredictor.cpp" />
     <ClCompile Include="FTest.cpp" />
-    <ClCompile Include="NodeBuilder.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -140,10 +134,6 @@
     <ClCompile Include="TreePredictor.cpp" />
     <ClCompile Include="TreeTrainer.cpp" />
     <ClCompile Include="TreeTrainerImpl.cpp" />
-    <ClCompile Include="TreeTrainerImplA.cpp" />
-    <ClCompile Include="TreeTrainerImplB.cpp" />
-    <ClCompile Include="TreeTrainerImplC.cpp" />
-    <ClCompile Include="TreeTrainerImplD.cpp" />
     <ClCompile Include="TrivialPredictor.cpp" />
     <ClCompile Include="TTest.cpp" />
   </ItemGroup>

@@ -23,6 +23,7 @@ public:
     double minGain() const { return minGain_; }
     bool isStratified() const { return isStratified_; }
     double pruneFactor() const { return pruneFactor_; }
+    bool altImplementation() const { return  altImplementation_; }
 
     void setMaxDepth(size_t d);
     void setUsedSampleRatio(double r);
@@ -35,6 +36,7 @@ public:
     void setMinGain(double g);
     void setIsStratified(bool b);
     void setPruneFactor(double p);
+    void setAltImplementation(bool b);
 
 protected:
     double cost() const;
@@ -51,4 +53,5 @@ private:
     double minGain_{ 0.0 };
     bool isStratified_{ true };
     double pruneFactor_{ 0.0 };
+    bool altImplementation_{ false };
 };

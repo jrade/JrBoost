@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95f4afab-ebd4-4c56-b9f6-385012fbe83c}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>example\iris.py</StartupFile>
+    <StartupFile>example\higgs_quick.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>

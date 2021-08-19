@@ -27,6 +27,7 @@ trainParam = {
         'usedVariableRatio': [0.25, 0.5, 0.75, 1.0],
         'minNodeSize': [1],
         'maxDepth': [1, 2, 3, 4, 5, 6],
+        #'altImplementation': [True],
     },
 
     'minimizeParam' : {

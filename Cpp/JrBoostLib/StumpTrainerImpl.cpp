@@ -64,11 +64,11 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     //ITEM_COUNT = sampleCount_;
 
     // initialize used variables
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_VARIABLES);
+    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_USED_VARIABLES);
     ITEM_COUNT = initUsedVariables_(options);
 
     // initialize sample mask
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_SAMPLE_MASK);
+    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_SAMPLE_STATUS);
     ITEM_COUNT = sampleCount_;
     const size_t usedSampleCount = initUsedSampleMask_(options, weights);
 
@@ -96,7 +96,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
 
         // initialize sorted used samples ......................................
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_USED_SORTED_SAMPLES);
+        PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES);
         ITEM_COUNT = sampleCount_;
 
         initSortedUsedSamples_(usedSampleCount, j);
@@ -124,7 +124,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
 
         // find best split .....................................................
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_NODE_BUILDER);
+        PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SPLITS);
         ITEM_COUNT = usedSampleCount;
 
         double leftSumW = 0.0;

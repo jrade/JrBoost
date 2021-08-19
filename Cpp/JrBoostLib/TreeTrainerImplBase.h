@@ -17,8 +17,7 @@ public:
 protected:
     TreeTrainerImplBase() = default;
 
-    // deleted:
+// deleted:
     TreeTrainerImplBase(const TreeTrainerImplBase&) = delete;
     TreeTrainerImplBase& operator=(const TreeTrainerImplBase&) = delete;
 };
-

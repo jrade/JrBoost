@@ -27,7 +27,7 @@ public:
 private:
     using RandomNumberEngine_ = splitmix;
 
-    struct SplitData {
+    struct Split {
         bool isInit;
         double sumW;
         double sumWY;
@@ -39,6 +39,8 @@ private:
         float x;
         double leftY;
         double rightY;
+        size_t leftSampleCount;
+        size_t rightSampleCount;
 
         size_t iterationCount;
         size_t slowBranchCount;
@@ -51,16 +53,24 @@ private:
     >::type;
 
     vector<vector<SampleIndex>> createSortedSamples_() const;
+
     void validateData_(CRefXd outData, CRefXd weights) const;
-    size_t initUsedVariables_(const TreeOptions& opt) const;
-    void initSampleStatus_(const TreeOptions& opt, CRefXd weights) const;
-    void updateSampleStatus_(const vector<TreeNode>& parentNodes, const vector<TreeNode>& childNodes) const;
-    void initOrderedSamples_(size_t j) const;
-    void initOrderedSamplesFast_(size_t j) const;
+    pair<size_t, size_t> initUsedVariables_(const TreeOptions& opt) const;
+    size_t initSampleStatus_(const TreeOptions& opt, CRefXd weights) const;
+    void initTree_(size_t usedSampleCount, const TreeOptions& options) const;
+    void initSplits_(size_t d) const;
+    void initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount) const;
+    void initOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount) const;
+    void updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount) const;
+    void updateOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const;
+    void initOrderedSampleIndex_(std::span<SampleIndex> orderedSamples) const;
+    void updateSplits_(size_t j, CRefXd outData, CRefXd weights, const TreeOptions& options) const;
     void updateSplit_(
-        SplitData* splitData, CRefXd outData, CRefXd weights, const TreeOptions& options,
-        const SampleIndex* usedSamples, size_t usedSampleCount, size_t j) const;
-    void updateTree_(vector<TreeNode>& parentNodes, vector<TreeNode>& childNodes) const;
+        Split* split, size_t j, std::span<SampleIndex> usedSamples,
+        CRefXd outData, CRefXd weights, const TreeOptions& options) const;
+    size_t updateTree_(size_t d) const;
+    void updateSampleStatus_(size_t d) const;
+    unique_ptr<BasePredictor> createPredictor_() const;
 
     const CRefXXf inData_;
     const size_t sampleCount_;
@@ -70,21 +80,28 @@ private:
     const size_t stratum0Count_;
     const size_t stratum1Count_;
 
-    inline static thread_local RandomNumberEngine_ rne_;
-    inline static thread_local vector<size_t> usedVariables_;
-    inline static thread_local vector<SampleIndex> sampleStatus_;
-    inline static thread_local vector<size_t> sampleCountByStatus_;
-    inline static thread_local vector<SampleIndex> sampleBuffer_;
-    inline static thread_local vector<SplitData> splitData_;
-    inline static thread_local vector<vector<TreeNode>> nodes_;
+    // outer data only used by outer threads [in yet to be implemented version]
+    inline static thread_local RandomNumberEngine_ tlRne_;
+
+    // outer data also used by inner threads (beware!)
+    inline static thread_local vector<size_t> tlUsedVariables_;
+    inline static thread_local vector<vector<TreeNode>> tlTree_;
+    inline static thread_local vector<size_t> tlSampleCountByParentNode_;
+    inline static thread_local vector<size_t> tlSampleCountByChildNode_;
+    inline static thread_local vector<SampleIndex> tlSampleStatus_;
+    inline static thread_local vector<vector<SampleIndex>> tlOrderedSamplesByVariable_;
+
+    // need both outer and inner version
+    inline static thread_local vector<Split> tlSplits_;
+
+    // inner data (only used by inner threads)
+    inline static thread_local vector<SampleIndex> tlSampleBuffer_;
+    inline static thread_local vector<typename std::span<SampleIndex>::iterator> tlOrderedSampleIndex_;
 
     inline static thread_local struct ThreadLocalInit_ {
         ThreadLocalInit_() {
             std::random_device rd;
-            rne_.seed(rd);
+            tlRne_.seed(rd);
         }
     } threadLocalInit_{};
 };
-
-
-

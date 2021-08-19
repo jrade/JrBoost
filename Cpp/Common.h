@@ -22,6 +22,7 @@
 #include <numeric>
 #include <optional>
 #include <random>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <sstream>
@@ -58,7 +59,7 @@ using std::vector;
 
 #ifdef _MSC_VER
 #pragma warning( push )
-#pragma warning( disable: 4127 )
+#pragma warning( disable: 4127 5054)
 #endif
 
 #include <Eigen/Dense>

@@ -33,18 +33,16 @@ public:
         T_RANK, BOOST_INIT, STUMP_INIT, BOOST_TRAIN, STUMP_TRAIN,
             /*VALIDATE,*/
             INIT_TREE,
-            USED_VARIABLES,
-            INIT_SAMPLE_MASK,
+            INIT_USED_VARIABLES,
             INIT_SAMPLE_STATUS,
-            INIT_USED_SORTED_SAMPLES,
-            INIT_ORDERED_SAMPLES_D,
             UPDATE_SAMPLE_STATUS,
-            UPDATE_USED_SORTED_SAMPLES,
-            INIT_ORDERED_SAMPLES_C,
+            INIT_ORDERED_SAMPLES,
             UPDATE_ORDERED_SAMPLES,
-            UPDATE_NODE_BUILDER,
+            INIT_SPLITS,
+            UPDATE_SPLITS,
+                SUMS,
             UPDATE_TREE,
-            SUMS,
+            CREATE_PREDICTOR,
         TREE_PREDICT,
         THREAD_SYNCH, BOOST_PREDICT,
         TEST1, TEST2, TEST3,
@@ -62,12 +60,7 @@ private:
     static StaticStack<CLOCK_ID, 1000> clockIndexStack_;
 
     template<typename SampleIndex> friend class TreeTrainerImpl;
-
     template<typename SampleIndex> friend class StumpTrainerImpl;
-    template<typename SampleIndex> friend class TreeTrainerImplA;
-    template<typename SampleIndex> friend class TreeTrainerImplB;
-    template<typename SampleIndex> friend class TreeTrainerImplC;
-    template<typename SampleIndex> friend class TreeTrainerImplD;
 
     static uint64_t SPLIT_ITERATION_COUNT;
     static uint64_t SLOW_BRANCH_COUNT;
@@ -83,18 +76,16 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "    stump train",            
 //  "      validate",
     "      init tree",
-    "      used variables",
-    "      init sample mask",
+    "      init used variables",
     "      init sample status",
-    "      init used sorted samples",
-    "      init ordered samples",
     "      update sample status",
-    "      update used sorted samples",
     "      init ordered samples",
     "      update ordered samples",
-    "      update node builder",
+    "      init splits",
+    "      update splits",
+    "        sums",
     "      update tree",
-    "      sums",
+    "      create predictor",
     "     tree predict",
     "    thread synch",
     "  boost predict",
