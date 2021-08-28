@@ -80,21 +80,14 @@ private:
     const size_t stratum0Count_;
     const size_t stratum1Count_;
 
-    // outer data only used by outer threads [in yet to be implemented version]
     inline static thread_local RandomNumberEngine_ tlRne_;
-
-    // outer data also used by inner threads (beware!)
     inline static thread_local vector<size_t> tlUsedVariables_;
     inline static thread_local vector<vector<TreeNode>> tlTree_;
     inline static thread_local vector<size_t> tlSampleCountByParentNode_;
     inline static thread_local vector<size_t> tlSampleCountByChildNode_;
     inline static thread_local vector<SampleIndex> tlSampleStatus_;
     inline static thread_local vector<vector<SampleIndex>> tlOrderedSamplesByVariable_;
-
-    // need both outer and inner version
     inline static thread_local vector<Split> tlSplits_;
-
-    // inner data (only used by inner threads)
     inline static thread_local vector<SampleIndex> tlSampleBuffer_;
     inline static thread_local vector<typename std::span<SampleIndex>::iterator> tlOrderedSampleIndex_;
 

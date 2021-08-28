@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <thread>
 #include <tuple>
 #include <variant>
 #include <vector>
@@ -46,6 +47,8 @@ using std::stringstream;
 using std::tuple;
 using std::unique_ptr;
 using std::vector;
+
+inline const std::thread::id mainThreadId = std::this_thread::get_id();
 
 
 // OpenMP

@@ -4,6 +4,9 @@
 
 #include "pch.h"
 #include "TreeTrainerImpl.h"
+
+#include "ExceptionSafeOmp.h"
+#include "InterruptHandler.h"
 #include "TreeOptions.h"
 #include "StumpPredictor.h"
 #include "TrivialPredictor.h"
@@ -54,6 +57,12 @@ template<typename SampleIndex>
 unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
     CRefXd outData, CRefXd weights, const TreeOptions& options) const
 {
+    if (currentInterruptHandler != nullptr)
+        currentInterruptHandler->check();
+
+    if (abortThreads)
+        throw ThreadAborted();
+
     // profiling zero calibration
     PROFILE::PUSH(PROFILE::ZERO);
     size_t ITEM_COUNT = 1;
@@ -112,7 +121,7 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
         }
 
         // CLEAN UP THIS CODE
-        if (omp_get_thread_num() == 0) {
+        if (std::this_thread::get_id() == mainThreadId) {
             for (const Split& split: tlSplits_) {
                 PROFILE::SPLIT_ITERATION_COUNT += split.iterationCount;
                 PROFILE::SLOW_BRANCH_COUNT += split.slowBranchCount;

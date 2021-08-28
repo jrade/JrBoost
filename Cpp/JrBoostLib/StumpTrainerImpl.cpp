@@ -179,7 +179,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     }
 
     PROFILE::POP(ITEM_COUNT);
-    if (omp_get_thread_num() == 0)
+    if (std::this_thread::get_id() == mainThreadId)
     {
         const size_t usedVariableCount = size(usedVariables_);
         PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;

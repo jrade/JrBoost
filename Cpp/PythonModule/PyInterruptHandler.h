@@ -6,16 +6,24 @@
 
 #include "../JrBoostLib/InterruptHandler.h"
 
-
 class PyInterruptHandler : public InterruptHandler {
 public:
     virtual void check()
     {
-        namespace py = pybind11;
-        py::gil_scoped_acquire acquire;
-        if (PyErr_CheckSignals() != 0)
-            throw py::error_already_set();
+        if (std::this_thread::get_id() != mainThreadId) return;
+
+        time_t presentTime = time(nullptr);
+        if (presentTime < lastTime_ + 1) return;
+        lastTime_ = presentTime;
+
+        pybind11::gil_scoped_acquire acquire;
+        if (PyErr_CheckSignals() == 0) return;
+
+        throw py::error_already_set();
     }
+
+private:
+    time_t lastTime_ = 0;
 };
 
 inline PyInterruptHandler thePyInterruptHandler;

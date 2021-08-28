@@ -92,6 +92,9 @@
     <ClInclude Include="TreeNode.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
+    <ClInclude Include="ExceptionSafeOmp.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TreeOptions.cpp">

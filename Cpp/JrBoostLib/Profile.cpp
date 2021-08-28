@@ -10,7 +10,7 @@
 void PROFILE::PUSH(CLOCK_ID id)
 {
     if (!ENABLED) return;
-    if (omp_get_thread_num() != 0) return;
+    if (std::this_thread::get_id() != mainThreadId) return;
 
     uint64_t t = clockCycleCount();
 
@@ -26,7 +26,7 @@ void PROFILE::PUSH(CLOCK_ID id)
 void PROFILE::POP(size_t itemCount)
 {
     if (!ENABLED) return;
-    if (omp_get_thread_num() != 0) return;
+    if (std::this_thread::get_id() != mainThreadId) return;
 
     uint64_t t = clockCycleCount();
 
@@ -44,7 +44,7 @@ void PROFILE::POP(size_t itemCount)
 void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 {
     if (!ENABLED) return;
-    if (omp_get_thread_num() != 0) return;
+    if (std::this_thread::get_id() != mainThreadId) return;
 
     uint64_t t = clockCycleCount();
 

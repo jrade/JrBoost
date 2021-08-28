@@ -1,4 +1,3 @@
-
 //  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
@@ -8,7 +7,7 @@
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
 #include "BoostTrainer.h"
-#include "InterruptHandler.h"
+#include "ExceptionSafeOmp.h"
 #include "SortedIndices.h"
 
 
@@ -35,40 +34,18 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
     );
 
     vector<shared_ptr<BoostPredictor>> pred(optCount);
-    std::exception_ptr ep;
-    std::atomic<bool> exceptionThrown = false;
     std::atomic<int> i0 = 0;
 
-#pragma omp parallel
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
     {
         while (true) {
-            if (exceptionThrown) break;
             size_t i = i0++;
             if (i >= size(opt)) break;
-
-            try {
-                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
-
-                size_t j = optIndicesSortedByCost[i];
-                pred[j] = trainer.train(opt[j]);
-            }
-
-            catch (const std::exception&) {
-#pragma omp critical
-                if (!exceptionThrown) {
-                    ep = std::current_exception();
-                    exceptionThrown = true;
-                }
-            }
-
-        } // don't wait here ...
-
-        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
-    } // ... but here so we can measure the wait time
-    PROFILE::POP();
-
-    if (exceptionThrown) std::rethrow_exception(ep);
+            size_t j = optIndicesSortedByCost[i];
+            pred[j] = trainer.train(opt[j]);
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
 
     return pred;
 }
@@ -92,41 +69,19 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
     );
 
     ArrayXXd predData(sampleCount, optCount);
-    std::exception_ptr ep;
-    std::atomic<bool> exceptionThrown = false;
     std::atomic<int> i0 = 0;
 
-#pragma omp parallel
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
     {
         while (true) {
-            if (exceptionThrown) break;
             size_t i = i0++;
             if (i >= size(opt)) break;
-
-            try {
-                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
-
-                size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
-                predData.col(j) = pred->predict(testInData);
-            }
-
-            catch (const std::exception&) {
-#pragma omp critical
-                if (!exceptionThrown) {
-                    ep = std::current_exception();
-                    exceptionThrown = true;
-                }
-            }
-
-        } // don't wait here ...
-
-        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
-    } // ... but here so we can measure the wait time
-    PROFILE::POP();
-
-    if (exceptionThrown) std::rethrow_exception(ep);
+            size_t j = optIndicesSortedByCost[i];
+            shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
+            predData.col(j) = pred->predict(testInData);
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
 
     return predData;
 }
@@ -149,50 +104,27 @@ ArrayXd parallelTrainAndEval(
     );
 
     ArrayXd scores(optCount);
-    std::exception_ptr ep;
-    std::atomic<bool> exceptionThrown = false;
     std::atomic<int> i0 = 0;
 
-#pragma omp parallel
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
     {
         while (true) {
-            if (exceptionThrown) break;
             size_t i = i0++;
             if (i >= size(opt)) break;
-
-            try {
-                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
-
-                size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
-                ArrayXd predData = pred->predict(testInData);
-                scores(j) = lossFun(testOutData, predData);
-            }
-
-            catch (const std::exception&) {
-#pragma omp critical
-                if (!exceptionThrown) {
-                    ep = std::current_exception();
-                    exceptionThrown = true;
-                }
-            }
-
-        } // don't wait here ...
-
-        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
-
-    } // ... but here so we can measure the wait time
-    PROFILE::POP();
-
-    if (exceptionThrown) std::rethrow_exception(ep);
+            size_t j = optIndicesSortedByCost[i];
+            shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
+            ArrayXd predData = pred->predict(testInData);
+            scores(j) = lossFun(testOutData, predData);
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
 
     return scores;
 }
 
 ArrayXd parallelTrainAndEvalWeighted(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, CRefXd testWeights,  function<double(CRefXs, CRefXd, CRefXd)> lossFun
+    CRefXXf testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
 )
 {
     size_t optCount = size(opt);
@@ -206,48 +138,20 @@ ArrayXd parallelTrainAndEvalWeighted(
     );
 
     ArrayXd scores(optCount);
-    std::exception_ptr ep;
-    std::atomic<bool> exceptionThrown = false;
     std::atomic<int> i0 = 0;
 
-#pragma omp parallel
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
     {
         while (true) {
-            if (exceptionThrown) break;
             size_t i = i0++;
             if (i >= size(opt)) break;
-
-            try {
-                //if (omp_get_thread_num() == 0 && currentInterruptHandler != nullptr)
-                //    currentInterruptHandler->check();  // throws if there is a keyboard interrupt
-
-                size_t j = optIndicesSortedByCost[i];
-                shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
-                ArrayXd predData = pred->predict(testInData);
-                scores(j) = lossFun(testOutData, predData, testWeights);
-            }
-
-            catch (const std::exception&) {
-#pragma omp critical
-                if (!exceptionThrown) {
-                    ep = std::current_exception();
-                    exceptionThrown = true;
-                }
-            }
-
-            std::cout << ((i + 1) % 10 == 0 ? '0' : '.');
-
-        } // don't wait here ...
-
-        PROFILE::PUSH(PROFILE::THREAD_SYNCH);
-
-    } // ... but here so we can measure the wait time
-    PROFILE::POP();
-
-    std::cout << std::endl;
-
-    if (exceptionThrown) std::rethrow_exception(ep);
+            size_t j = optIndicesSortedByCost[i];
+            shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
+            ArrayXd predData = pred->predict(testInData);
+            scores(j) = lossFun(testOutData, predData, testWeights);
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
 
     return scores;
 }
-

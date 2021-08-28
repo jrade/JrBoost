@@ -1,70 +1,47 @@
-new GitHub login method
-	https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/
+cleanups:
+	variable weights as ArrayXd instead of vector<double>
+	ordering of includes
+	remove fastMath
+	show ccc/item, item count and ccc count in profiling log
+	clean up the slow branch profiling
+	Rename the jrboost.py project Python, move it up one step in the solution explorer hierarchy
+	decrease default gamma (in log loss) from 0.1 to 0.001?
+	Predictor::_predict should work on an existing vector instead of returning a new vector each time
+	clean up the profiling
 
-========================================================================================================================
+always do update sample status?
+	update sums at the same time?
 
-separate outer and inner thread counts
+classifier compactification
 
-	thread local data:
-
-		// written by outer threads only (no synch)
-		inline static thread_local RandomNumberEngine_ tlRne_;
-
-		// written by outer threads and read by inner threads (synch at beginning of block)
-		inline static thread_local vector<size_t> tlUsedVariables_;
-		inline static thread_local vector<SampleIndex> tlSampleStatus_;
-		inline static thread_local vector<vector<TreeNode>> tlTree_;
-		inline static thread_local vector<size_t> tlSampleCountByParentNode_;
-		inline static thread_local vector<size_t> tlSampleCountByChildNode_;
-
-		// written by outer threads and written by inner threads (synch at beginning and end of block)
-		inline static thread_local vector<Split> tlSplits_;
-
-		// written by inner threads only (no synch)
-		inline static thread_local vector<vector<SampleIndex>> tlOrderedSamplesByVariable_;
-		inline static thread_local vector<typename std::span<SampleIndex>::iterator> tlOrderedSampleIndex_;
-
-		// written both outer threads and separately (no data sharing) by inner threads (no synch)
-		inline static thread_local vector<SampleIndex> tlSampleBuffer_;
-
-	one possible design:
-		replace thread local static by static vectors indexed by thread id?
-			how do we manage their sizes?
-			keep track of both outer and inner thread id
-
-	another possible design:
-		separate otl and itl members
-		have the shared as both otl and itl and do a handover at the beginning and end of the inner parallel region
-		easier to implement based on current code
-
-
-Profiling cases (both on notebook and stationary PC)
+More systematic profiling cases:
+	check for optimal thread count?
 	Leukemia build-and-validate
 	higgs.py and higgs_quick.py
+	TCGA500 validate (only on desktop)
 
 TreeBuilderImpl:
 
-	clean up the init/update ordered samples functions
+	do a careful comparison of the old and the new (discarded) code
+		port everything that look useful
+		check how the main tree builder loop is structured in the inner parallelized code
+
+	use std::span to simplify code?
+
+	general code review - are there things we should bring in from the inner parallel version?
+
+	review the init/update ordered samples functions
+
+	resurrect filtered ordered samples implementation (filter once or for each level?)
+		could in fact be the best implementation
 
 	profile the two implementations
 		compare the detaled profile logs
 		is the alt implementation faster?
 
-		profiling cases:
-			TCGA500 validiate (12h on desktop)
-			higgs (?? on desktop)
-
-	continue cleaning up the initOrderedSamples functions
-
-	other implementations:
-		resurrect filtered ordered samples implementation (filter once or for each level?)
-			could in fact be the best implementation
-
 	notes:
 		the alt implementation can not be used with variables per level
-		the alt implementtaion should not be used with depth 1 (would waste a lot of memory)
-
-classifier compactification
+		the alt implementation should not be used with depth 1 (would waste a lot of memory)
 
 Minor things:
 	test pruning again (also with abs limit)
@@ -72,8 +49,8 @@ Minor things:
 		calculate right sums as total - left instead of doing it incrementally
 		then we should have right right sum == 0.0 at the end (assert this?)
 	are static thread_local buffers worth the trouble? some of them? profile
-	if we allowed depth = 0 (and why wouldn't we?), then root would not get properly initialized
-	let split class find the splits??
+	if we allowed depth = 0 (and why wouldn't we?), then the root would not get properly initialized
+	let Split class find the splits??
 		can also update the tree - see the TreeBuilderAlt / NodeBuilder code
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -122,6 +99,12 @@ major tasks:
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
 	BART
+	other parallelization strategy
+		the current version is threadsafe but non threaded
+		first put together a simple non-threadsafe version
+		then from there a threaded version
+		finally a nested version
+			https://software.intel.com/content/www/us/en/develop/videos/using-nested-parallelism-in-openmp.html
 	histogram-based tree builder (would speed up Otto a lot)
 	multinomial predictors
 
@@ -135,19 +118,12 @@ features to add:
 	U-test (with correct handling of ties)
 
 minor things:
-	Rename the jrboost.py project Python, move it up one step in the solution explorer hierarchy
-	decrease default gamma (in log loss) from 0.1 to 0.001?
-	Predictor::_predict should work on an existing vector instead of returning a new vector each time
-	get rid of all fastExp code
 	is there any need for the fudge term in the t- and F-test? 
 		How large should the fudge term be?
 	documentation of regularized logit boost
 	review handling of rounding off errors towards end when splitting nodes (look in old code)
-	smarter interrup handler
-		The other threads also need to be stopped, test with Higgs
 	clang code formatting
 	what is the correct way of adding terms when calculating variable weights?
-	variable weights as ArrayXd instead of vector<double>
 
 possible optimizations:
 	test PGO again
