@@ -44,16 +44,16 @@ TreeNode* cloneDepthFirstImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
     return cloneDepthFirstImpl_(sourceNode->rightChild, targetNode->rightChild);
 }
 
-pair<TreeNode*, vector<TreeNode>> cloneDepthFirst(const TreeNode* sourceNode)
+vector<TreeNode> cloneDepthFirst(const TreeNode* sourceNode)
 {
     size_t n = count(sourceNode);
     vector<TreeNode> targetNodes(n);
     TreeNode* targetNode = data(targetNodes);
     cloneDepthFirstImpl_(sourceNode, targetNode);
-    return std::make_pair(targetNode, move(targetNodes));
+    return targetNodes;
 }
 
-pair<TreeNode*, vector<TreeNode>> cloneBreadthFirst(const TreeNode* sourceNode)
+vector<TreeNode> cloneBreadthFirst(const TreeNode* sourceNode)
 {
     size_t n = count(sourceNode);
     vector<TreeNode> targetNodes(n);
@@ -77,5 +77,5 @@ pair<TreeNode*, vector<TreeNode>> cloneBreadthFirst(const TreeNode* sourceNode)
         ++targetChildNode;
     }
 
-    return std::make_pair(data(targetNodes), move(targetNodes));
+    return targetNodes;
 }

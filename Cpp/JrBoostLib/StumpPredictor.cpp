@@ -25,9 +25,9 @@ void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
     }
 }
 
-void StumpPredictor::variableWeights_(vector<double>& weights, double c) const
+void StumpPredictor::variableWeights_(double c, RefXd weights) const
 {
-    weights[j_] += c * gain_;
+    weights(j_) += c * gain_;
 }
 
 void StumpPredictor::save_(ostream& os) const

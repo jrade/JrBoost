@@ -14,7 +14,7 @@ public:
 
 private:
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
-    virtual void variableWeights_(vector<double>& /*weights*/, double /*c*/) const {};
+    virtual void variableWeights_(double /*c*/, RefXd /*weights*/) const {};
     virtual void save_(ostream& os) const;
 
     friend class BasePredictor;

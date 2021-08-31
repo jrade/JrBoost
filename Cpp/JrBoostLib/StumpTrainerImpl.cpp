@@ -4,10 +4,11 @@
 
 #include "pch.h"
 #include "StumpTrainerImpl.h"
-#include "TreeOptions.h"
-#include "StumpPredictor.h"
-#include "TrivialPredictor.h"
+
 #include "pdqsort.h"
+#include "StumpPredictor.h"
+#include "TreeOptions.h"
+#include "TrivialPredictor.h"
 
 
 template<typename SampleIndex>
@@ -26,10 +27,6 @@ StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
 template<typename SampleIndex>
 vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_() const
 {
-    PROFILE::PUSH(PROFILE::STUMP_INIT);
-    uint64_t ITEM_COUNT = static_cast<uint64_t>(
-        sampleCount_ * std::log2(static_cast<double>(sampleCount_)) * variableCount_);
-
     vector<vector<SampleIndex>> sortedSamples(variableCount_);
     vector<pair<float, SampleIndex>> tmp{ sampleCount_ };
     for (size_t j = 0; j < variableCount_; ++j) {
@@ -40,9 +37,6 @@ vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_(
         for (size_t i = 0; i < sampleCount_; ++i)
             sortedSamples[j][i] = tmp[i].second;
     }
-
-    PROFILE::POP(ITEM_COUNT);
-
     return sortedSamples;
 }
 
@@ -179,12 +173,10 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     }
 
     PROFILE::POP(ITEM_COUNT);
-    if (std::this_thread::get_id() == mainThreadId)
-    {
-        const size_t usedVariableCount = size(usedVariables_);
-        PROFILE::SPLIT_ITERATION_COUNT += usedVariableCount * usedSampleCount;
-        PROFILE::SLOW_BRANCH_COUNT += slowBranchCount;
-    }
+
+    const size_t usedVariableCount = size(usedVariables_);
+    const size_t iterationCount = usedVariableCount * usedSampleCount;
+    PROFILE::UPDATE_BRANCH_STATISTICS(iterationCount, slowBranchCount);
 
     if (!splitFound)
         return std::make_unique<TrivialPredictor>(sumWY / sumW);
@@ -385,7 +377,7 @@ void StumpTrainerImpl<SampleIndex>::initSortedUsedSamples_(size_t usedSampleCoun
 
 
 template<typename SampleIndex>
-pair<double, double> StumpTrainerImpl<SampleIndex>::initSums_(const CRefXd& outData, const CRefXd& weights) const
+pair<double, double> StumpTrainerImpl<SampleIndex>::initSums_(CRefXd outData, CRefXd weights) const
 {
     double sumW = 0.0;
     double sumWY = 0.0;

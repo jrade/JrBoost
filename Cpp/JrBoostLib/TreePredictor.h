@@ -22,8 +22,8 @@ public:
 private:
     virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
 
-    virtual void variableWeights_(vector<double>& weights, double c) const;
-    void variableWeights_(vector<double>& weights, double c, const TreeNode* node) const;
+    virtual void variableWeights_(double c, RefXd weights) const;
+    void variableWeights_(double c, const TreeNode* node, RefXd weights) const;
 
     virtual void save_(ostream& os) const;
     void save_(ostream& os, const TreeNode* node) const;

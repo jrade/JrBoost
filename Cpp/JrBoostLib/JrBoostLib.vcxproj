@@ -82,7 +82,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="EnsemblePredictor.h" />
-    <ClInclude Include="FastMath.h" />
     <ClInclude Include="FTest.h" />
     <ClInclude Include="ExceptionSafeOmp.h" />
     <ClInclude Include="InterruptHandler.h" />

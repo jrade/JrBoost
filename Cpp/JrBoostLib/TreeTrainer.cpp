@@ -4,9 +4,10 @@
 
 #include "pch.h"
 #include "TreeTrainer.h"
-#include "TreeTrainerImpl.h"
-#include "StumpTrainerImpl.h"
+
 #include "BasePredictor.h"
+#include "StumpTrainerImpl.h"
+#include "TreeTrainerImpl.h"
 
 template<typename SampleIndex>
 using TREE_TRAINER_IMPL = TreeTrainerImpl<SampleIndex>;
@@ -33,7 +34,7 @@ shared_ptr<TreeTrainerImplBase> TreeTrainer::createImpl_(CRefXXf inData, CRefXs 
 
 unique_ptr<BasePredictor> TreeTrainer::train(CRefXd outData, CRefXd weights, const TreeOptions& options) const
 {
-    PROFILE::PUSH(PROFILE::STUMP_TRAIN);
+    PROFILE::PUSH(PROFILE::TREE_TRAIN);
     unique_ptr<BasePredictor> pred =  impl_->train(outData, weights, options);
     PROFILE::POP();
     return pred;

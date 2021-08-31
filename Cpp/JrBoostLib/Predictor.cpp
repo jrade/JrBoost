@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "Predictor.h"
+
 #include "BoostPredictor.h"
 #include "EnsemblePredictor.h"
 
@@ -19,17 +20,15 @@ ArrayXd Predictor::predict(CRefXXf inData) const
 
     ArrayXd pred = predict_(inData);
 
-    size_t sampleCount = inData.rows();
-    PROFILE::POP(sampleCount);
+    PROFILE::POP();
 
     return pred;
 }
 
-vector<double> Predictor::variableWeights() const
+ArrayXd Predictor::variableWeights() const
 {
-    vector<double> weights;
-    weights.assign(variableCount(), 0.0);
-    variableWeights_(weights, 1.0);
+    ArrayXd weights = ArrayXd::Constant(variableCount(), 0.0);
+    variableWeights_(1.0, weights);
     return weights;
 }
 

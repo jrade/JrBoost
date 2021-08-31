@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "ParallelTrain.h"
+
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
 #include "BoostTrainer.h"
@@ -106,6 +107,7 @@ ArrayXd parallelTrainAndEval(
     ArrayXd scores(optCount);
     std::atomic<int> i0 = 0;
 
+    //std::cout << "0";
     BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
     {
         while (true) {
@@ -116,8 +118,10 @@ ArrayXd parallelTrainAndEval(
             ArrayXd predData = pred->predict(testInData);
             scores(j) = lossFun(testOutData, predData);
         }
+        //std::cout << '.';
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
+    //std::cout << '\n';
 
     return scores;
 }

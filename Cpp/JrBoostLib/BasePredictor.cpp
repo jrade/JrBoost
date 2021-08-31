@@ -4,19 +4,17 @@
 
 #include "pch.h"
 #include "BasePredictor.h"
+
+#include "TreePredictor.h"
 #include "TrivialPredictor.h"
 #include "StumpPredictor.h"
-#include "TreePredictor.h"
 
 
 void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
 {
     PROFILE::PUSH(PROFILE::TREE_PREDICT);
-
     predict_(inData, c, outData);
-
-    size_t sampleCount = inData.rows();
-    PROFILE::POP(sampleCount);
+    PROFILE::POP();
 }
 
 unique_ptr<BasePredictor> BasePredictor::load_(istream& is, int version)

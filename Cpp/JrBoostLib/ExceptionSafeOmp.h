@@ -1,4 +1,3 @@
-// Copyright (C) 2021 Johan Rade <johan.rade@gmail.com>
 //  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
@@ -12,7 +11,7 @@ inline std::atomic<bool> abortThreads = false;
 
 class ThreadAborted : public std::exception {};
 // The code in the parallel region should periodically check the flag abortThreads
-// and throw ThreadAborted when the flag has been set.
+// and throw ThreadAborted if the flag has been set.
 
 // This code handles nested parallelism if all levels use the macros below.
 

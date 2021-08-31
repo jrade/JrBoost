@@ -4,15 +4,15 @@
 
 #include "pch.h"
 #include "BoostTrainer.h"
+
+#include "BasePredictor.h"
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
 #include "TreeTrainer.h"
-#include "BasePredictor.h"
-#include "FastMath.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights) :
-    inData_{ std::move(inData) },
+    inData_{ (PROFILE::PUSH(PROFILE::BOOST_INIT), std::move(inData)) },
     sampleCount_{ static_cast<size_t>(inData_.rows()) },
     variableCount_{ static_cast<size_t>(inData_.cols()) },
     rawOutData_{ std::move(outData) },
@@ -21,8 +21,6 @@ BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> w
     lor0_{ calculateLor0_() },
     baseTrainer_{ std::make_shared<TreeTrainer>(inData_, rawOutData_) }
 {
-    PROFILE::PUSH(PROFILE::BOOST_INIT);
-
     if (sampleCount_ == 0)
         throw std::invalid_argument("Train indata has 0 samples.");
     if (variableCount_ == 0)
@@ -126,7 +124,6 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
 
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
-    const bool useFastExp = opt.fastExp();
 
     ArrayXd F = ArrayXd::Constant(sampleCount, lor0_);
     ArrayXd adjOutData(sampleCount);
@@ -136,42 +133,20 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
-        if (useFastExp) {
+        //ArrayXd x = (-F * outData_).exp();               
+        //adjOutData = outData_ * (x + 1.0);
+        //adjWeights = x / (x + 1.0).square()
 
-            //ArrayXd x = fastExp(-F * outData_);                   
-            //adjOutData = outData_ * (x + 1.0);
-            //adjWeights = x / (x + 1.0).square()
+        const double* pF = &F(0);
+        const double* pOutData = &outData_(0);
+        double* pAdjOutData = &adjOutData(0);
+        double* pAdjWeights = &adjWeights(0);
 
-            const double* pF = &F(0);
-            const double* pOutData = &outData_(0);
-            double* pAdjOutData = &adjOutData(0);
-            double* pAdjWeights = &adjWeights(0);
-
-            for (size_t j = 0; j < sampleCount; ++j) {      // not vectorized by MSVS 2019
-                double x = fastExp(-pF[j] * pOutData[j]);
-                pAdjOutData[j] = pOutData[j] * (x + 1.0);
-                pAdjWeights[j] = x / ((x + 1.0) * (x + 1.0));
-            }
+        for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
+            double x = std::exp(-pF[j] * pOutData[j]);
+            pAdjOutData[j] = pOutData[j] * (x + 1.0);
+            pAdjWeights[j] = x / ((x + 1.0) * (x + 1.0));
         }
-
-        else {
-
-            //ArrayXd x = (-F * outData_).exp();               
-            //adjOutData = outData_ * (x + 1.0);
-            //adjWeights = x / (x + 1.0).square()
-
-            const double* pF = &F(0);
-            const double* pOutData = &outData_(0);
-            double* pAdjOutData = &adjOutData(0);
-            double* pAdjWeights = &adjWeights(0);
-
-            for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
-                double x = std::exp(-pF[j] * pOutData[j]);
-                pAdjOutData[j] = pOutData[j] * (x + 1.0);
-                pAdjWeights[j] = x / ((x + 1.0) * (x + 1.0));
-            }
-        }
-
 
         if (weights_)
             adjWeights *= (*weights_);
@@ -196,7 +171,6 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
     const double gamma = opt.gamma();
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
-    const bool useFastExp = opt.fastExp();
 
     ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / (gamma + 1.0));
     ArrayXd adjOutData(sampleCount);
@@ -206,40 +180,19 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
 
     for (size_t i = 0; i < iterationCount; ++i) {
 
-        if(useFastExp) {
-
-            //ArrayXd x = fastExp(-F * outData_);                   
-            //adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
-            //adjWeights = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
-
-            const double* pF = &F(0);
-            const double* pOutData = &outData_(0);
-            double* pAdjOutData = &adjOutData(0);
-            double* pAdjWeights = &adjWeights(0);
-
-            for (size_t j = 0; j < sampleCount; ++j) {      // not vectorized by MSVS 2019
-                double x = fastExp(-pF[j] * pOutData[j]);
-                pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
-                pAdjWeights[j] = x * (gamma * x + 1.0) * fastPow(x + 1.0, gamma - 2.0);
-            }
-        }
-
-        else {
-
-            //ArrayXd x = (-F * outData_).exp();
-            //adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
-            //adjWeights = x * (gamma * x + 1.0) * (x + 1.0).pow(gamma - 2.0);
+        //ArrayXd x = (-F * outData_).exp();
+        //adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
+        //adjWeights = x * (gamma * x + 1.0) * (x + 1.0).pow(gamma - 2.0);
  
-            const double* pF = &F(0);
-            const double* pOutData = &outData_(0);
-            double* pAdjOutData = &adjOutData(0);
-            double* pAdjWeights = &adjWeights(0);
+        const double* pF = &F(0);
+        const double* pOutData = &outData_(0);
+        double* pAdjOutData = &adjOutData(0);
+        double* pAdjWeights = &adjWeights(0);
 
-            for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
-                double x = std::exp(-pF[j] * pOutData[j]);
-                pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
-                pAdjWeights[j] = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
-            }
+        for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
+            double x = std::exp(-pF[j] * pOutData[j]);
+            pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
+            pAdjWeights[j] = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
         }
 
         if (weights_)

@@ -12,7 +12,7 @@ public:
 
     ArrayXd predict(CRefXXf inData) const;
 
-    vector<double> variableWeights() const;
+    ArrayXd variableWeights() const;
 
     void save(const string& filePath) const;
     void save(ostream& os) const;
@@ -30,7 +30,7 @@ private:
     friend class EnsemblePredictor;
 
     virtual ArrayXd predict_(CRefXXf inData) const = 0;
-    virtual void variableWeights_(vector<double>& weights, double c) const = 0;
+    virtual void variableWeights_(double c, RefXd weights) const = 0;
 
     // File format versions:
     // 1 - original version

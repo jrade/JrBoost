@@ -1,4 +1,3 @@
-// Copyright (C) 2021 Johan Rade <johan.rade@gmail.com>
 //  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
@@ -29,5 +28,5 @@ size_t depth(const TreeNode* node);
 float maxGain(const TreeNode* node);
 
 void prune(TreeNode* node, float pruneLimit);
-pair<TreeNode*, vector<TreeNode>> cloneDepthFirst(const TreeNode* sourceNode);
-pair<TreeNode*, vector<TreeNode>> cloneBreadthFirst(const TreeNode* sourceNode);
+vector<TreeNode> cloneDepthFirst(const TreeNode* sourceNode);       // first node in the returned vector is the root
+vector<TreeNode> cloneBreadthFirst(const TreeNode* sourceNode);

@@ -38,9 +38,6 @@
     <ClInclude Include="InterruptHandler.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="FastMath.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
     <ClInclude Include="Predictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>

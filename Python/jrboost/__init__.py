@@ -2,5 +2,5 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-from ._jrboost import *
-from ._jrboostext import *
+from ._jrboost_py import *
+from ._jrboost_cpp import *

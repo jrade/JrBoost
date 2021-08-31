@@ -2,12 +2,9 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-__all__ = ['oneHotEncode', 'stratifiedRandomFolds', 'stratifiedRandomSplit', 'minimizeGrid', 'minimizePopulation', 'findPath']
-
 import copy, os, random, warnings
 import numpy as np
 import pandas as pd
-import jrboost
 
 
 def oneHotEncode(dataSeries):
@@ -52,6 +49,8 @@ def stratifiedRandomFolds(outData, foldCount, samples = None):
 
 
 def stratifiedRandomSplit(outData, ratio, samples = None):
+
+    assert 0.0 <= ratio <= 1.0
 
     if samples is None:
         tmp = list(enumerate(outData))
@@ -136,7 +135,6 @@ def _sampleList(a, n):
 def _sampleDict(a, n):
     return {key : _sampleList(valueList, n) for key, valueList in a.items()}
 
-
 # dictionary with values thar are lists -> list of dictionaries
 # all values of the input dictionary must be lists of he same length
 def _split(a):
@@ -148,15 +146,3 @@ def _split(a):
 def _merge(a):
     keys = a[0].keys()
     return {key : [b[key] for b in a] for key in keys}
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def findPath(filePath):
-    adjFilePath = filePath
-    i = 0
-    while not os.path.exists(adjFilePath):
-        if i == 10:
-            raise RuntimeError(f'Cannot find the file {filePath}')
-        adjFilePath = '../' + adjFilePath
-        i += 1
-    return adjFilePath

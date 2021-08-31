@@ -25,11 +25,11 @@ ArrayXd EnsemblePredictor::predict_(CRefXXf inData) const
     return pred;
 }
 
-void EnsemblePredictor::variableWeights_(vector<double>& weights, double c) const
+void EnsemblePredictor::variableWeights_(double c, RefXd weights) const
 {
     size_t n = size(predictors_);
     for (size_t k = 0; k < n; ++k)
-        predictors_[k]->variableWeights_(weights, c / n);
+        predictors_[k]->variableWeights_( c / n, weights);
 }
 
 void EnsemblePredictor::save_(ostream& os) const

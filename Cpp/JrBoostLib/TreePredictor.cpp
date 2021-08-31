@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "TreePredictor.h"
+
 #include "TreeNode.h"
 
 
@@ -20,17 +21,17 @@ void TreePredictor::predict_(CRefXXf inData, double c, RefXd outData) const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-void TreePredictor::variableWeights_(vector<double>& weights, double c) const
+void TreePredictor::variableWeights_(double c, RefXd weights) const
 {
-    variableWeights_(weights, c, root_);
+    variableWeights_(c, root_, weights);
 }
 
-void TreePredictor::variableWeights_(vector<double>& weights, double c, const TreeNode* node) const
+void TreePredictor::variableWeights_(double c, const TreeNode* node, RefXd weights) const
 {
     if (node->isLeaf) return;
-    weights[node->j] += c * node->gain;
-    variableWeights_(weights, c, node->leftChild);
-    variableWeights_(weights, c, node->rightChild);
+    weights(node->j) += c * node->gain;
+    variableWeights_(c, node->leftChild, weights);
+    variableWeights_(c, node->rightChild, weights);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

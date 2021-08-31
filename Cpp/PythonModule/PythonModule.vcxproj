@@ -49,10 +49,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\$(Platform)\$(Configuration)\</OutDir>
+    <TargetName>_jrboost_cpp</TargetName>
+    <TargetExt>.pyd</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>..\$(Platform)\$(Configuration)\</OutDir>
+    <TargetName>_jrboost_cpp</TargetName>
+    <TargetExt>.pyd</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -64,7 +68,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "$(SolutionDir)Python\jrboost\_jrboostext.pyd"</Command>
+      <Command>copy /y "$(TargetPath)" "$(SolutionDir)Python\jrboost"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -81,7 +85,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "$(SolutionDir)Python\jrboost\_jrboostext.pyd"</Command>
+      <Command>copy /y "$(TargetPath)" "$(SolutionDir)Python\jrboost"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -7,11 +7,11 @@
 
 #include "ExceptionSafeOmp.h"
 #include "InterruptHandler.h"
-#include "TreeOptions.h"
-#include "StumpPredictor.h"
-#include "TrivialPredictor.h"
-#include "TreePredictor.h"
 #include "pdqsort.h"
+#include "StumpPredictor.h"
+#include "TreeOptions.h"
+#include "TreePredictor.h"
+#include "TrivialPredictor.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -31,10 +31,6 @@ TreeTrainerImpl<SampleIndex>::TreeTrainerImpl(CRefXXf inData, CRefXs strata) :
 template<typename SampleIndex>
 vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::createSortedSamples_() const
 {
-    PROFILE::PUSH(PROFILE::STUMP_INIT);
-    uint64_t ITEM_COUNT = static_cast<uint64_t>(
-        sampleCount_ * std::log2(static_cast<double>(sampleCount_)) * variableCount_);
-
     vector<vector<SampleIndex>> sortedSamples(variableCount_);
     vector<pair<float, SampleIndex>> tmp{ sampleCount_ };
     for (size_t j = 0; j < variableCount_; ++j) {
@@ -45,9 +41,6 @@ vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::createSortedSamples_()
         for (size_t i = 0; i < sampleCount_; ++i)
             sortedSamples[j][i] = tmp[i].second;
     }
-
-    PROFILE::POP(ITEM_COUNT);
-
     return sortedSamples;
 }
 
@@ -80,15 +73,11 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
     ITEM_COUNT = sampleCount_;
     size_t usedSampleCount = initSampleStatus_(options, weights);
 
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_TREE);
-    ITEM_COUNT = 0;
     initTree_(usedSampleCount, options);
 
     size_t d = 0;
     while (true) {
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_SPLITS);
-        ITEM_COUNT = 0;
         initSplits_(d);
 
         for (size_t usedVariableIndex = 0; usedVariableIndex != usedVariableCount; ++usedVariableIndex) {
@@ -118,14 +107,6 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
             PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SPLITS);
             ITEM_COUNT = usedSampleCount;
             updateSplits_(usedVariableIndex, outData, weights, options);
-        }
-
-        // CLEAN UP THIS CODE
-        if (std::this_thread::get_id() == mainThreadId) {
-            for (const Split& split: tlSplits_) {
-                PROFILE::SPLIT_ITERATION_COUNT += split.iterationCount;
-                PROFILE::SLOW_BRANCH_COUNT += split.slowBranchCount;
-            }
         }
 
         // create layer d + 1 in the tree
@@ -639,6 +620,8 @@ size_t TreeTrainerImpl<SampleIndex>::updateTree_(size_t d) const
     size_t* pSampleCountByChildNode = data(sampleCountByChildNode);
     Split* pSplit = data(splits);
 
+    size_t iterationCount = 0;
+    size_t slowBranchCount = 0;
 
     for (size_t k = 0; k < parentCount; ++k) {
 
@@ -671,9 +654,16 @@ size_t TreeTrainerImpl<SampleIndex>::updateTree_(size_t d) const
         }
         else
             pParentNode->isLeaf = true;
+
+        iterationCount += pSplit->iterationCount;
+        slowBranchCount += pSplit->slowBranchCount;
+
         ++pParentNode;
         ++pSplit;
     }
+
+    PROFILE::UPDATE_BRANCH_STATISTICS(iterationCount, slowBranchCount);
+
     size_t childCount = pChildNode - childNodes.data();
     childNodes.resize(childCount);
     sampleCountByChildNode.resize(childCount);
@@ -709,16 +699,21 @@ void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(size_t d) const
 template<typename SampleIndex>
 unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::createPredictor_() const
 {
+    unique_ptr<BasePredictor> pred;
     const TreeNode* root = data(tlTree_.front());
-
     size_t treeDepth = depth(root);
-    if (treeDepth == 0)
-        return std::make_unique<TrivialPredictor>(root->y);
-    if (treeDepth == 1)
-        return std::make_unique<StumpPredictor>(root->j, root->x, root->leftChild->y, root->rightChild->y, root->gain);
 
-    auto [root1, nodes1] = cloneBreadthFirst(root);     // depth or breadth does not matter
-    return std::make_unique<TreePredictor>(root1, move(nodes1));
+    if (treeDepth == 0)
+        pred = std::make_unique<TrivialPredictor>(root->y);
+    else if (treeDepth == 1)
+        pred = std::make_unique<StumpPredictor>(root->j, root->x, root->leftChild->y, root->rightChild->y, root->gain);
+    else {
+        vector<TreeNode> clonedNodes = cloneBreadthFirst(root);     // depth or breadth does not matter
+        const TreeNode* clonedRoot = data(clonedNodes);
+        pred = std::make_unique<TreePredictor>(clonedRoot, move(clonedNodes));
+    }
+
+    return pred;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

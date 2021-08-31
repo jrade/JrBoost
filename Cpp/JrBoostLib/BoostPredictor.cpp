@@ -4,6 +4,7 @@
 
 #include "pch.h"
 #include "BoostPredictor.h"
+
 #include "BasePredictor.h"
 
 
@@ -34,11 +35,11 @@ ArrayXd BoostPredictor::predict_(CRefXXf inData) const
     return pred;
 }
 
-void BoostPredictor::variableWeights_(vector<double>& weights, double c) const
+void BoostPredictor::variableWeights_(double c, RefXd weights) const
 {
     size_t n = size(basePredictors_);
     for (size_t k = 0; k < n; ++k)
-        basePredictors_[k]->variableWeights_(weights, c * c1_);
+        basePredictors_[k]->variableWeights_(c * c1_, weights);
 }
 
 void BoostPredictor::save_(ostream& os) const

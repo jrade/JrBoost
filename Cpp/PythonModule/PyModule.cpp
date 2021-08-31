@@ -4,23 +4,23 @@
 
 #include "pch.h"
 
+#include "PyBoostOptions.h"
+#include "PyInterruptHandler.h"
 #include "../JrBoostLib/BoostOptions.h"
 #include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/BoostTrainer.h"
 #include "../JrBoostLib/EnsemblePredictor.h"
-#include "../JrBoostLib/Paralleltrain.h"
-#include "../JrBoostLib/Loss.h"
-#include "../JrBoostLib/TTest.h"
 #include "../JrBoostLib/FTest.h"
-#include "PyBoostOptions.h"
-#include "PyInterruptHandler.h"
+#include "../JrBoostLib/Loss.h"
+#include "../JrBoostLib/Paralleltrain.h"
+#include "../JrBoostLib/TTest.h"
 
 
 inline py::bytes predictorGetState(const Predictor& pred);
 template<typename T> inline shared_ptr<T> predictorSetState(const py::bytes& s);
 
 
-PYBIND11_MODULE(_jrboostext, mod)
+PYBIND11_MODULE(_jrboost_cpp, mod)
 {
     namespace py = pybind11;
 
@@ -85,8 +85,8 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     mod.def("linLoss", &linLoss);
     mod.def("linLossWeighted", &linLossWeighted);
-    mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.1);
-    mod.def("logLossWeighted", &logLossWeighted, py::arg(), py::arg(), py::arg(), py::arg("gamma") = 0.1);
+    mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.001);
+    mod.def("logLossWeighted", &logLossWeighted, py::arg(), py::arg(), py::arg(), py::arg("gamma") = 0.001);
     mod.def("auc", &auc);
     mod.def("aucWeighted", &aucWeighted);
     mod.def("aoc", &aoc);
@@ -124,21 +124,18 @@ PYBIND11_MODULE(_jrboostext, mod)
     py::module profileMod = mod.def_submodule("PROFILE");
 
     profileMod
-        // high level API
         .def("START", &PROFILE::START)
         .def("STOP", &PROFILE::STOP)
-        // low level API
-        .def("GET_ENABLED", []() { return PROFILE::ENABLED; })
-        .def("SET_ENABLED", [](bool b) { PROFILE::ENABLED = b; })
         .def("PUSH", &PROFILE::PUSH)
-        .def("POP", &PROFILE::POP, py::arg() = 0)
-        .def("RESULT", &PROFILE::RESULT);
+        .def("POP", &PROFILE::POP, py::arg() = 0);
 
     py::enum_<PROFILE::CLOCK_ID>(profileMod, "CLOCK_ID")
         .value("MAIN", PROFILE::MAIN)
         .value("TEST1", PROFILE::TEST1)
         .value("TEST2", PROFILE::TEST2)
         .value("TEST3", PROFILE::TEST3)
+        .value("TEST4", PROFILE::TEST4)
+        .value("TEST5", PROFILE::TEST5)
         .export_values();
 }
 

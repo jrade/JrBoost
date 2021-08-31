@@ -1,4 +1,3 @@
-// Copyright (C) 2021 Johan Rade <johan.rade@gmail.com>
 //  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
@@ -37,7 +36,7 @@ private:
     size_t initUsedVariables_(const TreeOptions& opt) const;
     size_t initUsedSampleMask_(const TreeOptions& opt, CRefXd weights) const;
     void initSortedUsedSamples_(size_t usedSampleCount, size_t j) const;
-    pair<double, double> initSums_(const CRefXd& outData, const CRefXd& weights) const;
+    pair<double, double> initSums_(CRefXd outData, CRefXd weights) const;
 
     const CRefXXf inData_;
     const size_t sampleCount_;

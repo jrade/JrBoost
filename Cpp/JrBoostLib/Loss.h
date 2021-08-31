@@ -37,7 +37,7 @@ inline double linLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
+inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.001)
 {
     lossFunValidate_(outData, predData);
     if (!(gamma > 0 && gamma <= 1.0))
@@ -47,7 +47,7 @@ inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.1)
     return falsePos + falseNeg;
 }
 
-inline double logLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights, double gamma = 0.1)
+inline double logLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights, double gamma = 0.001)
 {
     lossFunValidate_(outData, predData);
     if (!(gamma > 0 && gamma <= 1.0))
