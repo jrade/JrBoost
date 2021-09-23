@@ -55,7 +55,8 @@ void TreePredictor::save_(ostream& os, const TreeNode* node) const
     if (node->isLeaf)
         os.write(reinterpret_cast<const char*>(&node->y), sizeof(node->y));
     else {
-        os.write(reinterpret_cast<const char*>(&node->j), sizeof(node->j));
+        uint32_t j = static_cast<uint32_t>(node->j);
+        os.write(reinterpret_cast<const char*>(&j), sizeof(j));
         os.write(reinterpret_cast<const char*>(&node->x), sizeof(node->x));
         os.write(reinterpret_cast<const char*>(&node->gain), sizeof(node->gain));
         save_(os, node->leftChild);
@@ -73,7 +74,7 @@ unique_ptr<BasePredictor> TreePredictor::load_(istream& is, int version)
 
     TreeNode* root = &(nodes.front());
     TreeNode* node = load_(is, root, version);
-    if (node != &(nodes.back()) + 1)
+    if (node != data(nodes) + size(nodes))
         parseError_(is);
 
     return unique_ptr<TreePredictor>(new TreePredictor(root, nodes));
@@ -96,7 +97,9 @@ TreeNode* TreePredictor::load_(istream& is, TreeNode* node, int version)
         return node + 1;
     }
     else {
-        is.read(reinterpret_cast<char*>(&node->j), sizeof(node->j));
+        uint32_t j;
+        is.read(reinterpret_cast<char*>(&j), sizeof(j));
+        node->j = j;
         is.read(reinterpret_cast<char*>(&node->x), sizeof(node->x));
         if (version >= 3)
             is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));

@@ -6,7 +6,8 @@
 
 #include "AGRandom.h"
 #include "BernoulliDistribution.h"
-#include "TreeNode.h"
+#include "TreeNodeTrainer.h"
+#include "TreeNodeExt.h"
 #include "TreeTrainerImplBase.h"
 
 class TreeOptions;
@@ -26,8 +27,8 @@ public:
 private:
     using RandomNumberEngine_ = splitmix;
 
-    struct Split {
-        bool isInit;
+    struct Split
+    {
         double sumW;
         double sumWY;
         double minNodeWeight;
@@ -38,8 +39,6 @@ private:
         float x;
         double leftY;
         double rightY;
-        size_t leftSampleCount;
-        size_t rightSampleCount;
 
         size_t iterationCount;
         size_t slowBranchCount;
@@ -51,25 +50,26 @@ private:
         VeryFastBernoulliDistribution
     >::type;
 
-    vector<vector<SampleIndex>> createSortedSamples_() const;
+    vector<vector<SampleIndex>> initSortedSamples_() const;
 
     void validateData_(CRefXd outData, CRefXd weights) const;
-    pair<size_t, size_t> initUsedVariables_(const TreeOptions& opt) const;
-    size_t initSampleStatus_(const TreeOptions& opt, CRefXd weights) const;
-    void initTree_(size_t usedSampleCount, const TreeOptions& options) const;
-    void initSplits_(size_t d) const;
-    void initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount) const;
-    void initOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount) const;
-    void updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount) const;
-    void updateOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const;
-    void initOrderedSampleIndex_(std::span<SampleIndex> orderedSamples) const;
-    void updateSplits_(size_t j, CRefXd outData, CRefXd weights, const TreeOptions& options) const;
-    void updateSplit_(
-        Split* split, size_t j, std::span<SampleIndex> usedSamples,
-        CRefXd outData, CRefXd weights, const TreeOptions& options) const;
-    size_t updateTree_(size_t d) const;
-    void updateSampleStatus_(size_t d) const;
-    unique_ptr<BasePredictor> createPredictor_() const;
+    pair<size_t, size_t> initUsedVariables_(const TreeOptions& opionst) const;
+    size_t initSampleStatus_(CRefXd weights, const TreeOptions& options) const;
+    void initRoot_(CRefXd outData, CRefXd weights, size_t usedSampleCount) const;
+
+    const SampleIndex* initOrderedSamplesFast_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const;
+    const SampleIndex* initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const;
+    const SampleIndex* initOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const;
+    const SampleIndex* updateOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const;
+    //void initOrderedSamplesByNode_(span<SampleIndex> orderedSamples, size_t d) const;
+
+    void initSplits_(const TreeOptions& options, size_t d) const;
+    void updateSplits_(CRefXd outData, CRefXd weights, const TreeOptions& options,
+        const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
+    size_t finalizeSplits_(size_t d) const;
+
+    size_t updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
+    unique_ptr<BasePredictor> initPredictor_() const;
 
     const CRefXXf inData_;
     const size_t sampleCount_;
@@ -81,14 +81,13 @@ private:
 
     inline static thread_local RandomNumberEngine_ tlRne_;
     inline static thread_local vector<size_t> tlUsedVariables_;
-    inline static thread_local vector<vector<TreeNode>> tlTree_;
-    inline static thread_local vector<size_t> tlSampleCountByParentNode_;
-    inline static thread_local vector<size_t> tlSampleCountByChildNode_;
+    inline static thread_local vector<vector<TreeNodeExt>> tlTree_;
+    inline static thread_local vector<TreeNodeTrainer<SampleIndex>> tlTreeNodeTrainers_;
+
     inline static thread_local vector<SampleIndex> tlSampleStatus_;
-    inline static thread_local vector<vector<SampleIndex>> tlOrderedSamplesByVariable_;
-    inline static thread_local vector<Split> tlSplits_;
     inline static thread_local vector<SampleIndex> tlSampleBuffer_;
-    inline static thread_local vector<typename std::span<SampleIndex>::iterator> tlOrderedSampleIndex_;
+    inline static thread_local vector<vector<SampleIndex>> tlSampleBufferByVariable_;
+    inline static thread_local vector<SampleIndex*> tlSamplePointerBuffer_;
 
     inline static thread_local struct ThreadLocalInit_ {
         ThreadLocalInit_() {

@@ -15,7 +15,7 @@ struct TreeNode
     float y;
 
     // only used by interior nodes
-    uint32_t j;
+    size_t j;
     float x;
     float gain;
     TreeNode* leftChild;

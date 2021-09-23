@@ -1,34 +1,48 @@
+other parallelization strategy
+	the current version is threadsafe but non threaded
+	first put together a simple non-threadsafe version
+	then from there a threaded version
+	finally a nested version
+		https://software.intel.com/content/www/us/en/develop/videos/using-nested-parallelism-in-openmp.html
+	would a SampleManager class help with the nested multithreading
+
+..............................................................................
+
 TreeTrainerImpl:
 
-	tlOrderedSampleIndex_ -> orderedSamplesByNode
+	optimize initSampleSttaus_() in trivial case when all samples ae used
+		(usedSampleRatio = 1.0, minSampleWeigt = 0.0 )
 
-	do a careful comparison of the current and the discarded (flexible threading, other branch in repo) code
-		port everything that looks useful
-		check how the main tree builder loop is structured in the discarded code
+	Profile standard and alt methods, on all three machines
+		suitable benchmarks:
+			Leukemia, TCGA, Higgs
+			simple cross-validation
+			1 rep, 5 folds, use half of the cores
+			use half of the cores
+			put together a proper TCGA build script
+		store results in a file called Profile.txt ?
+		consider making the alt method the default
 
-	update sumW and sumWY in updateSampleSttaus()
-		write sampleCount, sumW and sumWY directly in nodes
-		need separate update of root
-		at the same time, look into updates of tlSampleCountByParentNode_ and tlSampleCountByChildNode_
-			replace them by sampleCount members in the Node objects?
+		preliminary results with TCGA500 (MET500 compatible data only)
+			Laptop 4 cores
+				std: 113:44
+				alt:  77:44
+			PC 8 cores
+				std:  53:40
+				alt:  37:12
+			PC 64 cores
+				std:  30:00
+				alt:  25:40
 
-	profile the two implementations
-		compare the detaled profile logs
-		is the alt implementation faster?
-		put together suitable benchmarks
-			Leukemia build-and-validate ?
-			higgs.py and higgs_quick.py ?
-			TCGA500 validate (only on desktop) ?
-			store in a file called Benchmark.txt ?
-
-	small things:
-		sneaky optimization of updateOrderedSamples using (s[i] & 1) ? ... : ...
-		use std::span to simplify code?
-
-	notes:
+	Notes
 		the alt implementation can not be used with variables per level
 		the alt implementation should not be used with depth 1 (would waste a lot of memory)
 
+	can 1D eigen arrays automatically be converted to span?
+		seems not. why? does CRefXf etc lack begin() and end()?
+		what are the requirements on a in the span constructor span::span(a)? read up, take a look in C++20 book
+
+................................................................................
 
 Higgs example:
 
@@ -70,23 +84,18 @@ Higgs example:
 ------------------------------------------------------------------------------------------------------------------------
 
 major tasks:
+	test pruning again (also with abs limit)
 	improved Otto example
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
 	BART
-	other parallelization strategy
-		the current version is threadsafe but non threaded
-		first put together a simple non-threadsafe version
-		then from there a threaded version
-		finally a nested version
-			https://software.intel.com/content/www/us/en/develop/videos/using-nested-parallelism-in-openmp.html
 	histogram-based tree builder (would speed up Otto a lot)
 	multinomial predictors
+	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 
 features to add:
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
 	set seed (to make the training process deterministic)
-	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 	used variable subset by level option (may be expensive)
 	multiple inData and multiple variable counts (to handle feature engineering etc.)
 	U-test (with correct handling of ties)
@@ -96,31 +105,26 @@ minor things:
 	is there any need for the fudge term in the t- and F-test? 
 		How large should the fudge term be?
 	documentation of regularized logit boost
-	review handling of rounding errors towards end when splitting nodes (look in old code)
 	clang code formatting
-	what is the correct way of adding terms when calculating variable weights?
+	what is the correct way of adding terms when calculating variable importance weights?
 	have the predictor class constructors take float instead of double as appropriate
-	test pragma omp threadlocal
-
-miscellaneous:
-	test pruning again (also with abs limit)
-	trick to reduce rounding off errors towards the end
-		calculate right sums as total - left instead of doing it incrementally
-		then we should have right right sum == 0.0 at the end (assert this?)
-	are static thread_local buffers worth the trouble? some of them? profile
-	if we allowed depth = 0 (and why wouldn't we?), then the root would not get properly initialized
-	let Split class find the splits??
-		can also update the tree - see the old TreeTrainerAlt / NodeTrainer code
-	compare performace (speed and accuracy) with xgboost
-
+	test pragma omp threadlocal?
+	assert dataset does not have more than 2G variables
+	is the design with static thread local buffers the best way?
+	get rid of uint32 nonsens in boost and ensemble predictor file formats
+	compare performance (speed and accuracy) with xgboost
+	
 optimizations:
+	compare performance with StumpTrainer
 	test PGO again
 	test narrower type for strata
 	float or double for outdata and weights?
-	optimize case when all samples are used (usedSampleRation = 1.0, minSampleWeight = 0.0)
-	alternative implementation of sortedUsedSamples
-		select fastest implementation dynamically depending on sample count etc.
-		maybe do this as a separate stump trainer class
+	store outData and weights in a single vector of structs with y and w members
+	other methods for ordered samples
+		1. sortedSamples -> usedSortedSamples -> usedOrderedSamples
+			this will only be useful if the ratio of used samples is substantailly < 1.0; log this ratio for some examples
+			maybe a dynamic switch between this method and the current standard method?
+		2. sort each time
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -134,17 +138,8 @@ Otto:
 	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
 
 review use of integer and floating point data types
-	use int64_t as default integer type?
+	use ssize_t as default integer type?
 		bow we got sszize_t and ssize()
-
-stump train strategy:
-	current method has time complexity (in clock cycles)
-		3 * sampleCount * usedVariableCount + 10 * usedSampleCount * usedVariableCount
-	there is an alternative method with time complexity
-		c * usedSampleCount * log2(usedSampleCount) * usedVariableCount + 10 * usedSampleCount * usedVariableCunt
-	create a used sample list and sort it each time
-	this might be faster when usedSampleCount is small i.e. when we do weight filtering and most weights are small
-	use pdq-sort (https://github.com/orlp/pdqsort) when sorting
 
 Eigen issues:
 	read Eigen 3.4 docs
@@ -159,6 +154,9 @@ Eigen issues:
 ------------------------------------------------------------------------------------------------------------------------
 
 Notes:
+
+The Vissual Studio project used the environment variables EIGEN_DIR, PYTHON_DIR and PYBIND11_DIR
+to find third party header and librray files
 
 /O2 = /Og /Oi /Ot /Oy /Ob2 /GF /Gy
 

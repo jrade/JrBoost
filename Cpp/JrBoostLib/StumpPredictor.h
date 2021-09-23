@@ -9,7 +9,7 @@
 
 class StumpPredictor : public BasePredictor {
 public:
-    StumpPredictor(uint32_t j, float x, float leftY, float rightY, float gain = 0.0f);
+    StumpPredictor(size_t j, float x, float leftY, float rightY, float gain = 0.0f);
     virtual ~StumpPredictor() = default;
 
 private:
@@ -21,7 +21,7 @@ private:
     static unique_ptr<BasePredictor> load_(istream& is, int version);
 
 private:
-    uint32_t j_;
+    size_t j_;
     float x_;
     float leftY_;
     float rightY_;

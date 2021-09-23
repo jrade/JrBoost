@@ -85,6 +85,8 @@
     <ClInclude Include="FTest.h" />
     <ClInclude Include="ExceptionSafeOmp.h" />
     <ClInclude Include="InterruptHandler.h" />
+    <ClInclude Include="TreeNodeExt.h" />
+    <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />
     <ClInclude Include="pdqsort.h" />
     <ClInclude Include="BasePredictor.h" />
@@ -120,6 +122,7 @@
     <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="EnsemblePredictor.cpp" />
     <ClCompile Include="FTest.cpp" />
+    <ClCompile Include="TreeNodeTrainer.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

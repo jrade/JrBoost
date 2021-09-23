@@ -6,7 +6,7 @@
 #include "StumpPredictor.h"
 
 
-StumpPredictor::StumpPredictor(uint32_t j, float x, float leftY, float rightY, float gain) :
+StumpPredictor::StumpPredictor(size_t j, float x, float leftY, float rightY, float gain) :
     j_{ j },
     x_{ x },
     leftY_{ leftY },
@@ -35,7 +35,8 @@ void StumpPredictor::save_(ostream& os) const
     const int type = Stump;
     os.put(static_cast<char>(type));
 
-    os.write(reinterpret_cast<const char*>(&j_), sizeof(j_));
+    uint32_t j = static_cast<uint32_t>(j_);
+    os.write(reinterpret_cast<const char*>(&j), sizeof(j));
     os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
     os.write(reinterpret_cast<const char*>(&leftY_), sizeof(leftY_));
     os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));

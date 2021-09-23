@@ -20,7 +20,7 @@ TreeTrainerImpl<SampleIndex>::TreeTrainerImpl(CRefXXf inData, CRefXs strata) :
     inData_{ inData },
     sampleCount_{ static_cast<size_t>(inData.rows()) },
     variableCount_{ static_cast<size_t>(inData.cols()) },
-    sortedSamples_{ createSortedSamples_() },
+    sortedSamples_{ initSortedSamples_() },
     strata_{ strata },
     stratum0Count_{ (strata == 0).cast<size_t>().sum() },
     stratum1Count_{ (strata == 1).cast<size_t>().sum() }
@@ -29,16 +29,16 @@ TreeTrainerImpl<SampleIndex>::TreeTrainerImpl(CRefXXf inData, CRefXs strata) :
 
 
 template<typename SampleIndex>
-vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::createSortedSamples_() const
+vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::initSortedSamples_() const
 {
     vector<vector<SampleIndex>> sortedSamples(variableCount_);
     vector<pair<float, SampleIndex>> tmp{ sampleCount_ };
-    for (size_t j = 0; j < variableCount_; ++j) {
-        for (size_t i = 0; i < sampleCount_; ++i)
+    for (size_t j = 0; j != variableCount_; ++j) {
+        for (size_t i = 0; i != sampleCount_; ++i)
             tmp[i] = { inData_(i,j), static_cast<SampleIndex>(i) };
         pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
         sortedSamples[j].resize(sampleCount_);
-        for (size_t i = 0; i < sampleCount_; ++i)
+        for (size_t i = 0; i != sampleCount_; ++i)
             sortedSamples[j][i] = tmp[i].second;
     }
     return sortedSamples;
@@ -71,63 +71,68 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_SAMPLE_STATUS);
     ITEM_COUNT = sampleCount_;
-    size_t usedSampleCount = initSampleStatus_(options, weights);
+    size_t usedSampleCount = initSampleStatus_(weights, options);
 
-    initTree_(usedSampleCount, options);
+    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_TREE);
+    ITEM_COUNT = sampleCount_;
+    initRoot_(outData, weights, usedSampleCount);
 
-    size_t d = 0;
-    while (true) {
+    for (size_t d = 0; d != options.maxDepth(); ++d) {
 
-        initSplits_(d);
+        initSplits_(options, d);
 
         for (size_t usedVariableIndex = 0; usedVariableIndex != usedVariableCount; ++usedVariableIndex) {
 
-            // sort the samples in each node in layer d according to the variable specifed by usedVariableIndex
-            if (d == 0) {
-                PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES);
-                ITEM_COUNT = sampleCount_;
-                if (options.altImplementation() && options.maxDepth() > 1)
-                    initOrderedSamplesAlt_(usedVariableIndex, usedSampleCount);
-                else
-                    initOrderedSamples_(usedVariableIndex, usedSampleCount);
-            }
-            else {
-                PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_ORDERED_SAMPLES);
-                if (options.altImplementation()) {
-                    ITEM_COUNT = usedSampleCount;
-                    updateOrderedSamplesAlt_(usedVariableIndex, usedSampleCount, d);
+            const SampleIndex* orderedSamples;
+            if (options.altImplementation()) {
+                if (d == 0) {
+                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES);
+                    ITEM_COUNT = sampleCount_;
+                    orderedSamples = initOrderedSamplesAlt_(usedVariableIndex, usedSampleCount, d);
                 }
                 else {
+                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_ORDERED_SAMPLES);
+                    ITEM_COUNT = usedSampleCount;
+                    orderedSamples = updateOrderedSamplesAlt_(usedVariableIndex, usedSampleCount, d);
+                }
+            }
+            else {
+                if (d == 0) {
+                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::SET_ORDERED_SAMPLES_FAST);
                     ITEM_COUNT = sampleCount_;
-                    updateOrderedSamples_(usedVariableIndex, usedSampleCount);
+                    orderedSamples = initOrderedSamplesFast_(usedVariableIndex, usedSampleCount, d);
+                }
+                else {
+                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::SET_ORDERED_SAMPLES);
+                    ITEM_COUNT = sampleCount_;
+                    orderedSamples = initOrderedSamples_(usedVariableIndex, usedSampleCount, d);
                 }
             }
 
-            // find the best split for each node in layer d according to variable specified by usedVariableIndex
             PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SPLITS);
             ITEM_COUNT = usedSampleCount;
-            updateSplits_(usedVariableIndex, outData, weights, options);
+            updateSplits_(outData, weights, options, orderedSamples, usedVariableIndex, d);
         }
 
-        // create layer d + 1 in the tree
         PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_TREE);
         ITEM_COUNT = 0;
-        usedSampleCount = updateTree_(d);
+        size_t newNodeCount = finalizeSplits_(d);
+        if (newNodeCount == 0) break;
 
-        ++d;
-        if (d == options.maxDepth() || usedSampleCount == 0) break;
-        // usedSampleCount == 0 if and only if layer d (note that d has been incremented!) in the tree is empty
+        if (d + 1 == options.maxDepth()) break;     
+        // if this test is removed, then y in the child nodes is recalculated
+        // with more precision in updateSampleStatus_() 
 
         PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SAMPLE_STATUS);
         ITEM_COUNT = sampleCount_;
-        updateSampleStatus_(d);
+        usedSampleCount = updateSampleStatus_(outData, weights, d);
     }
 
     // TO DO: PRUNE TREE
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::CREATE_PREDICTOR);
     ITEM_COUNT = 0;
-    unique_ptr<BasePredictor> predictor = createPredictor_();
+    unique_ptr<BasePredictor> predictor = initPredictor_();
 
     PROFILE::POP(ITEM_COUNT);
 
@@ -166,8 +171,7 @@ pair<size_t, size_t> TreeTrainerImpl<SampleIndex>::initUsedVariables_(const Tree
     ASSERT(candidateVariableCount <= variableCount_);
 
     tlUsedVariables_.resize(usedVariableCount);
-    std::span usedVariables{ tlUsedVariables_ };
-
+    span<size_t> usedVariables{ tlUsedVariables_ };
 
     size_t n = candidateVariableCount;
     size_t k = usedVariableCount;
@@ -182,28 +186,29 @@ pair<size_t, size_t> TreeTrainerImpl<SampleIndex>::initUsedVariables_(const Tree
         ++i;
     }
 
-    if (options.altImplementation() && size(tlOrderedSamplesByVariable_) < usedVariableCount)
-        tlOrderedSamplesByVariable_.resize(usedVariableCount);
+    if (options.altImplementation())
+        tlSampleBufferByVariable_.resize(std::max(usedVariableCount, size(tlSampleBufferByVariable_)));
 
     return std::make_pair(usedVariableCount, candidateVariableCount);
 }
 
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(const TreeOptions& options, CRefXd weights) const
+size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights0, const TreeOptions& options) const
 {
-    RandomNumberEngine_& rne = tlRne_;
-    const size_t minNodeSize = options.minNodeSize();
-
     size_t usedSampleCount;
 
+    RandomNumberEngine_& rne = tlRne_;
+
     tlSampleStatus_.resize(sampleCount_);
-    std::span sampleStatus{ tlSampleStatus_ };
+    span<SampleIndex> sampleStatus{ tlSampleStatus_ };
+
+    const size_t minNodeSize = options.minNodeSize();
 
     double minSampleWeight = options.minAbsSampleWeight();
     double minRelSampleWeight = options.minRelSampleWeight();
     if (minRelSampleWeight > 0.0)
-        minSampleWeight = std::max(minSampleWeight, weights.maxCoeff() * minRelSampleWeight);
+        minSampleWeight = std::max(minSampleWeight, weights0.maxCoeff() * minRelSampleWeight);
 
     if (minSampleWeight == 0.0) {
 
@@ -240,10 +245,9 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(const TreeOptions& option
             if (k[1] == 0 && n[1] > 0) k[1] = 1;
             usedSampleCount = k[0] + k[1];
 
-            const size_t* s = &strata_.coeffRef(0);
-            for (auto p = begin(sampleStatus); p != end(sampleStatus); ++p) {
-                size_t stratum = *s;
-                ++s;
+            const size_t* q = std::data(strata_);
+            for (auto p = begin(sampleStatus); p != end(sampleStatus); ++p, ++q) {
+                size_t stratum = *q;
                 bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne);
                 *p = b;
                 k[stratum] -= b;
@@ -261,12 +265,14 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(const TreeOptions& option
         std::ranges::fill(sampleStatus, static_cast<SampleIndex>(0));
 
         tlSampleBuffer_.resize(sampleCount_);
-        std::span sampleBuffer{ tlSampleBuffer_ };
+        span<SampleIndex> sampleBuffer{ tlSampleBuffer_ };
+
+        const double* weights = std::data(weights0);
 
         if (!options.isStratified()) {
             auto p = begin(sampleBuffer);
-            for (size_t i = 0; i < sampleCount_; ++i) {
-                bool b = weights(i) >= minSampleWeight;
+            for (size_t i = 0; i != sampleCount_; ++i) {
+                bool b = weights[i] >= minSampleWeight;
                 *p = static_cast<SampleIndex>(i);
                 p += b;
             }
@@ -287,11 +293,12 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(const TreeOptions& option
         }
 
         else {
+            const size_t* strata = std::data(strata_);
             array<size_t, 2> n = { 0, 0 };
             auto p = begin(sampleBuffer);
-            for (size_t i = 0; i < sampleCount_; ++i) {
-                size_t stratum = strata_[i];
-                bool b = weights(i) >= minSampleWeight;
+            for (size_t i = 0; i != sampleCount_; ++i) {
+                size_t stratum = strata[i];
+                bool b = weights[i] >= minSampleWeight;
                 *p = static_cast<SampleIndex>(i);
                 p += b;
                 n[stratum] += b;
@@ -307,7 +314,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(const TreeOptions& option
             usedSampleCount = k[0] + k[1];
 
             for (size_t i : sampleBuffer) {
-                size_t stratum = strata_[i];
+                size_t stratum = strata[i];
                 bool b = BernoulliDistribution(k[stratum], n[stratum]) (rne);
                 sampleStatus[i] = b;
                 k[stratum] -= b;
@@ -321,386 +328,283 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(const TreeOptions& option
 
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initTree_(size_t usedSampleCount, const TreeOptions& options) const
+void TreeTrainerImpl<SampleIndex>::initRoot_(
+    CRefXd outData, CRefXd weights, size_t usedSampleCount) const
 {
-    tlTree_.resize(std::max(options.maxDepth() + 1, size(tlTree_)));
+    double sumW = 0.0;
+    double sumWY = 0.0;
+    const SampleIndex* sampleStatus = data(tlSampleStatus_);
+    const double* pOutData = &outData.coeffRef(0);
+    const double* pWeights = &weights.coeffRef(0);
+    for (size_t i = 0; i != sampleCount_; ++i) {
+        double m = static_cast<double>(sampleStatus[i]);
+        double w = pWeights[i];
+        double y = pOutData[i];
+        sumW += m * w;
+        sumWY += m * w * y;
+    }
+
+    tlTree_.resize(std::max<size_t>(1, size(tlTree_)));
     tlTree_.front().resize(1);
-
-    tlSampleCountByParentNode_ = {};
-    tlSampleCountByChildNode_ = { usedSampleCount };
+    TreeNodeExt* root = data(tlTree_.front());
+    root->isLeaf = true;
+    root->sampleCount = usedSampleCount;
+    root->sumW = sumW;
+    root->sumWY = sumWY;
+    root->y = sumW == 0.0 ? 0.0f : static_cast<float>(sumWY / sumW);
 }
 
 //......................................................................................................................
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initSplits_(size_t d) const
+const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesFast_(
+    size_t usedVariableIndex, size_t usedSampleCount, size_t d) const
 {
-    size_t nodeCount = size(tlTree_[d]);
-    tlSplits_.resize(nodeCount);
-    for (Split& split : tlSplits_)
-        split.isInit = false;
-}
+    span<TreeNodeExt> nodes{ tlTree_[d] };
+    const size_t nodeCount = size(nodes);
+    ASSERT(nodeCount == 1);
 
-//......................................................................................................................
-
-template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount) const
-{
-    tlSampleBuffer_.resize(usedSampleCount);
-    std::span sortedUsedSamples{ tlSampleBuffer_ };
+    span<SampleIndex> sampleStatus{ tlSampleStatus_ };
 
     size_t variableIndex = tlUsedVariables_[usedVariableIndex];
-    std::span sortedSamples{ sortedSamples_[variableIndex] };
+    span<const SampleIndex> sortedSamples{ sortedSamples_[variableIndex] };
 
-    std::span sampleMask{ tlSampleStatus_ };
+    tlSampleBuffer_.resize(usedSampleCount);
+    span<SampleIndex> sampleBuffer{ tlSampleBuffer_ };
+
+    // branchfree code for copying all i in sortedSamples with sampleStatus[i] = 1 to sampleBuffer
 
     auto p = cbegin(sortedSamples);
-    auto q = begin(sortedUsedSamples);
-    while (q != end(sortedUsedSamples)) {
+    auto q = begin(sampleBuffer);
+    auto qEnd = end(sampleBuffer);
+    while (q != qEnd) {
         SampleIndex i = *p;
         *q = i;
         ++p;
-        q += sampleMask[i];
+        q += sampleStatus[i];
     }
 
-    tlOrderedSampleIndex_ = { begin(sortedUsedSamples), end(sortedUsedSamples) };
+    return data(sampleBuffer);
 }
 
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount) const
+const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
+    size_t usedVariableIndex, size_t usedSampleCount, size_t d) const
 {
-    initOrderedSamples_(usedVariableIndex, usedSampleCount);
-    swap(tlSampleBuffer_, tlOrderedSamplesByVariable_[usedVariableIndex]);
-}
+    span<TreeNodeExt> nodes{ tlTree_[d] };
+    const size_t nodeCount = size(nodes);
 
+    span<const SampleIndex> sampleStatus = span(tlSampleStatus_);
 
-template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount) const
-{
-    // status = 0 means unused sample
-    // status = k + 1 means sample belongs to child node k
-
-    const size_t unusedSampleCount = sampleCount_ - usedSampleCount;
-    std::span sampleCountByChildNode{ tlSampleCountByChildNode_ };
-    size_t childNodeCount = size(sampleCountByChildNode);
+    const size_t variableIndex = tlUsedVariables_[usedVariableIndex];
+    span<const SampleIndex> sortedSamples{ sortedSamples_[variableIndex] };
 
     tlSampleBuffer_.resize(sampleCount_);
-    auto p = cbegin(std::span(tlSampleBuffer_));
+    span<SampleIndex> sampleBuffer = span(tlSampleBuffer_);
 
-    tlOrderedSampleIndex_.resize(childNodeCount + 1);
-    auto q = begin(tlOrderedSampleIndex_);
+    tlSamplePointerBuffer_.resize(nodeCount + 1);
+    span<SampleIndex*> samplePointerBuffer = span(tlSamplePointerBuffer_);
 
-    for (size_t k = 0; k < childNodeCount + 1; ++k) {
-        q[k] = p;
-        p += (k == 0 ? unusedSampleCount : sampleCountByChildNode[k - 1]);
+    SampleIndex* p = data(sampleBuffer);
+    const size_t unusedSampleCount = sampleCount_ - usedSampleCount;
+    for (size_t k = 0; k != nodeCount + 1; ++k) {
+        samplePointerBuffer[k] = p;
+        p += (k == 0 ? unusedSampleCount : nodes[k - 1].sampleCount);
     }
 
-    auto s = cbegin(tlSampleStatus_);
+    // samplePointerBuffer[i] (i = 0, 1, 2, ... nodeCount) points to the block
+    //  where we soon will store samples with status i 
+    // (status i = 0 means unused sample, i > 0 means sample nbelongs to node number i - 1)
 
-    size_t variableIndex = tlUsedVariables_[usedVariableIndex];
-    std::span sortedSamples{ sortedSamples_[variableIndex] };
-    for (SampleIndex i : sortedSamples)
-        *(q[s[i]]++) = i;
+    for (SampleIndex i : sortedSamples) {
+        SampleIndex s = sampleStatus[i];
+        *(samplePointerBuffer[s]++) = i;
+    }
 
-    // no need to call initOrderedSampleIndex_()
-    // tlOrderedSampleIndex_[k] now points to the end of the block with status k samples
-    // which is the beginning of the block with child node k samples
+    // samplePointerBuffer[i] (i = 0, 1, 2, ... nodeCount) now points to end of the above block
+    // which has been filled with the appropriate samples
+    // This means that samplePointerBuffer[i] (i = 0, 1, 2, ... nodeCount - 1) points to the beginning of the block
+    // where we now store samples with status i + 1, i.e. that belong to node i
+    // and orderedSamplesByNode[nodeCount] points to the end of the last block.
+
+    return samplePointerBuffer[0];
 }
 
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::updateOrderedSamplesAlt_(size_t usedVariableIndex, size_t usedSampleCount, size_t d) const
+const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesAlt_(
+    size_t usedVariableIndex, size_t usedSampleCount, size_t d) const
 {
+    const SampleIndex* p = initOrderedSamplesFast_(usedVariableIndex, usedSampleCount, d);
+    swap(tlSampleBuffer_, tlSampleBufferByVariable_[usedVariableIndex]);
+    return p;
+}
+
+
+template<typename SampleIndex>
+const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamplesAlt_(
+    size_t usedVariableIndex, size_t usedSampleCount, size_t d) const
+{
+    span<TreeNodeExt> parentNodes{ tlTree_[d - 1] };
+
+    span<TreeNodeExt> childNodes{ tlTree_[d] };
+    size_t childNodeCount = size(childNodes);
+
+    span<SampleIndex> sampleStatus{ tlSampleStatus_ };
+
+    span<SampleIndex> prevSampleBuffer{ tlSampleBufferByVariable_[usedVariableIndex] };
+
     tlSampleBuffer_.resize(usedSampleCount);
-
-    std::span parentNodes{ tlTree_[d - 1] };
-    std::span sampleCountByParentNode{ tlSampleCountByParentNode_ };
-    std::span sampleCountByChildNode{ tlSampleCountByChildNode_ };
-    std::span prevOrderedUsedSamples{ tlOrderedSamplesByVariable_[usedVariableIndex] };
-    std::span orderedUsedSamples{ tlSampleBuffer_ };
-
-    const size_t parentNodeCount = size(sampleCountByParentNode);
-
-    auto p = cbegin(prevOrderedUsedSamples);
-
-    initOrderedSampleIndex_(orderedUsedSamples);
-    auto q = begin(tlOrderedSampleIndex_);
-
-    auto s = cbegin(tlSampleStatus_);
-
-    for (size_t parentNodeIndex = 0; parentNodeIndex < parentNodeCount; ++parentNodeIndex) {
-
-        auto pEnd = p + sampleCountByParentNode[parentNodeIndex];
-
-        const TreeNode* parentNode = &parentNodes[parentNodeIndex];
-        if (!parentNode->isLeaf)
-            for(SampleIndex i: std::span(p, pEnd))
-                *(q[s[i] - 1]++) = i;
+    span<SampleIndex> sampleBuffer = span{ tlSampleBuffer_ };
         
+    tlSamplePointerBuffer_.resize(childNodeCount + 1);
+    span<SampleIndex*> samplePointerBuffer = span(tlSamplePointerBuffer_);
+
+    SampleIndex* p = data(sampleBuffer);
+    for (size_t k = 0; k != childNodeCount; ++k) {
+        samplePointerBuffer[k + 1] = p;
+        p += childNodes[k].sampleCount;
+    }
+
+    // samplePointerBuffer[i] (i = 1, 2, ... nodeCount-1) points to the block
+    //  where we soon will store samples with status i 
+    // (status i = 0 means unused sample, i > 0 means sample nbelongs to node number i - 1)
+
+    p = data(prevSampleBuffer);
+    for (const TreeNodeExt& parentNode: parentNodes) {
+        SampleIndex* pEnd = p + parentNode.sampleCount;
+        if (!parentNode.isLeaf)
+            for (SampleIndex i : span(p, pEnd)) {
+                SampleIndex s = sampleStatus[i];
+                *(samplePointerBuffer[s]++) = i;
+            }
         p = pEnd;
     }
 
-    ASSERT(p == cend(prevOrderedUsedSamples));
-
-    initOrderedSampleIndex_(orderedUsedSamples);
-
-    swap(tlOrderedSamplesByVariable_[usedVariableIndex], tlSampleBuffer_);
-}
-
-
-template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initOrderedSampleIndex_(std::span<SampleIndex> orderedSamples) const
-{
-    std::span sampleCountByChildNode{ tlSampleCountByChildNode_ };
-    const size_t childNodeCount = size(sampleCountByChildNode);
-
-    tlOrderedSampleIndex_.resize(childNodeCount + 1);
-    std::span orderedSampleIndex{ tlOrderedSampleIndex_ };
-
-    auto q = begin(orderedSamples);
-    for (size_t childNodeIndex = 0; childNodeIndex < childNodeCount; ++childNodeIndex) {
-        orderedSampleIndex[childNodeIndex] = q;
-        q += sampleCountByChildNode[childNodeIndex];
-    }
-    orderedSampleIndex[childNodeCount] = q;
-    ASSERT(q == end(orderedSamples));
+    p = data(sampleBuffer);
+    swap(tlSampleBufferByVariable_[usedVariableIndex], tlSampleBuffer_);
+    return p;
 }
 
 //......................................................................................................................
+
+template<typename SampleIndex>
+void TreeTrainerImpl<SampleIndex>::initSplits_(const TreeOptions& options, size_t d) const
+{
+    span<TreeNodeExt> parentNodes{ tlTree_[d] };
+    size_t parentNodeCount = size(parentNodes);
+
+    tlTreeNodeTrainers_.resize(parentNodeCount);
+    span<TreeNodeTrainer<SampleIndex>> treeNodeTrainers{ tlTreeNodeTrainers_ };
+
+    for (size_t k = 0; k != parentNodeCount; ++k)
+        treeNodeTrainers[k].init(&parentNodes[k], options);
+}
+
 
 template<typename SampleIndex>
 void TreeTrainerImpl<SampleIndex>::updateSplits_(
-    size_t usedVariableIndex,
     CRefXd outData,
     CRefXd weights,
-    const TreeOptions& options
+    const TreeOptions& options,
+    const SampleIndex* orderedSamples,
+    size_t usedVariableIndex,
+    size_t d
 ) const
 {
+    span<TreeNodeExt> parentNodes{ tlTree_[d] };
+    size_t parentNodeCount = size(parentNodes);
+
+    span<TreeNodeTrainer<SampleIndex>> treeNodeTrainers{ tlTreeNodeTrainers_ };
     size_t variableIndex = tlUsedVariables_[usedVariableIndex];
-    std::span orderedSampleIndex{ tlOrderedSampleIndex_ };
-    std::span<typename TreeTrainerImpl<SampleIndex>::Split> splits{ tlSplits_ };
-    for (size_t k = 0; k != size(splits); ++k) {
-        std::span sortedSamples{ orderedSampleIndex[k], orderedSampleIndex[k + 1] };
-        updateSplit_(&splits[k], variableIndex, sortedSamples, outData, weights, options);
+
+    const SampleIndex* p0 = orderedSamples;
+    for (size_t k = 0; k != parentNodeCount; ++k) {
+        const SampleIndex* p1 = p0 + parentNodes[k].sampleCount;
+        treeNodeTrainers[k].update(inData_, outData, weights, options, span(p0, p1), variableIndex);
+        p0 = p1;
     }
 }
 
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::updateSplit_(
-    typename TreeTrainerImpl<SampleIndex>::Split* split,
-    size_t j,
-    std::span<SampleIndex> sortedSamples,
-    CRefXd outData,
-    CRefXd weights,
-    const TreeOptions& options) const
+size_t TreeTrainerImpl<SampleIndex>::finalizeSplits_(size_t d) const
 {
-    const float* pInDataColJ = &inData_.coeffRef(0, j);
-    const double* pOutData = &outData.coeffRef(0);
-    const double* pWeights = &weights.coeffRef(0);
+    span<TreeNodeExt> parentNodes{ tlTree_[d] };
+    size_t parentNodeCount = size(parentNodes);
 
-    if (!split->isInit) {
-        PROFILE::PUSH(PROFILE::SUMS);
-        size_t ITEM_COUNT = size(sortedSamples);
-            
-        split->splitFound = false;
-        split->iterationCount = 0;
-        split->slowBranchCount = 0;
+    size_t maxChildNodeCount = 2 * parentNodeCount;
+    tlTree_.resize(std::max(d + 2, size(tlTree_)));
+    tlTree_[d + 1].resize(maxChildNodeCount);
+    span<TreeNodeExt> childNodes{ tlTree_[d + 1] };
 
-        double sumW = 0.0;
-        double sumWY = 0.0;
-        for (SampleIndex i: sortedSamples) {
-            double w = pWeights[i];
-            double y = pOutData[i];
-            sumW += w;
-            sumWY += w * y;
-        }
-        split->sumW = sumW;
-        split->sumWY = sumWY;
-        split->score = sumWY * sumWY / sumW + options.minGain();
-        double tol = sumW * sqrt(static_cast<double>(size(sortedSamples))) * numeric_limits<double>::epsilon() / 2;
-        split->minNodeWeight = std::max<double>(options.minNodeWeight(), tol);
+    span<TreeNodeTrainer<SampleIndex>> treeNodeTrainers{ tlTreeNodeTrainers_ };
+    TreeNodeExt* parentNode = data(parentNodes);
+    TreeNodeExt* childNode = data(childNodes);
+    for (size_t k = 0; k != parentNodeCount; ++k)
+        treeNodeTrainers[k].finalize(&parentNode, &childNode);
 
-        split->isInit = true;
-
-        PROFILE::POP(ITEM_COUNT);
-    }
-
-    if (split->sumW == 0) return;
-
-    const size_t minNodeSize = options.minNodeSize();
-    const double minNodeWeight = split->minNodeWeight;
-    size_t slowBranchCount = 0;
-
-    bool splitFound = split->splitFound;
-    double bestScore = split->score;
-    size_t bestJ = split->j;
-    float bestX = split->x;
-    double bestLeftY = split->leftY;
-    double bestRightY = split->rightY;
-    size_t bestLeftSampleCount = split->leftSampleCount;
-
-    double leftSumW = 0.0;
-    double leftSumWY = 0.0;
-    double rightSumW = split->sumW;
-    double rightSumWY = split->sumWY;
-
-    auto p = begin(sortedSamples);
-    size_t nextI = *p;
-    while (p != end(sortedSamples) - 1) {
-
-        // this is where most execution time is spent
-        const size_t i = nextI;
-        nextI = *++p;
-        const double w = pWeights[i];
-        const double y = pOutData[i];
-        leftSumW += w;
-        rightSumW -= w;
-        leftSumWY += w * y;
-        rightSumWY -= w * y;
-        const double score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
-
-        if (score <= bestScore) continue;  // usually true
-
-        ++slowBranchCount;
-
-        if (p < begin(sortedSamples) + minNodeSize
-            || p > end(sortedSamples) - minNodeSize
-            || leftSumW < minNodeWeight
-            || rightSumW < minNodeWeight
-            ) continue;
-
-        const float leftX = pInDataColJ[i];
-        const float rightX = pInDataColJ[nextI];
-        const float midX = (leftX + rightX) / 2;
-
-        if (leftX == midX) continue;
-
-        bestScore = score;
-        bestJ = j;
-        bestX = midX;
-        bestLeftY = leftSumWY / leftSumW;
-        bestRightY = rightSumWY / rightSumW;
-        bestLeftSampleCount = p - begin(sortedSamples);
-        splitFound = true;
-    }
-
-    split->splitFound = splitFound;
-    split->score = bestScore;
-    split->j = bestJ;
-    split->x = bestX;
-    split->leftY = bestLeftY;
-    split->rightY = bestRightY;
-    split->leftSampleCount = bestLeftSampleCount;
-    split->rightSampleCount = size(sortedSamples) - bestLeftSampleCount;
-
-    split->iterationCount += size(sortedSamples);
-    split->slowBranchCount += slowBranchCount;
+    size_t childNodeCount = childNode - data(childNodes);
+    tlTree_[d + 1].resize(childNodeCount);
+    return childNodeCount;
 }
 
 //......................................................................................................................
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::updateTree_(size_t d) const
+size_t TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const
 {
-    std::span parentNodes{ tlTree_[d] };
-    vector<TreeNode>& childNodes{ tlTree_[d + 1] };
-    std::span splits{ tlSplits_ };
-    std::swap(tlSampleCountByChildNode_, tlSampleCountByParentNode_);
-    vector<size_t>& sampleCountByChildNode{ tlSampleCountByChildNode_ };
+    span<TreeNodeExt> parentNodes{ tlTree_[d] };
+    span<TreeNodeExt> childNodes{ tlTree_[d + 1] };
+    span<SampleIndex> sampleStatus{ tlSampleStatus_ };
 
-    size_t parentCount = size(parentNodes);
-    size_t maxChildCount = 2 * parentCount;
-    childNodes.resize(maxChildCount);
-    sampleCountByChildNode.resize(maxChildCount);
-
-    TreeNode* pParentNode = data(parentNodes);
-    TreeNode* pChildNode = data(childNodes);
-    size_t* pSampleCountByChildNode = data(sampleCountByChildNode);
-    Split* pSplit = data(splits);
-
-    size_t iterationCount = 0;
-    size_t slowBranchCount = 0;
-
-    for (size_t k = 0; k < parentCount; ++k) {
-
-        double sumW = pSplit->sumW;
-        double sumWY = pSplit->sumWY;
-        double y = (sumW == 0) ? 0.0 : sumWY / sumW;
-
-        pParentNode->y = static_cast<float>(y);
-
-        if (pSplit->splitFound) {
-
-            pParentNode->isLeaf = false;
-            pParentNode->j = static_cast<uint32_t>(pSplit->j);
-            pParentNode->x = pSplit->x;
-            pParentNode->gain = static_cast<float>(pSplit->score - sumWY * sumWY / sumW);
-
-            pParentNode->leftChild = pChildNode;
-            pChildNode->isLeaf = true;
-            pChildNode->y = static_cast<float>(pSplit->leftY);
-            ++pChildNode;
-            *pSampleCountByChildNode = pSplit->leftSampleCount;
-            ++pSampleCountByChildNode;
-
-            pParentNode->rightChild = pChildNode;
-            pChildNode->isLeaf = true;
-            pChildNode->y = static_cast<float>(pSplit->rightY);
-            ++pChildNode;
-            *pSampleCountByChildNode = pSplit->rightSampleCount;
-            ++pSampleCountByChildNode;
-        }
-        else
-            pParentNode->isLeaf = true;
-
-        iterationCount += pSplit->iterationCount;
-        slowBranchCount += pSplit->slowBranchCount;
-
-        ++pParentNode;
-        ++pSplit;
+    for (TreeNodeExt& childNode : childNodes) {
+        childNode.sampleCount = 0;
+        childNode.sumW = 0.0;
+        childNode.sumWY = 0.0;
     }
 
-    PROFILE::UPDATE_BRANCH_STATISTICS(iterationCount, slowBranchCount);
+    const double* pOutData = &outData.coeffRef(0);
+    const double* pWeights = &weights.coeffRef(0);
 
-    size_t childCount = pChildNode - childNodes.data();
-    childNodes.resize(childCount);
-    sampleCountByChildNode.resize(childCount);
+    for (size_t i = 0; i != sampleCount_; ++i) {
 
-    size_t usedSampleCount = std::accumulate(begin(sampleCountByChildNode), end(sampleCountByChildNode), 0LL);
+        SampleIndex s = sampleStatus[i];
+        if (s == 0) continue;
+        const TreeNodeExt* parentNode = &parentNodes[s - 1];
+        if (parentNode->isLeaf) {
+            sampleStatus[i] = 0;
+            continue;
+        }
+
+        TreeNodeExt* childNode = (inData_(i, parentNode->j) < parentNode->x)
+            ? static_cast<TreeNodeExt*>(parentNode->leftChild)
+            : static_cast<TreeNodeExt*>(parentNode->rightChild);
+        s = static_cast<SampleIndex>(childNode - data(childNodes) + 1);
+        sampleStatus[i] = s;
+
+        double w = pWeights[i];
+        double y = pOutData[i];
+        ++childNode->sampleCount;
+        childNode->sumW += w;
+        childNode->sumWY += w * y;
+    }
+
+    size_t usedSampleCount = 0;
+    for (TreeNodeExt& childNode : childNodes) {
+        childNode.y = (childNode.sumW == 0) ? 0.0f : static_cast<float>(childNode.sumWY / childNode.sumW);
+        usedSampleCount += childNode.sampleCount;
+    }
     return usedSampleCount;
 }
 
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(size_t d) const
-{
-    std::span parentNodes{ tlTree_[d - 1] };
-    std::span childNodes{ tlTree_[d] };
-    std::span sampleStatus{ tlSampleStatus_ };
-
-    for (size_t i = 0; i < sampleCount_; ++i) {
-        if (sampleStatus[i] == 0) continue;
-        SampleIndex s = sampleStatus[i];
-        const TreeNode* node = &parentNodes[s - 1];
-        if (node->isLeaf) {
-            sampleStatus[i] = 0;
-            continue;
-        }
-        node = (inData_(i, node->j) < node->x) ? node->leftChild : node->rightChild;
-        s = static_cast<SampleIndex>(node - (&childNodes[0] - 1));
-        sampleStatus[i] = s;
-    }
-}
-
-//......................................................................................................................
-
-template<typename SampleIndex>
-unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::createPredictor_() const
+unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::initPredictor_() const
 {
     unique_ptr<BasePredictor> pred;
-    const TreeNode* root = data(tlTree_.front());
+    const TreeNodeExt* root = data(tlTree_.front());
     size_t treeDepth = depth(root);
 
     if (treeDepth == 0)

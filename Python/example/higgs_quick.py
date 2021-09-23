@@ -12,7 +12,7 @@ PROFILE = jrboost.PROFILE
 #-----------------------------------------------------------------------------------------------------------------------
 
 param = {
-    'threadCount': os.cpu_count() - 2,
+    'threadCount': 1,
     'profile': True,
     'trainFraction': 1.0,
     'repCount': 1

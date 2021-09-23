@@ -92,6 +92,12 @@
     <ClInclude Include="ExceptionSafeOmp.h">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="TreeNodeTrainer.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeNodeExt.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TreeOptions.cpp">
@@ -148,6 +154,9 @@
     </ClCompile>
     <ClCompile Include="TreeNode.cpp">
       <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeNodeTrainer.cpp">
+      <Filter>Base Trainer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

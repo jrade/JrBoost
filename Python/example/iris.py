@@ -10,7 +10,7 @@ import jrboost
 #-----------------------------------------------------------------------------------------------------------------------
 
 validationParam = {
-    'threadCount': os.cpu_count() - 2,
+    'threadCount': os.cpu_count() // 2,
     'profile': True,
     'outerFoldCount': 5,
 }
@@ -27,7 +27,6 @@ trainParam = {
         'usedVariableRatio': [0.25, 0.5, 0.75, 1.0],
         'minNodeSize': [1],
         'maxDepth': [1, 2, 3, 4, 5, 6],
-        #'altImplementation': [True],
     },
 
     'minimizeParam' : {
@@ -66,7 +65,7 @@ def validate():
     samples = outDataFrame.index
     variables = inDataFrame.columns
     labels = outDataFrame.columns
-    print(f'{len(samples)} samples, {len(variables)} variables')
+    print(f'{len(samples)} samples, {len(variables)} variables\n')
 
     confusionFrame = pd.DataFrame(index = labels, columns = labels, data = 0)
 

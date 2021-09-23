@@ -183,7 +183,7 @@ unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
     
     float gain = static_cast<float>(bestScore - sumWY * sumWY / sumW);
     return std::make_unique<StumpPredictor>(
-        static_cast<uint32_t>(bestJ), bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY),
+        bestJ, bestX, static_cast<float>(bestLeftY), static_cast<float>(bestRightY),
         static_cast<float>(gain));
 };
 

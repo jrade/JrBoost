@@ -32,6 +32,7 @@
 #include <vector>
 
 using std::array;
+using std::cout;
 using std::function;
 using std::ifstream;
 using std::istream;
@@ -42,6 +43,7 @@ using std::optional;
 using std::ostream;
 using std::pair;
 using std::shared_ptr;
+using std::span;
 using std::string;
 using std::stringstream;
 using std::tuple;

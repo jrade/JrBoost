@@ -8,8 +8,8 @@
 
 void TreeOptions::setMaxDepth(size_t d)
 {
-    if (d <= 0)
-        throw std::invalid_argument("maxDepth must be positive.");
+    if (d < 0)
+        throw std::invalid_argument("maxDepth must be non-negative.");
     maxDepth_ = d;
 }
 
