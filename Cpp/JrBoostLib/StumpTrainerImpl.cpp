@@ -44,8 +44,10 @@ vector<vector<SampleIndex>> StumpTrainerImpl<SampleIndex>::createSortedSamples_(
 
 template<typename SampleIndex>
 unique_ptr<BasePredictor> StumpTrainerImpl<SampleIndex>::train(
-    CRefXd outData, CRefXd weights, const TreeOptions& options) const
+    CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const
 {
+    (void)threadCount;
+
     ASSERT(options.maxDepth() == 1);
 
     // profiling zero calibration
@@ -280,7 +282,7 @@ size_t StumpTrainerImpl<SampleIndex>::initUsedSampleMask_(const TreeOptions& opt
             if (k[1] == 0 && n[1] > 0) k[1] = 1;
             usedSampleCount = k[0] + k[1];
 
-            const size_t* s = &strata_.coeffRef(0);
+            const size_t* s = std::data(strata_);
             for (auto p = begin(usedSampleMask_); p != end(usedSampleMask_); ++p) {
                 size_t stratum = *s;
                 ++s;

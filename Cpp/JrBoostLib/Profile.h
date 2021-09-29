@@ -8,7 +8,8 @@
 #include "StaticStack.h"
 
 
-class PROFILE {
+class PROFILE
+{
 public:
     enum CLOCK_ID {
         MAIN, 
@@ -20,18 +21,21 @@ public:
                     INIT_USED_VARIABLES,
                     INIT_SAMPLE_STATUS,
                     INIT_TREE,
+                    INIT_SPLITS,
                     SET_ORDERED_SAMPLES_FAST,
                     SET_ORDERED_SAMPLES,
+                    INIT_ORDERED_SAMPLES_FAST,
                     INIT_ORDERED_SAMPLES,
                     UPDATE_ORDERED_SAMPLES,
                     UPDATE_SPLITS,
                         SUMS,           // used by StumpTrainer
-                    UPDATE_TREE,
+                    FINALIZE_SPLITS,
                     UPDATE_SAMPLE_STATUS,
                     CREATE_PREDICTOR,
                 TREE_PREDICT,
-                THREAD_SYNCH, 
-            BOOST_PREDICT,
+                INNER_THREAD_SYNCH,
+                OUTER_THREAD_SYNCH,
+                BOOST_PREDICT,
         TEST1, TEST2, TEST3, TEST4, TEST5,
         ZERO, CLOCK_COUNT
     };
@@ -65,17 +69,20 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "      used variables",
     "      init sample status",
     "      init tree",
-    "      ordered samples fast",
-    "      ordered samples",
-    "      init ordered samples",
-    "      update ordered samples",
+    "      init splits",
+    "      ord. samples fast",
+    "      ord. samples",
+    "      init ord. samples fast",
+    "      init ord. samples",
+    "      update ord. samples",
     "      update splits",
     "        sums",
     "      finalize splits",
     "      update sample status",
     "      create predictor",
     "    tree predict",
-    "    thread synch",
+    "    inner thread synch",
+    "    outer thread synch",
     "  boost predict",
     "  test-1",
     "  test-2",

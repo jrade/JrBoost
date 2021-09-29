@@ -12,4 +12,4 @@
 #include <pybind11/functional.h>
 #include <pybind11/eigen.h>
 
-inline const char* pybind11Version = STR(PYBIND11_VERSION_MAJOR) "." STR(PYBIND11_VERSION_MINOR) "." STR(PYBIND11_VERSION_PATCH);
+inline const char* thePybind11Version = STR(PYBIND11_VERSION_MAJOR) "." STR(PYBIND11_VERSION_MINOR) "." STR(PYBIND11_VERSION_PATCH);

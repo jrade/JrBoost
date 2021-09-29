@@ -10,23 +10,26 @@ import jrboost
 #-----------------------------------------------------------------------------------------------------------------------
 
 validationParam = {
-    'threadCount': os.cpu_count() // 2,
-    'profile': True,
-    'outerFoldCount': 5,
+    'parallelTree': False,
+    'outerFoldCount': 10,
 }
 
 trainParam = {
     'minimizeAlgorithm': jrboost.minimizePopulation,
-    'innerFoldCount': 5,
+    'repetionCount': 1,
+    'innerFoldCount': 3,
     'lossFun': jrboost.logLoss,
 
     'boostParamGrid': {
-        'iterationCount': [1000],
+        'iterationCount': [300],
         'eta':  [0.001, 0.0015, 0.002, 0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'usedVariableRatio': [0.25, 0.5, 0.75, 1.0],
         'minNodeSize': [1],
-        'maxDepth': [1, 2, 3, 4, 5, 6],
+        'maxDepth': [1, 2, 3, 4],
+        'minRelSampleWeight': [0.001],
+        #'saveMemory': [True],
+        #'isStratified': [False],
     },
 
     'minimizeParam' : {
@@ -52,12 +55,11 @@ def validate():
     print(f'validation: {validationParam}\n')
     print(f'train: {trainParam}\n')
 
-    threadCount = validationParam['threadCount']
-    profile = validationParam['profile']
-    outerFoldCount = validationParam['outerFoldCount']
+    if 'threadCount' in validationParam: jrboost.setThreadCount(validationParam['threadCount'])
+    if 'parallelTree' in validationParam: jrboost.setParallelTree(validationParam['parallelTree'])
+    if 'outerThreadCount' in validationParam: jrboost.setOuterThreadCount(validationParam['outerThreadCount'])
 
-    jrboost.setThreadCount(threadCount)
-    print(f'{threadCount} threads\n')
+    outerFoldCount = validationParam['outerFoldCount']
 
     inDataFrame, outDataSeries = loadData()
     outDataFrame = jrboost.oneHotEncode(outDataSeries)
@@ -75,7 +77,7 @@ def validate():
 
         print(f'-------------------- {i} --------------------\n')
         t = -time.time()
-        if profile: jrboost.PROFILE.START() 
+        jrboost.PROFILE.START() 
         predOutDataFrame = pd.DataFrame(index = samples, columns = labels, dtype = np.float64)
 
         for label in labels:
@@ -103,8 +105,8 @@ def validate():
             confusionFrame.loc[outDataSeries[sample], predOutDataSeries[sample]] += 1
 
         t += time.time()
-        if profile: print(jrboost.PROFILE.STOP()); print()
-        print(formatTime(t))
+        print(jrboost.PROFILE.STOP()); print()
+        print(f'{t:.2f}s')
         print()
         print(confusionFrame / (i + 1))
         print()
@@ -122,14 +124,17 @@ def loadData():
 def train(inData, outData):
 
     minimizeAlgorithm = trainParam['minimizeAlgorithm']
+    repetionCount = trainParam['repetionCount']
     boostParamGrid = trainParam['boostParamGrid']
     minimizeParam = trainParam['minimizeParam']
 
-    bestBoostParamList = minimizeAlgorithm(
-        lambda boostParamList: evaluateBoostParam(boostParamList, inData, outData),
-        boostParamGrid,
-        minimizeParam
-    )                 
+    bestBoostParamList = []
+    for _ in range(repetionCount):
+        bestBoostParamList += minimizeAlgorithm(
+            lambda boostParamList: evaluateBoostParam(boostParamList, inData, outData),
+            boostParamGrid,
+            minimizeParam
+        )                 
     print(formatBoostParam(bestBoostParamList[0]))
 
     trainer = jrboost.BoostTrainer(inData, outData)
@@ -161,21 +166,11 @@ def evaluateBoostParam(boostParamList, inData, outData):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def formatBoostParam(boostParam):
-    ic = boostParam['iterationCount']
     eta  = boostParam['eta']
     md = boostParam.get('maxDepth', 1)
     usr = boostParam['usedSampleRatio']
     uvr = boostParam['usedVariableRatio']
-    mns = boostParam['minNodeSize']
-    return f'ic = {ic}  eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.1f}  mns = {mns:2}'
-
-def formatTime(t):
-    h = int(t / 3600)
-    t -= 3600 * h;
-    m = int(t / 60)
-    t -= 60 * m
-    s = int(t)
-    return f'{h}:{m:02}:{s:02}'
+    return f'eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.1f}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 

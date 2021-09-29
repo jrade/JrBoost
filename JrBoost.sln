@@ -5,8 +5,10 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E7537CA6-817B-42AE-95BE-7345836D8986}"
 	ProjectSection(SolutionItems) = preProject
+		Higgs Notes.txt = Higgs Notes.txt
 		License.txt = License.txt
 		Profile.txt = Profile.txt
+		ReadMe.txt = ReadMe.txt
 		ToDo.txt = ToDo.txt
 	EndProjectSection
 EndProject
@@ -20,13 +22,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JrBoostLib", "Cpp\JrBoostLib\JrBoostLib.vcxproj", "{5E1798B2-CBDB-45A1-811A-884850C61C3C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PythonModule", "Cpp\PythonModule\PythonModule.vcxproj", "{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{6C5CE8EF-A6AE-4D09-9FE4-9150BD25C926}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Iris", "Iris", "{45EDF526-1F19-4284-BCA3-557C1CB86828}"
-	ProjectSection(SolutionItems) = preProject
-		Data\Iris\Iris.csv = Data\Iris\Iris.csv
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,7 +58,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
-		{45EDF526-1F19-4284-BCA3-557C1CB86828} = {6C5CE8EF-A6AE-4D09-9FE4-9150BD25C926}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1D96605-E60B-47D3-87A4-5190D6AD3139}

@@ -10,8 +10,7 @@ class BoostPredictor;
 
 
 vector<shared_ptr<BoostPredictor>> parallelTrain(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt
-);
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt);
 
 ArrayXXd parallelTrainAndPredict(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,

@@ -32,10 +32,11 @@ shared_ptr<TreeTrainerImplBase> TreeTrainer::createImpl_(CRefXXf inData, CRefXs 
         return std::make_shared<TREE_TRAINER_IMPL<uint64_t>>(inData, strata);
 }
 
-unique_ptr<BasePredictor> TreeTrainer::train(CRefXd outData, CRefXd weights, const TreeOptions& options) const
+unique_ptr<BasePredictor> TreeTrainer::train(
+    CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::TREE_TRAIN);
-    unique_ptr<BasePredictor> pred =  impl_->train(outData, weights, options);
+    unique_ptr<BasePredictor> pred =  impl_->train(outData, weights, options, threadCount);
     PROFILE::POP();
     return pred;
 }

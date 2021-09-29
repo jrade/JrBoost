@@ -73,54 +73,54 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
     size_t blockCount = omp_get_max_threads();
     size_t blockWidth = divideRoundUp(variableCount, blockCount);
     // ... but avoid too small blocks
-    const size_t minBlockWidth = 1024;
+    const size_t minBlockWidth = 256;
     blockWidth = minBlockWidth * divideRoundUp(blockWidth, minBlockWidth);
     blockCount = divideRoundUp(variableCount, blockWidth);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(static_cast<int>(blockCount))
     {
+        ASSERT(static_cast<size_t>(omp_get_num_threads()) == blockCount);
+
         StatArray mean(2, blockWidth);
         StatArray totalMean(1, blockWidth);
         StatArray ss(2, blockWidth);
 
-#pragma omp for
-        for (int k = 0; k < static_cast<int>(blockCount); ++k) {
-            const size_t j0 = k * blockWidth;
-            const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
+        const size_t k = omp_get_thread_num();      // block index
+        const size_t j0 = k * blockWidth;
+        const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
-            Eigen::Ref<const DataArray> inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
-            Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, 2, j1 - j0));
-            Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
-            Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
-            Eigen::Ref<ArrayXf> tBlock(t.segment(j0, j1 - j0));
+        Eigen::Ref<const DataArray> inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
+        Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, 2, j1 - j0));
+        Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
+        Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
+        Eigen::Ref<ArrayXf> tBlock(t.segment(j0, j1 - j0));
 
-            meanBlock = AccType(0);
-            for (size_t i: samples) {
-                size_t s = outData(i);
-                meanBlock.row(s) += inDataBlock.row(i).cast<AccType>();
-            }
-            meanBlock.colwise() /= n.cast<AccType>();
-
-            ssBlock = AccType(0);
-            for (size_t i : samples) {
-                size_t s = outData(i);
-                ssBlock.row(s) += (inDataBlock.row(i).cast<AccType>() - meanBlock.row(s)).square();
-            }
-
-            totalMeanBlock = (n(0) * meanBlock.row(0) + n(1) * meanBlock.row(1)) / sampleCount;
-
-            tBlock = (
-                a
-                *
-                (meanBlock.row(1) - meanBlock.row(0))
-                /
-                (
-                    ssBlock.row(0) + ssBlock.row(1)
-                    +
-                    c * totalMeanBlock.square()             // fudge term
-                ).sqrt()
-            ).cast<float>();
+        meanBlock = AccType(0);
+        for (size_t i: samples) {
+            size_t s = outData(i);
+            meanBlock.row(s) += inDataBlock.row(i).cast<AccType>();
         }
+        meanBlock.colwise() /= n.cast<AccType>();
+
+        ssBlock = AccType(0);
+        for (size_t i : samples) {
+            size_t s = outData(i);
+            ssBlock.row(s) += (inDataBlock.row(i).cast<AccType>() - meanBlock.row(s)).square();
+        }
+
+        totalMeanBlock = (n(0) * meanBlock.row(0) + n(1) * meanBlock.row(1)) / sampleCount;
+
+        tBlock = (
+            a
+            *
+            (meanBlock.row(1) - meanBlock.row(0))
+            /
+            (
+                ssBlock.row(0) + ssBlock.row(1)
+                +
+                c * totalMeanBlock.square()             // fudge term
+            ).sqrt()
+        ).cast<float>();
     }
 
     if (!(t.abs() < numeric_limits<float>::infinity()).all()) {

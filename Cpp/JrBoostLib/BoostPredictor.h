@@ -9,7 +9,8 @@
 class BasePredictor;
 
 
-class BoostPredictor : public Predictor {
+class BoostPredictor : public Predictor
+{
 public:
     BoostPredictor(
         size_t variableCount,

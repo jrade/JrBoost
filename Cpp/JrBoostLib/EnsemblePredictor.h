@@ -7,7 +7,8 @@
 #include "Predictor.h"
 
 
-class EnsemblePredictor : public Predictor {
+class EnsemblePredictor : public Predictor
+{
 public:
     EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors);
 

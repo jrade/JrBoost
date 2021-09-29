@@ -20,7 +20,7 @@ public:
     StumpTrainerImpl(CRefXXf inData, CRefXs strata);
     virtual ~StumpTrainerImpl() = default;
 
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const;
 
 private:
     using RandomNumberEngine_ = splitmix;

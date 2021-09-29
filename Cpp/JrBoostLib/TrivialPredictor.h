@@ -7,7 +7,8 @@
 #include "BasePredictor.h"
 
 
-class TrivialPredictor : public BasePredictor {
+class TrivialPredictor : public BasePredictor
+{
 public:
     TrivialPredictor(double y);
     virtual ~TrivialPredictor() = default;

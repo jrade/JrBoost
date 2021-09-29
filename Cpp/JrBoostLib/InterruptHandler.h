@@ -5,7 +5,8 @@
 #pragma once
 
 
-class InterruptHandler {
+class InterruptHandler
+{
 public:
     virtual void check() = 0;
 };

@@ -8,10 +8,11 @@ class BasePredictor;
 class TreeOptions;
 
 
-class TreeTrainerImplBase {
+class TreeTrainerImplBase
+{
 public:
     virtual ~TreeTrainerImplBase() = default;
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options) const = 0;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const = 0;
 
 protected:
     TreeTrainerImplBase() = default;

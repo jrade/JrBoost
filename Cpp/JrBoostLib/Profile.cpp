@@ -28,7 +28,7 @@ string PROFILE::STOP()
 void PROFILE::PUSH(CLOCK_ID id)
 {
     if (!enabled_) return;
-    if (std::this_thread::get_id() != mainThreadId) return;
+    if (std::this_thread::get_id() != theMainThreadId) return;
 
     uint64_t t = clockCycleCount();
 
@@ -44,7 +44,7 @@ void PROFILE::PUSH(CLOCK_ID id)
 void PROFILE::POP(size_t itemCount)
 {
     if (!enabled_) return;
-    if (std::this_thread::get_id() != mainThreadId) return;
+    if (std::this_thread::get_id() != theMainThreadId) return;
 
     uint64_t t = clockCycleCount();
 
@@ -62,7 +62,7 @@ void PROFILE::POP(size_t itemCount)
 void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 {
     if (!enabled_) return;
-    if (std::this_thread::get_id() != mainThreadId) return;
+    if (std::this_thread::get_id() != theMainThreadId) return;
 
     uint64_t t = clockCycleCount();
 
@@ -77,7 +77,7 @@ void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 void PROFILE::UPDATE_BRANCH_STATISTICS(size_t iterationCount, size_t slowBranchCount)
 {
     if (!enabled_) return;
-    if (std::this_thread::get_id() != mainThreadId) return;
+    if (std::this_thread::get_id() != theMainThreadId) return;
 
     splitIterationCount_ += iterationCount;
     slowBranchCount_ += slowBranchCount;

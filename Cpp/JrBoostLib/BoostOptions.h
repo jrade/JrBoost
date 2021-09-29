@@ -7,7 +7,8 @@
 #include "TreeOptions.h"
 
 
-class BoostOptions : public TreeOptions {
+class BoostOptions : public TreeOptions 
+{
 public:
     BoostOptions() = default;
     BoostOptions(const BoostOptions&) = default;

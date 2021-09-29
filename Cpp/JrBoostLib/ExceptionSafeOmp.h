@@ -16,10 +16,12 @@ class ThreadAborted : public std::exception {};
 // This code handles nested parallelism if all levels use the macros below.
 
 
-#define BEGIN_EXCEPTION_SAFE_OMP_PARALLEL \
+#define BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(THREAD_COUNT) \
     { \
+        const int tc = THREAD_COUNT; \
+        (void)tc; \
         std::exception_ptr ep; \
-        _Pragma("omp parallel") \
+        _Pragma("omp parallel num_threads(tc)") \
         { \
             try {
 

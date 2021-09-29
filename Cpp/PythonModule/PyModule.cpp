@@ -19,8 +19,9 @@
 inline py::bytes predictorGetState(const Predictor& pred);
 template<typename T> inline shared_ptr<T> predictorSetState(const py::bytes& s);
 
+//----------------------------------------------------------------------------------------------------------------------
 
-PYBIND11_MODULE(_jrboost_cpp, mod)
+PYBIND11_MODULE(_jrboostext, mod)
 {
     namespace py = pybind11;
 
@@ -39,8 +40,15 @@ PYBIND11_MODULE(_jrboost_cpp, mod)
 
     mod.def("getThreadCount", &omp_get_max_threads);
     mod.def("setThreadCount", &omp_set_num_threads);
-    mod.attr("eigenVersion") = py::str(eigenVersion);
-    mod.attr("pybind11Version") = py::str(pybind11Version);
+
+    mod.def("getParallelTree", []() { return ::theParallelTree; });
+    mod.def("setParallelTree", [](bool b) { ::theParallelTree = b; });
+
+    mod.def("getOuterThreadCount", []() { return ::theOuterThreadCount; });
+    mod.def("setOuterThreadCount", [](size_t n) { ::theOuterThreadCount = n; });
+
+    mod.attr("eigenVersion") = py::str(theEigenVersion);
+    mod.attr("pybind11Version") = py::str(thePybind11Version);
 
 
     // Predictors
@@ -67,14 +75,20 @@ PYBIND11_MODULE(_jrboost_cpp, mod)
             py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(),
             py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
         )
-        .def("train", &BoostTrainer::train);
+        .def("train", [](const BoostTrainer& trainer, const BoostOptions& opt) { return trainer.train(opt); });
 
     mod.def("getDefaultBoostParam", []() { return BoostOptions(); });
 
-    mod.def("parallelTrain", &parallelTrain);
-    mod.def("parallelTrainAndPredict", &parallelTrainAndPredict);
-    mod.def("parallelTrainAndEval", &parallelTrainAndEval, py::call_guard<py::gil_scoped_release>());
-    mod.def("parallelTrainAndEvalWeighted", &parallelTrainAndEvalWeighted, py::call_guard<py::gil_scoped_release>());
+    mod.def("parallelTrain", &parallelTrain,
+        py::arg(), py::arg());
+    mod.def("parallelTrainAndPredict", &parallelTrainAndPredict,
+        py::arg(), py::arg(), py::arg());
+    mod.def("parallelTrainAndEval", &parallelTrainAndEval,
+        py::arg(), py::arg(), py::arg(), py::arg(), py::arg(),
+        py::call_guard<py::gil_scoped_release>());
+    mod.def("parallelTrainAndEvalWeighted", &parallelTrainAndEvalWeighted,
+        py::arg(), py::arg(), py::arg(), py::arg(), py::arg(), py::arg(),
+        py::call_guard<py::gil_scoped_release>());
 
     // parallelTrainAndEval() makes callbacks from multi-threaded code.
     // These callbacks may be to Python functions that need to acquire the GIL.

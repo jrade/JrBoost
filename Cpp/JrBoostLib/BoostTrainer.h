@@ -9,12 +9,13 @@ class BoostPredictor;
 class TreeTrainer;
 
 
-class BoostTrainer {
+class BoostTrainer
+{
 public:
     BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights);
     ~BoostTrainer() = default;
 
-    shared_ptr<BoostPredictor> train(const BoostOptions& opt) const;
+    shared_ptr<BoostPredictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
 
  // deleted:
     BoostTrainer(const BoostTrainer&) = delete;
@@ -22,9 +23,9 @@ public:
 
 private:
     double calculateLor0_() const;
-    shared_ptr<BoostPredictor> trainAda_(const BoostOptions& opt) const;
-    shared_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt) const;
-    shared_ptr<BoostPredictor> trainRegularizedLogit_(const BoostOptions& opt) const;
+    shared_ptr<BoostPredictor> trainAda_(const BoostOptions& opt, size_t threadCount) const;
+    shared_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt, size_t threadCount) const;
+    shared_ptr<BoostPredictor> trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const;
     static void overflow_ [[noreturn]] (const BoostOptions& opt);
 
 private:
@@ -34,6 +35,6 @@ private:
     const ArrayXs rawOutData_;
     const ArrayXd outData_;
     const optional<ArrayXd> weights_;
-    const shared_ptr<TreeTrainer> baseTrainer_;
     const double lor0_;
+    const shared_ptr<TreeTrainer> baseTrainer_;
 };

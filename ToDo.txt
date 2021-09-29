@@ -1,130 +1,82 @@
-other parallelization strategy
-	the current version is threadsafe but non threaded
-	first put together a simple non-threadsafe version
-	then from there a threaded version
-	finally a nested version
-		https://software.intel.com/content/www/us/en/develop/videos/using-nested-parallelism-in-openmp.html
-	would a SampleManager class help with the nested multithreading
+improved stratification in example programs
+	need a strata numpy array, create at the same time as the one-hot encoded array
+	first improve the logging: some of the item counts should be divided by the number of threads
 
-..............................................................................
+Test with the Intel C++ compiler:
+	Does it have better support for 128 threads?
+	Does it have better support for SIMD vectorization?
+	To do:
+		1. report internal compiler error to
+				https://community.intel.com/t5/Intel-C-Compiler/bd-p/c-compiler
+		2. test how the compiler handles 128 threads
+		3. improved vectorization (t-test, F-test, boost) ()
+				first improve the logging: some of the item counts should be divided by the number of threads
+				does this improve performance with many threads?
+		4. report that vectors of overaligned data do  not compile
+		5. check the alignment of buffers for such vectors
+		6. cache line align TreeNodeTrainer and parallelize join splits
 
-TreeTrainerImpl:
+make another attempt at parallelizing outside the d-loop
+	profile with Leukemia and 64 threads
+	does this make the code too messy?
 
-	optimize initSampleSttaus_() in trivial case when all samples ae used
-		(usedSampleRatio = 1.0, minSampleWeigt = 0.0 )
-
-	Profile standard and alt methods, on all three machines
-		suitable benchmarks:
-			Leukemia, TCGA, Higgs
-			simple cross-validation
-			1 rep, 5 folds, use half of the cores
-			use half of the cores
-			put together a proper TCGA build script
-		store results in a file called Profile.txt ?
-		consider making the alt method the default
-
-		preliminary results with TCGA500 (MET500 compatible data only)
-			Laptop 4 cores
-				std: 113:44
-				alt:  77:44
-			PC 8 cores
-				std:  53:40
-				alt:  37:12
-			PC 64 cores
-				std:  30:00
-				alt:  25:40
-
-	Notes
-		the alt implementation can not be used with variables per level
-		the alt implementation should not be used with depth 1 (would waste a lot of memory)
-
-	can 1D eigen arrays automatically be converted to span?
-		seems not. why? does CRefXf etc lack begin() and end()?
-		what are the requirements on a in the span constructor span::span(a)? read up, take a look in C++20 book
-
-................................................................................
-
-Higgs example:
-
-	feature engineerings
-		read paper appendix A, then appendix B
-		look at winning (and other) submissions
-
-	target loss functions (for fitting hyper parameters):
-		AUC:      3.7372 -> 3.7403
-		AMS:      3.7340 -> 3.7342
-		ll(1e-3): 3.7156 -> 3.7073
-	
-	more robust AMS cutoff fitting (testing every possible cutoff may lead to overfitting, apply some smoothing?)
-	also: test simple cutoff again
-	population optimization parameters (generator approach)
-	repetition count
-
-	minGain feature
-	forward and backward pruning
-	drop useless variables?
-
-	cross-validation for fitting hyper parameters and AMS cutoff
-		only use the data files train.csv and test.csv from Kaggle competition
-		trainer that works with sample subset
-
-	look at final version of my Kaggle code
-	look at winning submissions, paper, code at https://github.com/melisgl/higgsml
-	look at other publicly available submissions
-		
-	do some profiling
-		how does it scale with number of cores (using the full dataset)
-		what takes so much time at the end?
-
-	compare with the xgbost higgs example:
-		speed, accuracy?
-
-	how does higgs.py find jrboost when importing it? (this ís a bit of a mystery)
+continue cleanup of TreeTrainerImpl
 
 ------------------------------------------------------------------------------------------------------------------------
 
 major tasks:
-	test pruning again (also with abs limit)
+	release 0.1 (reset file format version?)
+	boosted forests
+		maybe train with forestSize = 1, then build with a larger forestSize
+	improved Higgs example (see "Higgs Notes.txt")
+	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
+	BART
 	improved Otto example
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
-	BART
 	histogram-based tree builder (would speed up Otto a lot)
 	multinomial predictors
-	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
+	documentation of regularized logit boost method
 
 features to add:
+	used variable subset by level option (would require saveMemory = True)
+	strata that is distinct from out data (with possibly more than two strata)
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
-	set seed (to make the training process deterministic)
-	used variable subset by level option (may be expensive)
-	multiple inData and multiple variable counts (to handle feature engineering etc.)
+	set seed to make the code deterministic (how to handle dynamic scheduling?)
 	U-test (with correct handling of ties)
+	multiple inData and multiple variable ounts (to handle feature engineering etc.)
 
 minor things:
+	test pruning again (also with abs limit)
 	predict overload that takes a one-dim array and returns a double (use in QD Demo)
-	is there any need for the fudge term in the t- and F-test? 
-		How large should the fudge term be?
-	documentation of regularized logit boost
-	clang code formatting
-	what is the correct way of adding terms when calculating variable importance weights?
-	have the predictor class constructors take float instead of double as appropriate
-	test pragma omp threadlocal?
-	assert dataset does not have more than 2G variables
-	is the design with static thread local buffers the best way?
-	get rid of uint32 nonsens in boost and ensemble predictor file formats
+	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
+	save and load:
+		check that dataset does not have more than 2G variables
+		get rid of uint32 nonsense
 	compare performance (speed and accuracy) with xgboost
+	clang code formatting
 	
 optimizations:
-	compare performance with StumpTrainer
-	test PGO again
-	test narrower type for strata
-	float or double for outdata and weights?
-	store outData and weights in a single vector of structs with y and w members
-	other methods for ordered samples
-		1. sortedSamples -> usedSortedSamples -> usedOrderedSamples
-			this will only be useful if the ratio of used samples is substantailly < 1.0; log this ratio for some examples
-			maybe a dynamic switch between this method and the current standard method?
-		2. sort each time
+	make updateSampleStatus() code branch-free by introducing dummy nodes corresponding to status = 0 (unusued)
+		maintain sorted lists of active samples to speed up this further
+	compare performance with StumpTrainer (use Leukemia build and validate as a test case)
+	data
+		narrower type for strata
+		float or double for outdata and weights?
+		outData and weights interleaved in a single array
+	PGO
+	joinSplits_ could be parallelized, but this requires cache line alignment of TreeNodeBuilder
+		this seems not to work with the Intel compiler
+
+steps needed for the code to scale well with 128 threads:
+	a preliminary test has shown that 128 threads might work well with 8 outer and 16 inner threads
+	requires MSVC with openmp:/llvm (or the Intel compiler?)
+	need better profiling:
+		group the profiling numbers in 4 groups (unthread, outer, inner, synch)
+		show the subtotal and percentage for each group
+	SIMD optimize t-test, F-test, boost
+	OMP optimize initSampleSttaus, updateSampleStatus
+	fast jrboost.select(), jrboost.selectRows() and jrboost.selectColumns()
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -136,10 +88,6 @@ Otto:
 	fit hyperparams jointly or separately for the different labels?
 	try again with linloss, logloss and auc
 	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
-
-review use of integer and floating point data types
-	use ssize_t as default integer type?
-		bow we got sszize_t and ssize()
 
 Eigen issues:
 	read Eigen 3.4 docs
@@ -155,8 +103,8 @@ Eigen issues:
 
 Notes:
 
-The Vissual Studio project used the environment variables EIGEN_DIR, PYTHON_DIR and PYBIND11_DIR
-to find third party header and librray files
+The Visual Studio project used the environment variables EIGEN_DIR, PYTHON_DIR and PYBIND11_DIR
+to find third party header and library files
 
 /O2 = /Og /Oi /Ot /Oy /Ob2 /GF /Gy
 
@@ -164,7 +112,6 @@ to find third party header and librray files
 
 /arch:AVX is faster than /arch:SSE and /arch:SSE2
 /arch:AVX2 is not faster than /arch:AVX
-the sppedup comes from BoostTrainer::trainAda_() (possibly the exp() call)
 
 /fp:strict, /fp:pecise, /fp:fast: no clear difference, but there is no reason not to choose /fp:fast
 

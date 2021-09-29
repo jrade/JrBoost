@@ -5,7 +5,8 @@
 #pragma once
 
 
-class Predictor {
+class Predictor
+{
 public:
     virtual ~Predictor() = default;
     virtual size_t variableCount() const = 0;

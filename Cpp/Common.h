@@ -22,7 +22,6 @@
 #include <numeric>
 #include <optional>
 #include <random>
-#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <sstream>
@@ -43,14 +42,11 @@ using std::optional;
 using std::ostream;
 using std::pair;
 using std::shared_ptr;
-using std::span;
 using std::string;
 using std::stringstream;
 using std::tuple;
 using std::unique_ptr;
 using std::vector;
-
-inline const std::thread::id mainThreadId = std::this_thread::get_id();
 
 
 // OpenMP
@@ -89,12 +85,24 @@ using CRefXs = Eigen::Ref<const ArrayXs>;
 
 using Array3d = Eigen::Array3d;
 
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
-inline const char* eigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJOR_VERSION) "." STR(EIGEN_MINOR_VERSION);
-
 
 // Tools
 
+#include "JrBoostLib/AGRandom.h"
 #include "JrBoostLib/Assert.h"
 #include "JrBoostLib/Profile.h"
+
+
+// Global data
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJOR_VERSION) "." STR(EIGEN_MINOR_VERSION);
+
+inline bool theParallelTree = true;
+inline size_t theOuterThreadCount = 0;
+
+inline const std::thread::id theMainThreadId = std::this_thread::get_id();
+
+using RandomNumberEngine = splitmix;
+inline thread_local RandomNumberEngine theRne((std::random_device()));

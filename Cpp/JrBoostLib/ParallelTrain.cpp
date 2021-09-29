@@ -11,20 +11,15 @@
 #include "ExceptionSafeOmp.h"
 #include "SortedIndices.h"
 
+static const double gamma_ = 2.0 / 3.0;
 
-// In each iteration of the loop we build a classifier with one set of options
-// Differents sets of options can take very different time.
-// To ensure that the OMP threads are balanced we sort the options objects
-// from the most time-consuming to the least.
-// Note that we can not use 
-//      #pragma omp for schedule(dynamic)
-// because it is not guarangeed to process the elements in order
-
-//----------------------------------------------------------------------------------------------------------------------
 
 vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
 {
     const size_t optCount = size(opt);
+
+    // In order to keep the threads balanced we will process the options one-by-one in order
+    // from the most computaionally expensive to the least computationally expensive
 
     vector<size_t> optIndicesSortedByCost(optCount);
     sortedIndices(
@@ -35,25 +30,68 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
     );
 
     vector<shared_ptr<BoostPredictor>> pred(optCount);
-    std::atomic<int> i0 = 0;
 
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
+    const size_t totalThreadCount = omp_get_max_threads();
+    const bool isNested = ::theParallelTree;
+
+    size_t outerThreadCount;
+    if (isNested) {
+        omp_set_nested(true);
+        outerThreadCount = ::theOuterThreadCount;
+        if (outerThreadCount == 0)
+            // the square root of the total thread count is a reasonable default for the outer thread count
+            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+        if (outerThreadCount > totalThreadCount)
+            outerThreadCount = totalThreadCount;
+    }
+    else
+        outerThreadCount = totalThreadCount;
+    if (outerThreadCount > optCount)
+        outerThreadCount = optCount;
+
+    vector<size_t> innerThreadCounts(outerThreadCount);
+    if (isNested)
+        // each inner thread count is approximately the total thread count divided by the outer thread count
+        // and the sum of the inner thread counts is exactly the total thread count
+        for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
+            innerThreadCounts[outerThreadIndex]
+            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+    else
+        std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
+
+    // since the profiling only tracks the master thread, we randomize
+    // the initial item given to each thread and the inner thread counts
+    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
+    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
+
+    // An OpenMP parallel for loop with dynamic scheduling does not in general process the elements in any 
+    // particular order. Therefore we implement our own scheduling to make sure they are processed in order.
+
+    std::atomic<size_t> nextSortedOptIndex = 0;
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
+        ASSERT(static_cast<size_t>(omp_get_num_threads()) == outerThreadCount);
+        size_t outerThreadIndex = omp_get_thread_num();
+        size_t innerThreadCount = innerThreadCounts[outerThreadIndex];
+
         while (true) {
-            size_t i = i0++;
-            if (i >= size(opt)) break;
-            size_t j = optIndicesSortedByCost[i];
-            pred[j] = trainer.train(opt[j]);
+            size_t sortedOptIndex = nextSortedOptIndex++;
+            if (sortedOptIndex >= optCount) break;
+            size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
+            pred[optIndex] = trainer.train(opt[optIndex], innerThreadCount);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
 
     return pred;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXf testInData)
+ArrayXXd parallelTrainAndPredict(
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
+    CRefXXf testInData)
 {
     if (testInData.rows() == 0)
         throw std::invalid_argument("Test indata has 0 samples.");
@@ -70,19 +108,52 @@ ArrayXXd parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boost
     );
 
     ArrayXXd predData(sampleCount, optCount);
-    std::atomic<int> i0 = 0;
 
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
+    const size_t totalThreadCount = omp_get_max_threads();
+    const bool isNested = ::theParallelTree;
+
+    size_t outerThreadCount;
+    if (isNested) {
+        omp_set_nested(true);
+        outerThreadCount = ::theOuterThreadCount;
+        if (outerThreadCount == 0)
+            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+        if (outerThreadCount > totalThreadCount)
+            outerThreadCount = totalThreadCount;
+    }
+    else
+        outerThreadCount = totalThreadCount;
+    if (outerThreadCount > optCount)
+        outerThreadCount = optCount;
+
+    vector<size_t> innerThreadCounts(outerThreadCount);
+    if (isNested)
+        for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
+            innerThreadCounts[outerThreadIndex]
+            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+    else
+        std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
+
+    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
+    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
+
+    std::atomic<size_t> nextSortedOptIndex = 0;
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
+        ASSERT(static_cast<size_t>(omp_get_num_threads()) == outerThreadCount);
+        size_t outerThreadIndex = omp_get_thread_num();
+        size_t innerThreadCount = innerThreadCounts[outerThreadIndex];
+
         while (true) {
-            size_t i = i0++;
-            if (i >= size(opt)) break;
-            size_t j = optIndicesSortedByCost[i];
-            shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
-            predData.col(j) = pred->predict(testInData);
+            size_t sortedOptIndex = nextSortedOptIndex++;
+            if (sortedOptIndex >= optCount) break;
+            size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
+            shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            predData.col(optIndex) = pred->predict(testInData);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
 
     return predData;
 }
@@ -105,22 +176,59 @@ ArrayXd parallelTrainAndEval(
     );
 
     ArrayXd scores(optCount);
-    std::atomic<int> i0 = 0;
+
+    const size_t totalThreadCount = omp_get_max_threads();
+    const bool isNested = ::theParallelTree;
+
+    size_t outerThreadCount;
+    if (isNested) {
+        omp_set_nested(true);
+        outerThreadCount = ::theOuterThreadCount;
+        if (outerThreadCount == 0)
+            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+        if (outerThreadCount > totalThreadCount)
+            outerThreadCount = totalThreadCount;
+    }
+    else
+        outerThreadCount = totalThreadCount;
+    if (outerThreadCount > optCount)
+        outerThreadCount = optCount;
+
+    vector<size_t> innerThreadCounts(outerThreadCount);
+    if (isNested)
+        for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
+            innerThreadCounts[outerThreadIndex]
+            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+    else
+        std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
+
+    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
+    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
 
     //cout << "0";
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
+    std::atomic<size_t> nextSortedOptIndex = 0;
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
+        ASSERT(static_cast<size_t>(omp_get_num_threads()) == outerThreadCount);
+        size_t outerThreadIndex = omp_get_thread_num();
+        size_t innerThreadCount = innerThreadCounts[outerThreadIndex];
+
+        //stringstream ss;
+        //ss << outerThreadCount << " -> " << innerThreadCount << '\n';
+        //cout << ss.str();
+
         while (true) {
-            size_t i = i0++;
-            if (i >= size(opt)) break;
-            size_t j = optIndicesSortedByCost[i];
-            shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
+            size_t sortedOptIndex = nextSortedOptIndex++;
+            if (sortedOptIndex >= optCount) break;
+            size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
+            shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
-            scores(j) = lossFun(testOutData, predData);
+            scores(optIndex) = lossFun(testOutData, predData);
         }
         //cout << '.';
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
     //cout << '\n';
 
     return scores;
@@ -142,20 +250,53 @@ ArrayXd parallelTrainAndEvalWeighted(
     );
 
     ArrayXd scores(optCount);
-    std::atomic<int> i0 = 0;
 
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL
+    const size_t totalThreadCount = omp_get_max_threads();
+    const bool isNested = ::theParallelTree;
+
+    size_t outerThreadCount;
+    if (isNested) {
+        omp_set_nested(true);
+        outerThreadCount = ::theOuterThreadCount;
+        if (outerThreadCount == 0)
+            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+        if (outerThreadCount > totalThreadCount)
+            outerThreadCount = totalThreadCount;
+    }
+    else
+        outerThreadCount = totalThreadCount;
+    if (outerThreadCount > optCount)
+        outerThreadCount = optCount;
+
+    vector<size_t> innerThreadCounts(outerThreadCount);
+    if (isNested)
+        for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
+            innerThreadCounts[outerThreadIndex]
+            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+    else
+        std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
+
+    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
+    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
+
+    std::atomic<size_t> nextSortedOptIndex = 0;
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
+        ASSERT(static_cast<size_t>(omp_get_num_threads()) == outerThreadCount);
+        size_t outerThreadIndex = omp_get_thread_num();
+        size_t innerThreadCount = innerThreadCounts[outerThreadIndex];
+
         while (true) {
-            size_t i = i0++;
-            if (i >= size(opt)) break;
-            size_t j = optIndicesSortedByCost[i];
-            shared_ptr<BoostPredictor> pred = trainer.train(opt[j]);
+            size_t sortedOptIndex = nextSortedOptIndex++;
+            if (sortedOptIndex >= optCount) break;
+            size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
+            shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
-            scores(j) = lossFun(testOutData, predData, testWeights);
+            scores(optIndex) = lossFun(testOutData, predData, testWeights);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
 
     return scores;
 }

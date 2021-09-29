@@ -19,8 +19,9 @@ public:
     TreeNodeTrainer& operator=(TreeNodeTrainer&&) = default;
 
     void init(const TreeNodeExt* node, const TreeOptions& options);
-    void update(CRefXXf inData, CRefXd outData, CRefXd weights,
-        const TreeOptions& options, span<const SampleIndex> sortedSamples, size_t j);
+    void update(CRefXXf inData, CRefXd outData, CRefXd weights, const TreeOptions& options,
+        const SampleIndex* sortedSamplesBegin, const SampleIndex* sortedSamplesEnd, size_t j);
+    void join(const TreeNodeTrainer& other);
     void finalize(TreeNodeExt** parentNode, TreeNodeExt** childNode) const;
 
 // deleted:
@@ -36,8 +37,10 @@ private:
     double score_;
     size_t j_;
     float x_;
-    double leftY_;
-    double rightY_;
+    double leftSumW_;
+    double leftSumWY_;
+    double rightSumW_;
+    double rightSumWY_;
 
     size_t iterationCount_;
     size_t slowBranchCount_;

@@ -9,7 +9,8 @@
 struct TreeNode;
 
 
-class TreePredictor : public BasePredictor {
+class TreePredictor : public BasePredictor
+{
 public:
     template<typename NodeContainer>
     TreePredictor(const TreeNode* root, NodeContainer&& nodeContainer) :

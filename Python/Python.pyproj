@@ -26,7 +26,7 @@
     <Compile Include="example\higgs_quick.py" />
     <Compile Include="example\iris.py" />
     <Compile Include="example\otto.py" />
-    <Compile Include="jrboost\_jrboost_py.py" />
+    <Compile Include="jrboost\_jrboost.py" />
     <Compile Include="jrboost\__init__.py" />
   </ItemGroup>
   <ItemGroup>

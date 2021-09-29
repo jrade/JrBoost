@@ -2,7 +2,11 @@
     Fast random number engines by Arvid Gerstmann
     See https://arvid.io/2018/07/02/better-cxx-prng/
 
-    Bug fix by Johan Råde: added inline to operator== and operator!=
+    Changes by Johan Råde:
+        Added inline to operator== and operator!= (bug fix)
+        Added constructors that take r-values. This makes code such as
+            split_max rng((std::random_device()));
+        compile
 */
 
 
@@ -22,6 +26,10 @@ public:
 
     splitmix() : m_seed(1) {}
     explicit splitmix(std::random_device& rd)
+    {
+        seed(rd);
+    }
+    explicit splitmix(std::random_device&& rd)
     {
         seed(rd);
     }
@@ -69,6 +77,10 @@ public:
 
     xorshift() : m_seed(0xc1f651c67c62c6e0ull) {}
     explicit xorshift(std::random_device& rd)
+    {
+        seed(rd);
+    }
+    explicit xorshift(std::random_device&& rd)
     {
         seed(rd);
     }
@@ -120,6 +132,10 @@ public:
         , m_inc(0xda3e39cb94b95bdbULL)
     {}
     explicit pcg(std::random_device& rd)
+    {
+        seed(rd);
+    }
+    explicit pcg(std::random_device&& rd)
     {
         seed(rd);
     }

@@ -61,18 +61,18 @@ double BoostTrainer::calculateLor0_() const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
+shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
 
     shared_ptr<BoostPredictor> pred;
     double gamma = opt.gamma();
     if (gamma == 1.0)
-        pred = trainAda_(opt);
+        pred = trainAda_(opt, threadCount);
     else if (gamma == 0.0)
-        pred = trainLogit_(opt);
+        pred = trainLogit_(opt, threadCount);
     else
-        pred = trainRegularizedLogit_(opt);
+        pred = trainRegularizedLogit_(opt, threadCount);
     
     const size_t ITEM_COUNT = sampleCount_ *  opt.iterationCount();
     PROFILE::POP(ITEM_COUNT);
@@ -82,7 +82,7 @@ shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt) const
 
 //......................................................................................................................
 
-shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) const
+shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
 
@@ -108,7 +108,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
         if (!(adjWeights < numeric_limits<float>::infinity()).all())
             overflow_(opt);
 
-        unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt);
+        unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt, threadCount);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = move(basePred);
     }
@@ -118,7 +118,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt) cons
 
 //......................................................................................................................
 
-shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) const
+shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
 
@@ -154,7 +154,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
         if (!(adjWeights < numeric_limits<float>::infinity()).all())
             overflow_(opt);
 
-        unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
+        unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = move(basePred);
     }
@@ -164,7 +164,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt) co
 
 //......................................................................................................................
 
-shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt) const
+shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
 
@@ -201,7 +201,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
         if (!(adjWeights < numeric_limits<float>::infinity()).all())
             overflow_(opt);
 
-        unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt);
+        unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
         basePred->predict(inData_, eta, F);
         basePredictors[i] = move(basePred);
     }

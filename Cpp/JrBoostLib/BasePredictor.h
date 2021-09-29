@@ -5,7 +5,8 @@
 #pragma once
 
 
-class BasePredictor {
+class BasePredictor
+{
 public:
     virtual ~BasePredictor() = default;
 

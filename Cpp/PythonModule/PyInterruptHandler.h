@@ -6,11 +6,12 @@
 
 #include "../JrBoostLib/InterruptHandler.h"
 
-class PyInterruptHandler : public InterruptHandler {
+class PyInterruptHandler : public InterruptHandler
+{
 public:
     virtual void check()
     {
-        if (std::this_thread::get_id() != mainThreadId) return;
+        if (std::this_thread::get_id() != theMainThreadId) return;
 
         time_t presentTime = time(nullptr);
         if (presentTime < lastTime_ + 1) return;

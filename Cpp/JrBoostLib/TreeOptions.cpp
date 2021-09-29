@@ -81,9 +81,9 @@ void TreeOptions::setPruneFactor(double p)
     pruneFactor_ = p;
 }
 
-void TreeOptions::setAltImplementation(bool b)
+void TreeOptions::setSaveMemory(bool b)
 {
-    altImplementation_ = b;
+    saveMemory_ = b;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

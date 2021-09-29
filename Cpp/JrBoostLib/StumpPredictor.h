@@ -7,7 +7,8 @@
 #include "BasePredictor.h"
 
 
-class StumpPredictor : public BasePredictor {
+class StumpPredictor : public BasePredictor
+{
 public:
     StumpPredictor(size_t j, float x, float leftY, float rightY, float gain = 0.0f);
     virtual ~StumpPredictor() = default;

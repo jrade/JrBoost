@@ -30,13 +30,14 @@ void TreeNodeTrainer<SampleIndex>::update(
     CRefXd outData,
     CRefXd weights,
     const TreeOptions& options,
-    span<const SampleIndex> sortedSamples,
+    const SampleIndex* sortedSamplesBegin,
+    const SampleIndex* sortedSamplesEnd,
     size_t j
 )
 {
-    const float* pInDataColJ = &inData.coeffRef(0, j);
-    const double* pOutData = &outData.coeffRef(0);
-    const double* pWeights = &weights.coeffRef(0);
+    const float* pInDataColJ = std::data(inData.col(j));
+    const double* pOutData = std::data(outData);
+    const double* pWeights = std::data(weights);
 
     if (sumW_ == 0) return;
 
@@ -45,9 +46,9 @@ void TreeNodeTrainer<SampleIndex>::update(
     double leftSumW = 0.0;
     double leftSumWY = 0.0;
 
-    auto p = begin(sortedSamples);
+    const SampleIndex* p = sortedSamplesBegin;
     size_t nextI = *p;
-    while (p != end(sortedSamples) - 1) {
+    while (p != sortedSamplesEnd - 1) {
 
         // this is where most execution time is spent ..........................
 
@@ -67,8 +68,8 @@ void TreeNodeTrainer<SampleIndex>::update(
 
         ++slowBranchCount_;
 
-        if (p < begin(sortedSamples) + minNodeSize
-            || p > end(sortedSamples) - minNodeSize
+        if (p < sortedSamplesBegin + minNodeSize
+            || p > sortedSamplesEnd - minNodeSize
             || leftSumW < minNodeWeight_
             || rightSumW < minNodeWeight_
             ) continue;
@@ -83,11 +84,34 @@ void TreeNodeTrainer<SampleIndex>::update(
         score_ = score;
         j_ = j;
         x_ = midX;
-        leftY_ = leftSumWY / leftSumW;
-        rightY_ = rightSumWY / rightSumW;
+        leftSumW_ = leftSumW;
+        leftSumWY_ = leftSumWY;
+        rightSumW_ = rightSumW;
+        rightSumWY_ = rightSumWY;
     }
 
-    iterationCount_ += size(sortedSamples);
+    iterationCount_ += sortedSamplesBegin - sortedSamplesEnd;
+}
+
+
+template<typename SampleIndex>
+void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
+{
+    iterationCount_ += other.iterationCount_;
+    slowBranchCount_ += other.slowBranchCount_;
+
+    if (!other.splitFound_) return;
+    if (splitFound_ && other.score_ < score_) return;
+    if (splitFound_ && other.score_ == score_ && j_ < other.j_) return;     // makes the code deterministic
+
+    splitFound_ = true;
+    score_ = other.score_;
+    j_ = other.j_;
+    x_ = other.x_;
+    leftSumW_ = other.leftSumW_;
+    leftSumWY_ = other.leftSumWY_;
+    rightSumW_ = other.rightSumW_;
+    rightSumWY_ = other.rightSumWY_;
 }
 
 
@@ -103,12 +127,12 @@ void TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** parentNode, TreeNodeEx
 
         (*parentNode)->leftChild = *childNode;
         (*childNode)->isLeaf = true;
-        (*childNode)->y = static_cast<float>(leftY_);
+        (*childNode)->y = static_cast<float>(leftSumWY_ / leftSumW_);
         ++*childNode;
 
         (*parentNode)->rightChild = *childNode;
         (*childNode)->isLeaf = true;
-        (*childNode)->y = static_cast<float>(rightY_);
+        (*childNode)->y = static_cast<float>(rightSumWY_ / rightSumW_);
         ++*childNode;
     }
 
