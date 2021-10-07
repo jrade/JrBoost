@@ -9,15 +9,12 @@ enum class TestDirection { Up, Down, Any };
 
 
 ArrayXf tStatistic(
-    Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
+    CRefXXfr inData,
     CRefXs outData,
-    optional<CRefXs> optSamples = optional<CRefXs>()
-);
-
+    optional<vector<size_t>> optSamples = {});
 
 ArrayXs tTestRank(
-    Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
-    CRefXs outData,
-    optional<CRefXs> optSamples = optional<CRefXs>(),
+    CRefXXfr inData, CRefXs outData,
+    optional<vector<size_t>> optSamples = {},
     TestDirection testDirection = TestDirection::Any
 );

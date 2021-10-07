@@ -10,7 +10,7 @@
 #include "StumpPredictor.h"
 
 
-void BasePredictor::predict(CRefXXf inData, double c, RefXd outData) const
+void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
 {
     PROFILE::PUSH(PROFILE::TREE_PREDICT);
     predict_(inData, c, outData);

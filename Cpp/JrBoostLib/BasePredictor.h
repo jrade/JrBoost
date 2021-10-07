@@ -10,7 +10,7 @@ class BasePredictor
 public:
     virtual ~BasePredictor() = default;
 
-    void predict(CRefXXf inData, double c, RefXd outData) const;
+    void predict(CRefXXfc inData, double c, RefXd outData) const;
 
 protected:
     enum { Trivial = 100, Stump = 101, Tree = 102 };
@@ -21,7 +21,7 @@ protected:
 
 private:
     friend class BoostPredictor;
-    virtual void predict_(CRefXXf inData, double c, RefXd outData) const = 0;
+    virtual void predict_(CRefXXfc inData, double c, RefXd outData) const = 0;
     virtual void variableWeights_(double c, RefXd weights) const = 0;
     virtual void save_(ostream& os) const = 0;
     static unique_ptr<BasePredictor> load_(istream& is, int version);

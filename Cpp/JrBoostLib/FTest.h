@@ -6,14 +6,14 @@
 
 
 ArrayXf fStatistic(
-    Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
+    CRefXXfr inData,
     CRefXs outData,
-    optional<CRefXs> optSamples = optional<CRefXs>()
+    optional<vector<size_t>> optSamples = {}
 );
 
 
 ArrayXs fTestRank(
-    Eigen::Ref<const Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> inData,
+    CRefXXfr inData,
     CRefXs outData,
-    optional<CRefXs> optSamples = optional<CRefXs>()
+    optional<vector<size_t>> optSamples = {}
 );

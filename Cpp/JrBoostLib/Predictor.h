@@ -11,7 +11,7 @@ public:
     virtual ~Predictor() = default;
     virtual size_t variableCount() const = 0;
 
-    ArrayXd predict(CRefXXf inData) const;
+    ArrayXd predict(CRefXXfc inData) const;
 
     ArrayXd variableWeights() const;
 
@@ -30,7 +30,7 @@ protected:
 private:
     friend class EnsemblePredictor;
 
-    virtual ArrayXd predict_(CRefXXf inData) const = 0;
+    virtual ArrayXd predict_(CRefXXfc inData) const = 0;
     virtual void variableWeights_(double c, RefXd weights) const = 0;
 
     // File format versions:

@@ -11,7 +11,7 @@
 #include "TreeTrainer.h"
 
 
-BoostTrainer::BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights) :
+BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> weights) :
     inData_{ (PROFILE::PUSH(PROFILE::BOOST_INIT), std::move(inData)) },
     sampleCount_{ static_cast<size_t>(inData_.rows()) },
     variableCount_{ static_cast<size_t>(inData_.cols()) },
@@ -94,17 +94,30 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
 
     vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
-    for (size_t i = 0; i < iterationCount; ++i) {
-
-        //adjWeights = (-F * outData_).exp();
+    for (size_t i = 0; i != iterationCount; ++i) {
+        /*
+        // time per element with different enhanced instruction sets
+        // none:    ?
+        // SSE2:  27cc
+        // AVX:   15cc
+        // AVX2:  11cc
+        adjWeights = (-F * outData_).exp();
+        */
 
         const double* pF = &F(0);
         const double* pOutData = &outData_(0);
         double* pAdjWeights = &adjWeights(0);
-        for (size_t j = 0; j < sampleCount; ++j)
+        // time per element with different enhanced instruction sets
+        // none: 22cc
+        // SSE2: 11cc
+        // AVX:  11cc
+        // AVX2:  6cc
+        for (size_t j = 0; j != sampleCount; ++j)
             pAdjWeights[j] = exp(-pF[j] * pOutData[j]);
+
         if (weights_)
             adjWeights *= (*weights_);
+
         if (!(adjWeights < numeric_limits<float>::infinity()).all())
             overflow_(opt);
 
@@ -131,7 +144,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, si
 
     vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
-    for (size_t i = 0; i < iterationCount; ++i) {
+    for (size_t i = 0; i != iterationCount; ++i) {
 
         //ArrayXd x = (-F * outData_).exp();               
         //adjOutData = outData_ * (x + 1.0);
@@ -142,7 +155,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, si
         double* pAdjOutData = &adjOutData(0);
         double* pAdjWeights = &adjWeights(0);
 
-        for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
+        for (size_t j = 0; j != sampleCount; ++j) {
             double x = std::exp(-pF[j] * pOutData[j]);
             pAdjOutData[j] = pOutData[j] * (x + 1.0);
             pAdjWeights[j] = x / ((x + 1.0) * (x + 1.0));
@@ -178,7 +191,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
 
     vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
-    for (size_t i = 0; i < iterationCount; ++i) {
+    for (size_t i = 0; i != iterationCount; ++i) {
 
         //ArrayXd x = (-F * outData_).exp();
         //adjOutData = outData_ * (x + 1.0) / (gamma * x + 1.0);
@@ -189,7 +202,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
         double* pAdjOutData = &adjOutData(0);
         double* pAdjWeights = &adjWeights(0);
 
-        for (size_t j = 0; j < sampleCount; ++j) {      // vectorized by MSVS 2019
+        for (size_t j = 0; j != sampleCount; ++j) {
             double x = std::exp(-pF[j] * pOutData[j]);
             pAdjOutData[j] = pOutData[j] * (x + 1.0) / (gamma * x + 1.0);
             pAdjWeights[j] = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);

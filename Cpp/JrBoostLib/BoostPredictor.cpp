@@ -24,7 +24,7 @@ BoostPredictor::BoostPredictor(
 }
 
 
-ArrayXd BoostPredictor::predict_(CRefXXf inData) const
+ArrayXd BoostPredictor::predict_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Constant(sampleCount, static_cast<double>(c0_));

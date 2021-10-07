@@ -14,7 +14,7 @@ EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<Predictor>>& predic
         ASSERT(pred->variableCount() == variableCount());
 }
 
-ArrayXd EnsemblePredictor::predict_(CRefXXf inData) const
+ArrayXd EnsemblePredictor::predict_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);

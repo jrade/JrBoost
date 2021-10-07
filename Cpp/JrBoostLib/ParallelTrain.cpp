@@ -11,8 +11,6 @@
 #include "ExceptionSafeOmp.h"
 #include "SortedIndices.h"
 
-static const double gamma_ = 2.0 / 3.0;
-
 
 vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
 {
@@ -40,7 +38,7 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
         outerThreadCount = ::theOuterThreadCount;
         if (outerThreadCount == 0)
             // the square root of the total thread count is a reasonable default for the outer thread count
-            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+            outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
             outerThreadCount = totalThreadCount;
     }
@@ -89,9 +87,9 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXXd parallelTrainAndPredict(
+ArrayXXdc parallelTrainAndPredict(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData)
+    CRefXXfc testInData)
 {
     if (testInData.rows() == 0)
         throw std::invalid_argument("Test indata has 0 samples.");
@@ -107,7 +105,7 @@ ArrayXXd parallelTrainAndPredict(
         [](const auto& opt) { return -opt.cost(); }
     );
 
-    ArrayXXd predData(sampleCount, optCount);
+    ArrayXXdc predData(sampleCount, optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
     const bool isNested = ::theParallelTree;
@@ -117,7 +115,7 @@ ArrayXXd parallelTrainAndPredict(
         omp_set_nested(true);
         outerThreadCount = ::theOuterThreadCount;
         if (outerThreadCount == 0)
-            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+            outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
             outerThreadCount = totalThreadCount;
     }
@@ -162,7 +160,7 @@ ArrayXXd parallelTrainAndPredict(
 
 ArrayXd parallelTrainAndEval(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
+    CRefXXfc testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
 )
 {
     size_t optCount = size(opt);
@@ -185,7 +183,7 @@ ArrayXd parallelTrainAndEval(
         omp_set_nested(true);
         outerThreadCount = ::theOuterThreadCount;
         if (outerThreadCount == 0)
-            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+            outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
             outerThreadCount = totalThreadCount;
     }
@@ -236,7 +234,7 @@ ArrayXd parallelTrainAndEval(
 
 ArrayXd parallelTrainAndEvalWeighted(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
+    CRefXXfc testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
 )
 {
     size_t optCount = size(opt);
@@ -259,7 +257,7 @@ ArrayXd parallelTrainAndEvalWeighted(
         omp_set_nested(true);
         outerThreadCount = ::theOuterThreadCount;
         if (outerThreadCount == 0)
-            outerThreadCount = static_cast<size_t>(std::round(std::pow(totalThreadCount, gamma_)));
+            outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
             outerThreadCount = totalThreadCount;
     }

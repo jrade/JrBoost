@@ -12,7 +12,7 @@
 
 
 template<typename SampleIndex>
-StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXf inData, CRefXs strata) :
+StumpTrainerImpl<SampleIndex>::StumpTrainerImpl(CRefXXfc inData, CRefXs strata) :
     inData_{ inData },
     sampleCount_{ static_cast<size_t>(inData.rows()) },
     variableCount_{ static_cast<size_t>(inData.cols()) },

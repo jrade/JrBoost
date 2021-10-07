@@ -9,7 +9,6 @@
 
 
 using AccType = double;
-using DataArray = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using StatArray = Eigen::Array<AccType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 // AccType = double will give more accuracy
@@ -22,25 +21,27 @@ inline size_t divideRoundUp(size_t a, size_t b)
 }
 
 
-ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
+ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
 {        
+    PROFILE::PUSH(PROFILE::T_RANK);
+
     const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
     if((outData > 1).any())
         throw std::invalid_argument("Outdata has values that are not 0 or 1.");
 
-    ArrayXs samples;
+    vector<size_t> samples;
     size_t sampleCount;
     if (optSamples) {
-        samples = *optSamples;
-        sampleCount = samples.size();
+        samples = std::move(*optSamples);
+        sampleCount = size(samples);
     }
     else {
         sampleCount = inData.rows();
         samples.resize(sampleCount);
         for (size_t i = 0; i < sampleCount; ++i)
-            samples(i) = i;
+            samples[i] = i;
     }
 
     if (sampleCount < 3)
@@ -89,11 +90,11 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
         const size_t j0 = k * blockWidth;
         const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
-        Eigen::Ref<const DataArray> inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
+        CRefXXfr inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
         Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, 2, j1 - j0));
         Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
         Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
-        Eigen::Ref<ArrayXf> tBlock(t.segment(j0, j1 - j0));
+        RefXf tBlock(t.segment(j0, j1 - j0));
 
         meanBlock = AccType(0);
         for (size_t i: samples) {
@@ -131,24 +132,19 @@ ArrayXf tStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
             throw std::overflow_error("Numerical overflow when calculating the t-statistic.");
     }
 
+    const size_t ITEM_COUNT = sampleCount * blockWidth;
+    PROFILE::POP(ITEM_COUNT);
+
     return t;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs tTestRank(
-    Eigen::Ref<const DataArray> inData,
-    CRefXs outData,
-    optional<CRefXs> optSamples,
-    TestDirection testDirection
-)
+ArrayXs tTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples, TestDirection testDirection)
 {
-    PROFILE::PUSH(PROFILE::T_RANK);
-    const size_t sampleCount = optSamples ? optSamples->size() : static_cast<size_t>(inData.rows());
     const size_t variableCount = inData.cols();
-    const size_t ITEM_COUNT = sampleCount * variableCount;
 
-    ArrayXf t = tStatistic(inData, outData, optSamples);
+    ArrayXf t = tStatistic(inData, outData, std::move(optSamples));
 
     switch (testDirection) {
     case TestDirection::Up:
@@ -170,8 +166,6 @@ ArrayXs tTestRank(
         &ind(0),
         [](auto x) { return -x; }
     );
-
-    PROFILE::POP(ITEM_COUNT);
 
     return ind;
 }

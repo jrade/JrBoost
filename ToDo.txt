@@ -1,26 +1,20 @@
-improved stratification in example programs
-	need a strata numpy array, create at the same time as the one-hot encoded array
-	first improve the logging: some of the item counts should be divided by the number of threads
+
+continue cleanup of TreeTrainerImpl
+
+------------------------------------------------------------------------------------------------------------------------
 
 Test with the Intel C++ compiler:
 	Does it have better support for 128 threads?
 	Does it have better support for SIMD vectorization?
 	To do:
 		1. report internal compiler error to
-				https://community.intel.com/t5/Intel-C-Compiler/bd-p/c-compiler
-		2. test how the compiler handles 128 threads
-		3. improved vectorization (t-test, F-test, boost) ()
-				first improve the logging: some of the item counts should be divided by the number of threads
-				does this improve performance with many threads?
-		4. report that vectors of overaligned data do  not compile
-		5. check the alignment of buffers for such vectors
-		6. cache line align TreeNodeTrainer and parallelize join splits
-
-make another attempt at parallelizing outside the d-loop
-	profile with Leukemia and 64 threads
-	does this make the code too messy?
-
-continue cleanup of TreeTrainerImpl
+			https://community.intel.com/t5/Intel-C-Compiler/bd-p/c-compiler
+		2. test how well the compiler handles 128 threads and SIMD vectorization
+		3. report that vectors of overaligned data do not compile
+		4. check the alignment of buffers of such vectors
+		5. cache line align TreeNodeTrainer and parallelize join splits
+		6. does the compiler pessimise for AMD processors?
+	repost question?
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -40,43 +34,53 @@ major tasks:
 
 features to add:
 	used variable subset by level option (would require saveMemory = True)
-	strata that is distinct from out data (with possibly more than two strata)
+	multi-label stratification when generating folds and selecting active samples
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
 	set seed to make the code deterministic (how to handle dynamic scheduling?)
 	U-test (with correct handling of ties)
-	multiple inData and multiple variable ounts (to handle feature engineering etc.)
+	multiple inData and multiple variable counts (to handle feature engineering)
 
 minor things:
 	test pruning again (also with abs limit)
-	predict overload that takes a one-dim array and returns a double (use in QD Demo)
+	predict() overload that takes a one-dim array and returns a double (use in QD Demo)
 	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
 	save and load:
 		check that dataset does not have more than 2G variables
 		get rid of uint32 nonsense
 	compare performance (speed and accuracy) with xgboost
 	clang code formatting
+	other sub matrix functions (column major and double)
+	how fast a column major implementation of the t-statistic be?
+	look more into Eigen arrays and std::data
 	
 optimizations:
+	improved profiling log
+		group into unthreaded, partially threaded, fully threaded and thread synch
 	make updateSampleStatus() code branch-free by introducing dummy nodes corresponding to status = 0 (unusued)
-		maintain sorted lists of active samples to speed up this further
-	compare performance with StumpTrainer (use Leukemia build and validate as a test case)
-	data
+		maybe maintain sorted lists of active samples to speed up this further
+		improved cost function when ordering options objects in parallel train
+	vectorization and parallelixation:
+		parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
+		joinSplits_ could be parallelized, but this requires cache line alignment of TreeNodeBuilder
+			this seems not to work with the Intel compiler
+		TreeTrainerImpl::train() - parallelize outside the d-loop
+			profile with Leukemia and 64 threads
+			does this make the code too messy?
+	t-test and F-test:
+		is the following analysis correct?
+			if the data matrix fits in the cache we can parallelize and vectorize as much as possible
+			but if the data matrix does not fit in the cache, then things are different
+				each element in the data matrix as accessed twice
+					we need locality so that the the element still is in the cache the second time it is accessed
+	data:
 		narrower type for strata
 		float or double for outdata and weights?
 		outData and weights interleaved in a single array
+	rerun the profiling with different instruction sets and floating point flags
+	compare performance with the old StumpTrainer
+		if performance is the same or better, delete the old code
 	PGO
-	joinSplits_ could be parallelized, but this requires cache line alignment of TreeNodeBuilder
-		this seems not to work with the Intel compiler
-
-steps needed for the code to scale well with 128 threads:
-	a preliminary test has shown that 128 threads might work well with 8 outer and 16 inner threads
-	requires MSVC with openmp:/llvm (or the Intel compiler?)
-	need better profiling:
-		group the profiling numbers in 4 groups (unthread, outer, inner, synch)
-		show the subtotal and percentage for each group
-	SIMD optimize t-test, F-test, boost
-	OMP optimize initSampleSttaus, updateSampleStatus
-	fast jrboost.select(), jrboost.selectRows() and jrboost.selectColumns()
+	test with the Intel C++ compiler (how does the generated code perform with AMD processors?)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -95,7 +99,7 @@ Eigen issues:
 			ArrayXf a = {0, 4, 5};
 		compiles but gives unexpected result
 	no select with two constants
-	    StumpTrainerImpl(CRefXXf inData, RefXs strata)
+	    StumpTrainerImpl(CRefXXfc inData, RefXs strata)
 			second argument should be CRefXs, but that leads to problems ...
 	is BoostTrainer::trainAda_ slower with Eigen 3.4 than with Eigen 3.3.9?
 
@@ -103,7 +107,7 @@ Eigen issues:
 
 Notes:
 
-The Visual Studio project used the environment variables EIGEN_DIR, PYTHON_DIR and PYBIND11_DIR
+The Visual Studio project uses the environment variables EIGEN_DIR, PYTHON_DIR and PYBIND11_DIR
 to find third party header and library files
 
 /O2 = /Og /Oi /Ot /Oy /Ob2 /GF /Gy

@@ -98,6 +98,9 @@
     <ClInclude Include="TreeNodeExt.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
+    <ClInclude Include="Submatrix.h">
+      <Filter>Extra</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TreeOptions.cpp">
@@ -157,6 +160,9 @@
     </ClCompile>
     <ClCompile Include="TreeNodeTrainer.cpp">
       <Filter>Base Trainer</Filter>
+    </ClCompile>
+    <ClCompile Include="Submatrix.cpp">
+      <Filter>Extra</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -21,7 +21,7 @@ public:
     virtual ~TreePredictor() = default;
 
 private:
-    virtual void predict_(CRefXXf inData, double c, RefXd outData) const;
+    virtual void predict_(CRefXXfc inData, double c, RefXd outData) const;
 
     virtual void variableWeights_(double c, RefXd weights) const;
     void variableWeights_(double c, const TreeNode* node, RefXd weights) const;

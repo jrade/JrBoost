@@ -16,7 +16,7 @@ StumpPredictor::StumpPredictor(size_t j, float x, float leftY, float rightY, flo
     ASSERT(std::isfinite(x) && std::isfinite(leftY) && std::isfinite(rightY));
 }
 
-void StumpPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
+void StumpPredictor::predict_(CRefXXfc inData, double c, RefXd outData) const
 {
     const size_t sampleCount = inData.rows();
     for (size_t i = 0; i < sampleCount; ++i) {

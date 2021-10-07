@@ -69,21 +69,29 @@ using std::vector;
 #pragma warning( pop )
 #endif
 
-using ArrayXXd = Eigen::ArrayXXd;
-using ArrayXXf = Eigen::ArrayXXf;
-using ArrayXd = Eigen::ArrayXd;
-using ArrayXf = Eigen::ArrayXf;
-using ArrayXs = Eigen::Array<size_t, Eigen::Dynamic, 1>;
+using ArrayXXdc = Eigen::ArrayXXd;      // column major
+using ArrayXXdr = Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using ArrayXXfc = Eigen::ArrayXXf;      // column major
+using ArrayXXfr = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using ArrayXd   = Eigen::ArrayXd;
+using ArrayXf   = Eigen::ArrayXf;
+using ArrayXs   = Eigen::Array<size_t, Eigen::Dynamic, 1>;
 
-using RefXXf = Eigen::Ref<ArrayXXf>;
-using RefXd = Eigen::Ref<ArrayXd>;
-using RefXs = Eigen::Ref<ArrayXs>;
+using RefXXdc = Eigen::Ref<ArrayXXdc>;
+using RefXXdr = Eigen::Ref<ArrayXXdr>;
+using RefXXfc = Eigen::Ref<ArrayXXfc>;
+using RefXXfr = Eigen::Ref<ArrayXXfr>;
+using RefXd   = Eigen::Ref<ArrayXd>;
+using RefXf   = Eigen::Ref<ArrayXf>;
+using RefXs   = Eigen::Ref<ArrayXs>;
 
-using CRefXXf = Eigen::Ref<const ArrayXXf>;
-using CRefXd = Eigen::Ref<const ArrayXd>;
-using CRefXs = Eigen::Ref<const ArrayXs>;
-
-using Array3d = Eigen::Array3d;
+using CRefXXdc = Eigen::Ref<const ArrayXXdc>;
+using CRefXXdr = Eigen::Ref<const ArrayXXdr>;
+using CRefXXfc = Eigen::Ref<const ArrayXXfc>;
+using CRefXXfr = Eigen::Ref<const ArrayXXfr>;
+using CRefXd   = Eigen::Ref<const ArrayXd>;
+using CRefXf   = Eigen::Ref<const ArrayXf>;
+using CRefXs   = Eigen::Ref<const ArrayXs>;
 
 
 // Tools

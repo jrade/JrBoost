@@ -22,7 +22,7 @@ public:
     virtual size_t variableCount() const { return variableCount_; }
 
 private:
-    virtual ArrayXd predict_(CRefXXf inData) const;
+    virtual ArrayXd predict_(CRefXXfc inData) const;
     virtual void variableWeights_(double c, RefXd weights) const;
     virtual void save_(ostream& os) const;
 

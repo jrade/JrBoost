@@ -12,7 +12,7 @@ class TreeTrainer;
 class BoostTrainer
 {
 public:
-    BoostTrainer(ArrayXXf inData, ArrayXs outData, optional<ArrayXd> weights);
+    BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> weights);
     ~BoostTrainer() = default;
 
     shared_ptr<BoostPredictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
@@ -29,7 +29,7 @@ private:
     static void overflow_ [[noreturn]] (const BoostOptions& opt);
 
 private:
-    const ArrayXXf inData_;
+    const ArrayXXfc inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
     const ArrayXs rawOutData_;

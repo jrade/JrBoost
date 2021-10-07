@@ -12,17 +12,17 @@ class BoostPredictor;
 vector<shared_ptr<BoostPredictor>> parallelTrain(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt);
 
-ArrayXXd parallelTrainAndPredict(
+ArrayXXdc parallelTrainAndPredict(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData
+    CRefXXfc testInData
 );
 
 ArrayXd parallelTrainAndEval(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
+    CRefXXfc testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
 );
 
 ArrayXd parallelTrainAndEvalWeighted(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXf testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
+    CRefXXfc testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
 );

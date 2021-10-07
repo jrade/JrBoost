@@ -8,7 +8,7 @@
 #include "TreeNode.h"
 
 
-void TreePredictor::predict_(CRefXXf inData, double c, RefXd outData) const
+void TreePredictor::predict_(CRefXXfc inData, double c, RefXd outData) const
 {
     const size_t sampleCount = inData.rows();
     for (size_t i = 0; i < sampleCount; ++i) {

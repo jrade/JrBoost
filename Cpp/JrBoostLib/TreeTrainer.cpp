@@ -14,12 +14,12 @@ using TREE_TRAINER_IMPL = TreeTrainerImpl<SampleIndex>;
 //using TREE_TRAINER_IMPL = StumpTrainerImpl<SampleIndex>;
 
 
-TreeTrainer::TreeTrainer(CRefXXf inData, CRefXs strata) :
+TreeTrainer::TreeTrainer(CRefXXfc inData, CRefXs strata) :
     impl_(createImpl_(inData, strata))
 {
 }
 
-shared_ptr<TreeTrainerImplBase> TreeTrainer::createImpl_(CRefXXf inData, CRefXs strata)
+shared_ptr<TreeTrainerImplBase> TreeTrainer::createImpl_(CRefXXfc inData, CRefXs strata)
 {
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     if (sampleCount < 0x100)

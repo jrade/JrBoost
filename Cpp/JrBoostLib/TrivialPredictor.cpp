@@ -13,7 +13,7 @@ TrivialPredictor::TrivialPredictor(double y) :
 }
 
 
-void TrivialPredictor::predict_(CRefXXf inData, double c, RefXd outData) const
+void TrivialPredictor::predict_(CRefXXfc inData, double c, RefXd outData) const
 {
     (void)inData;
     outData += c * static_cast<double>(y_);

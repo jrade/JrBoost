@@ -9,7 +9,6 @@
 
 
 using AccType = double;
-using DataArray = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using StatArray = Eigen::Array<AccType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 // AccType = double will give more accuracy
@@ -22,23 +21,23 @@ inline size_t divideRoundUp(size_t a, size_t b)
 }
 
 
-ArrayXf fStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<CRefXs> optSamples)
+ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
 {        
     const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
 
-    ArrayXs samples;
+    vector<size_t> samples;
     size_t sampleCount;
     if (optSamples) {
-        samples = *optSamples;
-        sampleCount = samples.size();
+        samples = std::move(*optSamples);
+        sampleCount = size(samples);
     }
     else {
         sampleCount = inData.rows();
         samples.resize(sampleCount);
         for (size_t i = 0; i < sampleCount; ++i)
-            samples(i) = i;
+            samples[i] = i;
     }
 
     size_t groupCount = 0;
@@ -90,11 +89,11 @@ ArrayXf fStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
         const size_t j0 = k * blockWidth;
         const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
-        Eigen::Ref<const DataArray> inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
+        CRefXXfr inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
         Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, groupCount, j1 - j0));
         Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
         Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, groupCount, j1 - j0));
-        Eigen::Ref<ArrayXf> fBlock(f.segment(j0, j1 - j0));
+        RefXf fBlock(f.segment(j0, j1 - j0));
 
         meanBlock = AccType(0);
         for (size_t i: samples) {
@@ -141,14 +140,10 @@ ArrayXf fStatistic(Eigen::Ref<const DataArray> inData, CRefXs outData, optional<
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs fTestRank(
-    Eigen::Ref<const DataArray> inData,
-    CRefXs outData,
-    optional<CRefXs> optSamples
-)
+ArrayXs fTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
 {
     const size_t variableCount = inData.cols();
-    const ArrayXf f = fStatistic(inData, outData, optSamples);
+    const ArrayXf f = fStatistic(inData, outData, std::move(optSamples));
     ArrayXs ind(variableCount);
 
     sortedIndices(

@@ -9,7 +9,7 @@
 #include "EnsemblePredictor.h"
 
 
-ArrayXd Predictor::predict(CRefXXf inData) const
+ArrayXd Predictor::predict(CRefXXfc inData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
 

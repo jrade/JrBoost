@@ -13,6 +13,7 @@
 #include "../JrBoostLib/FTest.h"
 #include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/Paralleltrain.h"
+#include "../JrBoostLib/Submatrix.h"
 #include "../JrBoostLib/TTest.h"
 
 
@@ -38,18 +39,6 @@ PYBIND11_MODULE(_jrboostext, mod)
         }
     );
 
-    mod.def("getThreadCount", &omp_get_max_threads);
-    mod.def("setThreadCount", &omp_set_num_threads);
-
-    mod.def("getParallelTree", []() { return ::theParallelTree; });
-    mod.def("setParallelTree", [](bool b) { ::theParallelTree = b; });
-
-    mod.def("getOuterThreadCount", []() { return ::theOuterThreadCount; });
-    mod.def("setOuterThreadCount", [](size_t n) { ::theOuterThreadCount = n; });
-
-    mod.attr("eigenVersion") = py::str(theEigenVersion);
-    mod.attr("pybind11Version") = py::str(thePybind11Version);
-
 
     // Predictors
 
@@ -72,7 +61,7 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
         .def(
-            py::init<ArrayXXf, ArrayXs, optional<ArrayXd>>(),
+            py::init<ArrayXXfc, ArrayXs, optional<ArrayXd>>(),
             py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
         )
         .def("train", [](const BoostTrainer& trainer, const BoostOptions& opt) { return trainer.train(opt); });
@@ -127,10 +116,79 @@ PYBIND11_MODULE(_jrboostext, mod)
         .value("Any", TestDirection::Any);
 
     mod.def("tTestRank", &tTestRank,
-        py::arg(), py::arg(), py::arg("samples") = optional<CRefXs>(), py::arg("direction") = TestDirection::Any);
+        py::arg().noconvert(), py::arg(),
+        py::arg("samples") = optional<vector<size_t>>(),
+        py::arg("direction") = TestDirection::Any);
 
     mod.def("fTestRank", &fTestRank,
-        py::arg(), py::arg(), py::arg("samples") = optional<CRefXs>());
+        py::arg().noconvert(), py::arg(),
+        py::arg("samples") = optional<vector<size_t>>());
+
+
+    // Other
+
+    mod.def("getThreadCount", &omp_get_max_threads);
+    mod.def("setThreadCount", &omp_set_num_threads);
+
+    mod.def("getParallelTree", []() { return ::theParallelTree; });
+    mod.def("setParallelTree", [](bool b) { ::theParallelTree = b; });
+
+    mod.def("getOuterThreadCount", []() { return ::theOuterThreadCount; });
+    mod.def("setOuterThreadCount", [](size_t n) { ::theOuterThreadCount = n; });
+
+    mod.attr("eigenVersion") = py::str(theEigenVersion);
+    mod.attr("pybind11Version") = py::str(thePybind11Version);
+
+    mod.def(
+        "selectRows",
+        static_cast<ArrayXXfc(*)(CRefXXfc, const vector<size_t>&)>(&selectRows),
+        py::arg().noconvert(), py::arg());
+    mod.def(
+        "selectRows",
+        static_cast<ArrayXXfr(*)(CRefXXfr, const vector<size_t>&)>(&selectRows),
+        py::arg().noconvert(), py::arg());
+    mod.def(
+        "selectRows",
+        static_cast<ArrayXXdc(*)(CRefXXdc, const vector<size_t>&)>(&selectRows),
+        py::arg().noconvert(), py::arg());
+    mod.def(
+        "selectRows",
+        static_cast<ArrayXXdr(*)(CRefXXdr, const vector<size_t>&)>(&selectRows),
+        py::arg().noconvert(), py::arg());
+
+    mod.def(
+        "selectColumns",
+        static_cast<ArrayXXfc(*)(CRefXXfc, const vector<size_t>&)>(&selectColumns),
+        py::arg().noconvert(), py::arg());
+    mod.def(
+        "selectColumns",
+        static_cast<ArrayXXfr(*)(CRefXXfr, const vector<size_t>&)>(&selectColumns),
+        py::arg().noconvert(), py::arg());
+    mod.def(
+        "selectColumns",
+        static_cast<ArrayXXdc(*)(CRefXXdc, const vector<size_t>&)>(&selectColumns),
+        py::arg().noconvert(), py::arg());
+    mod.def(
+        "selectColumns",
+        static_cast<ArrayXXdr(*)(CRefXXdr, const vector<size_t>&)>(&selectColumns),
+        py::arg().noconvert(), py::arg());
+
+    mod.def(
+        "select",
+        static_cast<ArrayXXfc(*)(CRefXXfc, const vector<size_t>&, const vector<size_t>&)>(&select),
+        py::arg().noconvert(), py::arg(), py::arg());
+    mod.def(
+        "select",
+        static_cast<ArrayXXfr(*)(CRefXXfr, const vector<size_t>&, const vector<size_t>&)>(&select),
+        py::arg().noconvert(), py::arg(), py::arg());
+    mod.def(
+        "select",
+        static_cast<ArrayXXdc(*)(CRefXXdc, const vector<size_t>&, const vector<size_t>&)>(&select),
+        py::arg().noconvert(), py::arg(), py::arg());
+    mod.def(
+        "select",
+        static_cast<ArrayXXdr(*)(CRefXXdr, const vector<size_t>&, const vector<size_t>&)>(&select),
+        py::arg().noconvert(), py::arg(), py::arg());
 
 
     // Profiling

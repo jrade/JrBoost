@@ -17,7 +17,7 @@ template<typename SampleIndex>
 class StumpTrainerImpl : public TreeTrainerImplBase 
 {
 public:
-    StumpTrainerImpl(CRefXXf inData, CRefXs strata);
+    StumpTrainerImpl(CRefXXfc inData, CRefXs strata);
     virtual ~StumpTrainerImpl() = default;
 
     virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const;
@@ -38,7 +38,7 @@ private:
     void initSortedUsedSamples_(size_t usedSampleCount, size_t j) const;
     pair<double, double> initSums_(CRefXd outData, CRefXd weights) const;
 
-    const CRefXXf inData_;
+    const CRefXXfc inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
     const vector<vector<SampleIndex>> sortedSamples_;

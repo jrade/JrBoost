@@ -15,20 +15,19 @@ class TreeNodeTrainer
 public:
     TreeNodeTrainer() = default;
     ~TreeNodeTrainer() = default;
+    TreeNodeTrainer(const TreeNodeTrainer&) = default;
+    TreeNodeTrainer& operator=(const TreeNodeTrainer&) = default;
     TreeNodeTrainer(TreeNodeTrainer&&) = default;
     TreeNodeTrainer& operator=(TreeNodeTrainer&&) = default;
 
     void init(const TreeNodeExt* node, const TreeOptions& options);
-    void update(CRefXXf inData, CRefXd outData, CRefXd weights, const TreeOptions& options,
+    void update(CRefXXfc inData, CRefXd outData, CRefXd weights, const TreeOptions& options,
         const SampleIndex* sortedSamplesBegin, const SampleIndex* sortedSamplesEnd, size_t j);
     void join(const TreeNodeTrainer& other);
     void finalize(TreeNodeExt** parentNode, TreeNodeExt** childNode) const;
 
-// deleted:
-    TreeNodeTrainer(const TreeNodeTrainer&) = delete;
-    TreeNodeTrainer& operator=(const TreeNodeTrainer&) = delete;
-
 private:
+    size_t sampleCount_;
     double sumW_;
     double sumWY_;
     double minNodeWeight_;

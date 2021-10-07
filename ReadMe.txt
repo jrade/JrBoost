@@ -4,7 +4,7 @@ To build JrBoost you need:
 	a Python 3 installation with NumPy
 	the Eigen and pybind11 C++ libraries
 
-JrBoost has been built with:
+JrBoost has been built on Windows 10 with:
 
   Microsoft Visual Studio 2019
   Anaconda version 4.9.2 (includes Python version 3.8.5 and NumPy version 1.19.2)

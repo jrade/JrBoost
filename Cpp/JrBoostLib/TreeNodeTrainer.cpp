@@ -12,6 +12,7 @@
 template<typename SampleIndex>
 void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt* node, const TreeOptions& options)
 {
+    sampleCount_ = node->sampleCount;
     sumW_ = node->sumW;
     sumWY_ = node->sumWY;
     minNodeWeight_ = std::max(options.minNodeWeight(), 1e-6 * sumW_);
@@ -26,7 +27,7 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt* node, const TreeOptio
 
 template<typename SampleIndex>
 void TreeNodeTrainer<SampleIndex>::update(
-    CRefXXf inData,
+    CRefXXfc inData,
     CRefXd outData,
     CRefXd weights,
     const TreeOptions& options,
@@ -35,6 +36,8 @@ void TreeNodeTrainer<SampleIndex>::update(
     size_t j
 )
 {
+    ASSERT(static_cast<size_t>(sortedSamplesEnd - sortedSamplesBegin) == sampleCount_);
+
     const float* pInDataColJ = std::data(inData.col(j));
     const double* pOutData = std::data(outData);
     const double* pWeights = std::data(weights);
@@ -90,7 +93,7 @@ void TreeNodeTrainer<SampleIndex>::update(
         rightSumWY_ = rightSumWY;
     }
 
-    iterationCount_ += sortedSamplesBegin - sortedSamplesEnd;
+    iterationCount_ += sampleCount_;
 }
 
 

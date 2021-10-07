@@ -18,7 +18,7 @@ template<typename SampleIndex>
 class TreeTrainerImpl : public TreeTrainerImplBase 
 {
 public:
-    TreeTrainerImpl(CRefXXf inData, CRefXs strata);
+    TreeTrainerImpl(CRefXXfc inData, CRefXs strata);
     virtual ~TreeTrainerImpl() = default;
 
     virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const;
@@ -52,7 +52,7 @@ private:
     unique_ptr<BasePredictor> initPredictor_() const;
 
 private:
-    const CRefXXf inData_;
+    const CRefXXfc inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
     const vector<vector<SampleIndex>> sortedSamples_;

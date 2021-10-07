@@ -16,7 +16,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-TreeTrainerImpl<SampleIndex>::TreeTrainerImpl(CRefXXf inData, CRefXs strata) :
+TreeTrainerImpl<SampleIndex>::TreeTrainerImpl(CRefXXfc inData, CRefXs strata) :
     inData_{ inData },
     sampleCount_{ static_cast<size_t>(inData.rows()) },
     variableCount_{ static_cast<size_t>(inData.cols()) },
@@ -557,10 +557,13 @@ void TreeTrainerImpl<SampleIndex>::initSplits_(const TreeOptions& options, size_
     out->treeNodeTrainers.resize(threadCount * (parentNodeCount + 1));
     // parentNodeCount elements plus one dummy element to avoid sharing of cache lines between threads
 
-    size_t k = 0;
-    for (size_t i = 0; i != threadCount; ++i, ++k)
+    for (size_t j = 0; j != parentNodeCount; ++j)
+            out->treeNodeTrainers[j].init(&parentNodes[j], options);
+
+    size_t k = parentNodeCount + 1;
+    for (size_t i = 1; i != threadCount; ++i, ++k)
         for (size_t j = 0; j != parentNodeCount; ++j, ++k)
-            out->treeNodeTrainers[k].init(&parentNodes[j], options);
+            out->treeNodeTrainers[k] = out->treeNodeTrainers[j];
 }
 
 

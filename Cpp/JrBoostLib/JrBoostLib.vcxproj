@@ -85,6 +85,7 @@
     <ClInclude Include="FTest.h" />
     <ClInclude Include="ExceptionSafeOmp.h" />
     <ClInclude Include="InterruptHandler.h" />
+    <ClInclude Include="Submatrix.h" />
     <ClInclude Include="TreeNodeExt.h" />
     <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />
@@ -122,6 +123,7 @@
     <ClCompile Include="BoostPredictor.cpp" />
     <ClCompile Include="EnsemblePredictor.cpp" />
     <ClCompile Include="FTest.cpp" />
+    <ClCompile Include="Submatrix.cpp" />
     <ClCompile Include="TreeNodeTrainer.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">
