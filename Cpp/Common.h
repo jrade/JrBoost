@@ -60,7 +60,7 @@ using std::vector;
 
 #ifdef _MSC_VER
 #pragma warning( push )
-#pragma warning( disable: 4127 5054)
+#pragma warning( disable: 4127 )    // conditional expression is constant
 #endif
 
 #include <Eigen/Dense>
@@ -101,7 +101,7 @@ using CRefXs   = Eigen::Ref<const ArrayXs>;
 #include "JrBoostLib/Profile.h"
 
 
-// Global data
+// Globals
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
@@ -114,3 +114,16 @@ inline const std::thread::id theMainThreadId = std::this_thread::get_id();
 
 using RandomNumberEngine = splitmix;
 inline thread_local RandomNumberEngine theRne((std::random_device()));
+
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable: 4324 )    // 'struct_name' : structure was padded due to __declspec(align())
+#endif
+
+template<typename T>
+class alignas(std::hardware_destructive_interference_size) CacheLineAligned: public T {};
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif

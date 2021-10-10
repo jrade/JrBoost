@@ -193,7 +193,7 @@ def loadData(trainFrac = None):
         trainSampleCount = len(trainSamples)
         trainSamples = pd.Index(random.sample(
             trainSamples.tolist(),
-            int(trainFrac * trainSampleCount + 0.5)
+            round(trainFrac * trainSampleCount)
         ))
     testSamples = dataFrame.index[dataFrame['KaggleSet'] == 'b']
     validationSamples = dataFrame.index[dataFrame['KaggleSet'] == 'v']

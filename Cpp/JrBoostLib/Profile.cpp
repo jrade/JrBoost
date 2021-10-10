@@ -134,7 +134,7 @@ string PROFILE::result_()
     ss << std::setw(35) << std::setprecision(0) << 1e-6 * totalAdjustedClockCycleCount << '\n';;
 
     ss << '\n';
-    //ss << "zero calibration: " << adjustment << '\n';
+    ss << "zero calibration: " << adjustment << '\n';
     ss << "profiling overhead: "
         << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
     ss << "slow branch: " << (100.0 * slowBranchCount_) / splitIterationCount_ << "%" << '\n';

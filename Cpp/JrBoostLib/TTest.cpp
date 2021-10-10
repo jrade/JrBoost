@@ -28,7 +28,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
-    if((outData > 1).any())
+    if ((outData > 1).any())
         throw std::invalid_argument("Outdata has values that are not 0 or 1.");
 
     vector<size_t> samples;
@@ -62,7 +62,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
     ArrayXf t(variableCount);
 
-    const AccType a = sqrt(
+    const AccType a = std::sqrt(
         (sampleCount - AccType(2))
         /
         (AccType(1) / n(0) + AccType(1) / n(1))

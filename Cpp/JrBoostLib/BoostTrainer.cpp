@@ -25,20 +25,20 @@ BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> 
         throw std::invalid_argument("Train indata has 0 samples.");
     if (variableCount_ == 0)
         throw std::invalid_argument("Train indata has 0 variables.");
-    if(!(inData_.abs() < numeric_limits<float>::infinity()).all())
+    if (!(inData_.abs() < numeric_limits<float>::infinity()).all())
         throw std::invalid_argument("Train indata has values that are infinity or NaN.");
 
-    if(static_cast<size_t>(rawOutData_.rows()) != sampleCount_)
+    if (static_cast<size_t>(rawOutData_.rows()) != sampleCount_)
         throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
-    if((rawOutData_ > 1).any())
+    if ((rawOutData_ > 1).any())
         throw std::invalid_argument("Train outdata has values that are not 0 or 1.");
 
     if (weights_) {
-        if(static_cast<size_t>(weights_->rows()) != sampleCount_)
+        if (static_cast<size_t>(weights_->rows()) != sampleCount_)
             throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-        if(!(weights_->abs() < numeric_limits<float>::infinity()).all())
+        if (!(weights_->abs() < numeric_limits<float>::infinity()).all())
             throw std::invalid_argument("Train weights have values that are infinity or NaN.");
-        if((*weights_ <= 0.0).any())
+        if ((*weights_ <= 0.0).any())
             throw std::invalid_argument("Train weights have non-positive values.");
     }
 
@@ -113,7 +113,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
         // AVX:  11cc
         // AVX2:  6cc
         for (size_t j = 0; j != sampleCount; ++j)
-            pAdjWeights[j] = exp(-pF[j] * pOutData[j]);
+            pAdjWeights[j] = std::exp(-pF[j] * pOutData[j]);
 
         if (weights_)
             adjWeights *= (*weights_);

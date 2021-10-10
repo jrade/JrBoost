@@ -24,60 +24,73 @@ public:
     virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const;
 
 private:
-    using BernoulliDistribution = typename std::conditional<
-        sizeof(SampleIndex) == 8,
-        FastBernoulliDistribution,
-        VeryFastBernoulliDistribution
-    >::type;
+    struct ThreadLocalData_;
 
 private:
-    vector<vector<SampleIndex>> initSortedSamples_() const;
+    vector<vector<SampleIndex>> createSortedSamples_() const;
 
     void validateData_(CRefXd outData, CRefXd weights) const;
-    pair<size_t, size_t> initUsedVariables_(const TreeOptions& opionst) const;
+    size_t initUsedVariables_(const TreeOptions& opionst) const;
     size_t initSampleStatus_(CRefXd weights, const TreeOptions& options) const;
     void initRoot_(CRefXd outData, CRefXd weights, size_t usedSampleCount) const;
 
-    const SampleIndex* initOrderedSamplesFast_(size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
-    const SampleIndex* initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
-    const SampleIndex* updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
+    const SampleIndex* initOrderedSamplesFast_(
+        size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
+    const SampleIndex* initOrderedSamples_(
+        size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
+    const SampleIndex* updateOrderedSamples_(
+        size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
 
-    void initSplits_(const TreeOptions& options, size_t d, size_t threadCount) const;
-    void updateSplits_(CRefXd outData, CRefXd weights, const TreeOptions& options,
-        const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d, size_t threadIndex) const;
-    void joinSplits_(size_t d, size_t threadCount) const;
-    size_t finalizeSplits_(size_t d) const;
+    void initNodeTrainers_(const TreeOptions& options, size_t d, size_t threadCount) const;
+    void updateNodeTrainers_(CRefXd outData, CRefXd weights, const TreeOptions& options,
+        const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
+    void joinNodeTrainers_(size_t d, size_t threadCount) const;
+    bool finalizeNodeTrainers_(size_t d) const;
 
     size_t updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
-    unique_ptr<BasePredictor> initPredictor_() const;
+    unique_ptr<BasePredictor> createPredictor_() const;
 
 private:
     const CRefXXfc inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
     const vector<vector<SampleIndex>> sortedSamples_;
+
     const CRefXs strata_;
     const size_t stratum0Count_;
     const size_t stratum1Count_;
 
+    inline static thread_local ThreadLocalData_ threadLocalData_;
+
 private:
-    struct OuterThreadData_
+    struct ThreadLocalData_
     {
+        ThreadLocalData_* parent = nullptr;
+        // threadlocal data of parent thread
+
         vector<size_t> usedVariables;
         vector<vector<TreeNodeExt>> tree;
-        vector<TreeNodeTrainer<SampleIndex>> treeNodeTrainers;
+        vector<CacheLineAligned<TreeNodeTrainer<SampleIndex>>> treeNodeTrainers;
+
         vector<SampleIndex> sampleStatus;
-        vector<vector<SampleIndex>> sampleBufferByVariable;
-    };
+        // status of each sample in the current layer of the tree
+        // status`= 0 means the sample is unused
+        // status = k + 1 means the sample belongs to node number k in the layer; k = 0, 1, ..., node count - 1
 
-    inline static thread_local OuterThreadData_ out_;
+        vector<vector<SampleIndex>> orderedSamplesByVariable;
+        // orderedSamplesByVariable[j] contains the active samples grouped by node
+        // and then sorted by the j-th used variable
+        // (only used if options.saveMemory() = false)
 
-    struct InnerThreadData_
-    {
-        OuterThreadData_* out = nullptr;    // pointer to thread local data of parent thread
         vector<SampleIndex> sampleBuffer;
         vector<SampleIndex*> samplePointerBuffer;
+        // tmp buffers
     };
-    
-    inline static thread_local InnerThreadData_ in_;
+
+    using BernoulliDistribution_ = typename std::conditional<
+        sizeof(SampleIndex) == 8,
+        FastBernoulliDistribution,
+        VeryFastBernoulliDistribution
+    >::type;
+    // much faster than std::bernoulli_distribution
 };

@@ -10,15 +10,32 @@
 
 
 template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt* node, const TreeOptions& options)
+void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptions& options)
 {
-    sampleCount_ = node->sampleCount;
-    sumW_ = node->sumW;
-    sumWY_ = node->sumWY;
+    sampleCount_ = node.sampleCount;
+    sumW_ = node.sumW;
+    sumWY_ = node.sumWY;
     minNodeWeight_ = std::max(options.minNodeWeight(), 1e-6 * sumW_);
 
     splitFound_ = false;
     score_ = sumWY_ * sumWY_ / sumW_ + options.minGain();
+
+    iterationCount_ = 0;
+    slowBranchCount_ = 0;
+}
+
+template<typename SampleIndex>
+void TreeNodeTrainer<SampleIndex>::init(const TreeNodeTrainer& other)
+{
+    ASSERT(!other.splitFound_);
+
+    sampleCount_ = other.sampleCount_;
+    sumW_ = other.sumW_;
+    sumWY_ = other.sumWY_;
+    minNodeWeight_ = other.minNodeWeight_;
+
+    splitFound_ = false;
+    score_ = other.score_;
 
     iterationCount_ = 0;
     slowBranchCount_ = 0;
@@ -31,12 +48,12 @@ void TreeNodeTrainer<SampleIndex>::update(
     CRefXd outData,
     CRefXd weights,
     const TreeOptions& options,
-    const SampleIndex* sortedSamplesBegin,
-    const SampleIndex* sortedSamplesEnd,
+    const SampleIndex* pSortedSamplesBegin,
+    const SampleIndex* pSortedSamplesEnd,
     size_t j
 )
 {
-    ASSERT(static_cast<size_t>(sortedSamplesEnd - sortedSamplesBegin) == sampleCount_);
+    ASSERT(static_cast<size_t>(pSortedSamplesEnd - pSortedSamplesBegin) == sampleCount_);
 
     const float* pInDataColJ = std::data(inData.col(j));
     const double* pOutData = std::data(outData);
@@ -49,9 +66,9 @@ void TreeNodeTrainer<SampleIndex>::update(
     double leftSumW = 0.0;
     double leftSumWY = 0.0;
 
-    const SampleIndex* p = sortedSamplesBegin;
+    const SampleIndex* p = pSortedSamplesBegin;
     size_t nextI = *p;
-    while (p != sortedSamplesEnd - 1) {
+    while (p != pSortedSamplesEnd - 1) {
 
         // this is where most execution time is spent ..........................
 
@@ -71,8 +88,8 @@ void TreeNodeTrainer<SampleIndex>::update(
 
         ++slowBranchCount_;
 
-        if (p < sortedSamplesBegin + minNodeSize
-            || p > sortedSamplesEnd - minNodeSize
+        if (p < pSortedSamplesBegin + minNodeSize
+            || p > pSortedSamplesEnd - minNodeSize
             || leftSumW < minNodeWeight_
             || rightSumW < minNodeWeight_
             ) continue;
@@ -119,27 +136,27 @@ void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
 
 
 template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** parentNode, TreeNodeExt** childNode) const
+void TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const
 {
     if (splitFound_) {
 
-        (*parentNode)->isLeaf = false;
-        (*parentNode)->j = j_;
-        (*parentNode)->x = x_;
-        (*parentNode)->gain = static_cast<float>(score_ - sumWY_ * sumWY_ / sumW_);
+        (*ppParentNode)->isLeaf = false;
+        (*ppParentNode)->j = j_;
+        (*ppParentNode)->x = x_;
+        (*ppParentNode)->gain = static_cast<float>(score_ - sumWY_ * sumWY_ / sumW_);
 
-        (*parentNode)->leftChild = *childNode;
-        (*childNode)->isLeaf = true;
-        (*childNode)->y = static_cast<float>(leftSumWY_ / leftSumW_);
-        ++*childNode;
+        (*ppParentNode)->leftChild = *ppChildNode;
+        (*ppChildNode)->isLeaf = true;
+        (*ppChildNode)->y = static_cast<float>(leftSumWY_ / leftSumW_);
+        ++*ppChildNode;
 
-        (*parentNode)->rightChild = *childNode;
-        (*childNode)->isLeaf = true;
-        (*childNode)->y = static_cast<float>(rightSumWY_ / rightSumW_);
-        ++*childNode;
+        (*ppParentNode)->rightChild = *ppChildNode;
+        (*ppChildNode)->isLeaf = true;
+        (*ppChildNode)->y = static_cast<float>(rightSumWY_ / rightSumW_);
+        ++*ppChildNode;
     }
 
-    ++*parentNode;
+    ++*ppParentNode;
 
     PROFILE::UPDATE_BRANCH_STATISTICS(iterationCount_, slowBranchCount_);
 }

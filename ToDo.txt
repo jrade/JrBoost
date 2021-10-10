@@ -1,27 +1,27 @@
+one more general review
 
-continue cleanup of TreeTrainerImpl
+push to GitHub
+	ask David to download, compile with other compilers
+
+sedan
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Test with the Intel C++ compiler:
 	Does it have better support for 128 threads?
 	Does it have better support for SIMD vectorization?
-	To do:
-		1. report internal compiler error to
+	To do:	
+		1. report that vectors of overaligned data do not compile
+		2. check the alignment of buffers of such vectors
+		3. report internal compiler error to
 			https://community.intel.com/t5/Intel-C-Compiler/bd-p/c-compiler
-		2. test how well the compiler handles 128 threads and SIMD vectorization
-		3. report that vectors of overaligned data do not compile
-		4. check the alignment of buffers of such vectors
-		5. cache line align TreeNodeTrainer and parallelize join splits
-		6. does the compiler pessimise for AMD processors?
-	repost question?
+		4. test how well the compiler handles 128 threads and SIMD vectorization
+		5. how well does the generated code work with AMD processors?
 
 ------------------------------------------------------------------------------------------------------------------------
 
 major tasks:
 	release 0.1 (reset file format version?)
-	boosted forests
-		maybe train with forestSize = 1, then build with a larger forestSize
 	improved Higgs example (see "Higgs Notes.txt")
 	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 	BART
@@ -33,45 +33,40 @@ major tasks:
 	documentation of regularized logit boost method
 
 features to add:
-	used variable subset by level option (would require saveMemory = True)
-	multi-label stratification when generating folds and selecting active samples
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
-	set seed to make the code deterministic (how to handle dynamic scheduling?)
+	set seed to make the code deterministic (how to handle dynamic scheduling? doable, but a bit tricky)
 	U-test (with correct handling of ties)
 	multiple inData and multiple variable counts (to handle feature engineering)
 
-minor things:
-	test pruning again (also with abs limit)
-	predict() overload that takes a one-dim array and returns a double (use in QD Demo)
-	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
-	save and load:
-		check that dataset does not have more than 2G variables
-		get rid of uint32 nonsense
-	compare performance (speed and accuracy) with xgboost
-	clang code formatting
-	other sub matrix functions (column major and double)
-	how fast a column major implementation of the t-statistic be?
-	look more into Eigen arrays and std::data
+optimizations (accuracy):
+	boosted forests
+		maybe train with forestSize = 1, then build with a larger forestSize
+	pruning
+	used variable subset by level option (would require saveMemory = True)
+	multi-label stratification when generating folds and selecting active samples
 	
-optimizations:
+optimizations (speed):
 	improved profiling log
 		group into unthreaded, partially threaded, fully threaded and thread synch
-	make updateSampleStatus() code branch-free by introducing dummy nodes corresponding to status = 0 (unusued)
-		maybe maintain sorted lists of active samples to speed up this further
-		improved cost function when ordering options objects in parallel train
-	vectorization and parallelixation:
-		parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
-		joinSplits_ could be parallelized, but this requires cache line alignment of TreeNodeBuilder
-			this seems not to work with the Intel compiler
-		TreeTrainerImpl::train() - parallelize outside the d-loop
-			profile with Leukemia and 64 threads
-			does this make the code too messy?
 	t-test and F-test:
 		is the following analysis correct?
 			if the data matrix fits in the cache we can parallelize and vectorize as much as possible
 			but if the data matrix does not fit in the cache, then things are different
 				each element in the data matrix as accessed twice
 					we need locality so that the the element still is in the cache the second time it is accessed
+		the following should handle all cases
+			divde the variables into large blocks, one for each thread
+				then divide each block into strips, each one cashe line wide
+	make updateSampleStatus() code branch-free by introducing dummy nodes corresponding to status = 0 (unusued)
+		maybe maintain sorted lists of active samples to speed up this further
+		improved cost function when ordering options objects in parallel train
+	vectorization and parallelixation:
+		parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
+		joinNodeTrainers_ could be parallelized, but this requires cache line alignment of TreeNodeBuilder
+			this seems not to work with the Intel compiler
+		TreeTrainerImpl::train() - parallelize outside the d-loop
+			profile with Leukemia and 64 threads
+			does this make the code too messy?
 	data:
 		narrower type for strata
 		float or double for outdata and weights?
@@ -81,6 +76,20 @@ optimizations:
 		if performance is the same or better, delete the old code
 	PGO
 	test with the Intel C++ compiler (how does the generated code perform with AMD processors?)
+
+minor things:
+	predict() overload that takes a one-dim array and returns a double (use in QD Demo)
+	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
+	save and load:
+		check that dataset does not have more than 2G variables
+		get rid of uint32 nonsense
+	compare performance (speed and accuracy) with xgboost
+	clang code formatting
+	how fast can a column major implementation of the t-statistic be?
+	look more into Eigen arrays and std::data
+	seems PyBind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
+		that would be useful for passing sample lists to t-test and F-test
+	simpler way of selecting used samples; pick each sample with probability usedSampleRatio, count may vary
 
 ------------------------------------------------------------------------------------------------------------------------
 

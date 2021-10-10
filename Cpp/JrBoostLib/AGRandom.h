@@ -1,6 +1,7 @@
 /*
     Fast random number engines by Arvid Gerstmann
     See https://arvid.io/2018/07/02/better-cxx-prng/
+    and https://gist.github.com/Leandros/6dc334c22db135b033b57e9ee0311553
 
     Changes by Johan Råde:
         Added inline to operator== and operator!= (bug fix)
@@ -8,7 +9,6 @@
             split_max rng((std::random_device()));
         compile
 */
-
 
 /* Copyright (c) 2018 Arvid Gerstmann. */
 /* This code is licensed under MIT license. */

@@ -1,4 +1,12 @@
 /*
+    Branch-free implementation of quick sort by Orson Peters
+    See https://github.com/orlp/pdqsort
+
+    Changes by Johan Råde:
+        Added workaround for broken __cplusplus on Visual Studio
+*/
+
+/*
     pdqsort.h - Pattern-defeating quicksort.
 
     Copyright (c) 2021 Orson Peters

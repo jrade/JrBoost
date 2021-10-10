@@ -36,7 +36,7 @@ unique_ptr<BasePredictor> TreeTrainer::train(
     CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::TREE_TRAIN);
-    unique_ptr<BasePredictor> pred =  impl_->train(outData, weights, options, threadCount);
+    unique_ptr<BasePredictor> pred = impl_->train(outData, weights, options, threadCount);
     PROFILE::POP();
     return pred;
 }
