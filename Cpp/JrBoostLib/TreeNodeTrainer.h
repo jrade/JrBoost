@@ -4,8 +4,16 @@
 
 #pragma once
 
-struct TreeNodeExt;
+#include "TreeNode.h"
+
 class TreeOptions;
+
+struct TreeNodeExt : public TreeNode
+{
+    size_t sampleCount;
+    double sumW;
+    double sumWY;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -22,12 +30,11 @@ public:
         CRefXXfc inData, CRefXd outData, CRefXd weights, const TreeOptions& options,
         const SampleIndex* pSortedSamplesBegin, const SampleIndex* pSortedSamplesEnd, size_t j);
     void join(const TreeNodeTrainer& other);
-    void finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;
+    size_t finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;
 
     // not really used, but required by vector<TreeNodeTrainer>
-    TreeNodeTrainer(const TreeNodeTrainer&) = default;
-    TreeNodeTrainer& operator=(const TreeNodeTrainer&) = default;
-
+    TreeNodeTrainer(const TreeNodeTrainer&) {};
+    TreeNodeTrainer& operator=(const TreeNodeTrainer&) {};
 
 private:
     size_t sampleCount_;
@@ -39,6 +46,8 @@ private:
     double score_;
     size_t j_;
     float x_;
+
+    size_t leftSampleCount_;
     double leftSumW_;
     double leftSumWY_;
     double rightSumW_;

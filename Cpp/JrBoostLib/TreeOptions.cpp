@@ -27,6 +27,11 @@ void TreeOptions::setUsedVariableRatio(double r)
     usedVariableRatio_ = r;
 }
 
+void TreeOptions::setSelectVariablesByLevel(bool b)
+{
+    selectVariablesByLevel_ = b;
+}
+
 void TreeOptions::setTopVariableCount(size_t n)
 {
     if (n <= 0)

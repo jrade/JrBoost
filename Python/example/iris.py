@@ -29,8 +29,10 @@ trainParam = {
         'minNodeSize': [1],
         'maxDepth': [1, 2, 3, 4],
         'minRelSampleWeight': [0.001],
+
         #'saveMemory': [True],
         #'isStratified': [False],
+        #'selectVariablesByLevel': [True],
     },
 
     'minimizeParam' : {
@@ -171,7 +173,7 @@ def formatBoostParam(boostParam):
     md = boostParam.get('maxDepth', 1)
     usr = boostParam['usedSampleRatio']
     uvr = boostParam['usedVariableRatio']
-    return f'eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.1f}'
+    return f'eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.2f}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 

@@ -5,7 +5,6 @@
 #include "pch.h"
 #include "TreeNodeTrainer.h"
 
-#include "TreeNodeExt.h"
 #include "TreeOptions.h"
 
 
@@ -23,6 +22,7 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptio
     iterationCount_ = 0;
     slowBranchCount_ = 0;
 }
+
 
 template<typename SampleIndex>
 void TreeNodeTrainer<SampleIndex>::init(const TreeNodeTrainer& other)
@@ -42,6 +42,8 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeTrainer& other)
 }
 
 
+// finds the best split of a node for variable j
+
 template<typename SampleIndex>
 void TreeNodeTrainer<SampleIndex>::update(
     CRefXXfc inData,
@@ -53,6 +55,8 @@ void TreeNodeTrainer<SampleIndex>::update(
     size_t j
 )
 {
+    // the samples in the range [pSortedSamplesBegin, pSortedSamplesEnd) should be sorted according to inData.col(j)
+
     ASSERT(static_cast<size_t>(pSortedSamplesEnd - pSortedSamplesBegin) == sampleCount_);
 
     const float* pInDataColJ = std::data(inData.col(j));
@@ -95,7 +99,7 @@ void TreeNodeTrainer<SampleIndex>::update(
             ) continue;
 
         const float leftX = pInDataColJ[i];
-        const float rightX = pInDataColJ[nextI];
+        const float rightX = pInDataColJ[nextI];     // leftX <= rightX
         const float midX = (leftX + rightX) / 2;
 
         if (leftX == midX) continue;
@@ -104,6 +108,7 @@ void TreeNodeTrainer<SampleIndex>::update(
         score_ = score;
         j_ = j;
         x_ = midX;
+        leftSampleCount_ = p - pSortedSamplesBegin;
         leftSumW_ = leftSumW;
         leftSumWY_ = leftSumWY;
         rightSumW_ = rightSumW;
@@ -128,6 +133,7 @@ void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
     score_ = other.score_;
     j_ = other.j_;
     x_ = other.x_;
+    leftSampleCount_ = other.leftSampleCount_;
     leftSumW_ = other.leftSumW_;
     leftSumWY_ = other.leftSumWY_;
     rightSumW_ = other.rightSumW_;
@@ -135,30 +141,45 @@ void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
 }
 
 
+// updates one node based on the best split found
+// returns the number of used samples in the child nodes if any, otherwise 0
+
 template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const
+size_t TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const
 {
-    if (splitFound_) {
+    PROFILE::UPDATE_BRANCH_STATISTICS(iterationCount_, slowBranchCount_);
 
-        (*ppParentNode)->isLeaf = false;
-        (*ppParentNode)->j = j_;
-        (*ppParentNode)->x = x_;
-        (*ppParentNode)->gain = static_cast<float>(score_ - sumWY_ * sumWY_ / sumW_);
-
-        (*ppParentNode)->leftChild = *ppChildNode;
-        (*ppChildNode)->isLeaf = true;
-        (*ppChildNode)->y = static_cast<float>(leftSumWY_ / leftSumW_);
-        ++*ppChildNode;
-
-        (*ppParentNode)->rightChild = *ppChildNode;
-        (*ppChildNode)->isLeaf = true;
-        (*ppChildNode)->y = static_cast<float>(rightSumWY_ / rightSumW_);
-        ++*ppChildNode;
-    }
-
+    TreeNodeExt* pParentNode = *ppParentNode;
     ++*ppParentNode;
 
-    PROFILE::UPDATE_BRANCH_STATISTICS(iterationCount_, slowBranchCount_);
+    if (!splitFound_) return 0;
+
+    pParentNode->isLeaf = false;
+    pParentNode->j = j_;
+    pParentNode->x = x_;
+    pParentNode->gain = static_cast<float>(score_ - sumWY_ * sumWY_ / sumW_);
+
+    TreeNodeExt* leftChildNode = *ppChildNode;
+    ++*ppChildNode;
+    pParentNode->leftChild = leftChildNode;
+
+    leftChildNode->isLeaf = true;
+    leftChildNode->y = static_cast<float>(leftSumWY_ / leftSumW_);
+    leftChildNode->sampleCount = leftSampleCount_;
+    leftChildNode->sumW = leftSumW_;
+    leftChildNode->sumWY = leftSumWY_;
+
+    TreeNodeExt* rightChildNode = *ppChildNode;
+    ++*ppChildNode;
+    pParentNode->rightChild = rightChildNode;
+
+    rightChildNode->isLeaf = true;
+    rightChildNode->y = static_cast<float>(rightSumWY_ / rightSumW_);
+    rightChildNode->sampleCount = sampleCount_ - leftSampleCount_;
+    rightChildNode->sumW = rightSumW_;
+    rightChildNode->sumWY = rightSumWY_;
+
+    return sampleCount_;
 }
 
 //......................................................................................................................

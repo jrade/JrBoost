@@ -86,7 +86,6 @@
     <ClInclude Include="ExceptionSafeOmp.h" />
     <ClInclude Include="InterruptHandler.h" />
     <ClInclude Include="Submatrix.h" />
-    <ClInclude Include="TreeNodeExt.h" />
     <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />
     <ClInclude Include="pdqsort.h" />

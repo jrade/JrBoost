@@ -95,9 +95,6 @@
     <ClInclude Include="TreeNodeTrainer.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
-    <ClInclude Include="TreeNodeExt.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
     <ClInclude Include="Submatrix.h">
       <Filter>Extra</Filter>
     </ClInclude>

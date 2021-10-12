@@ -55,6 +55,8 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setUsedSampleRatio(std::get<double>(value));
             else if (key == "usedVariableRatio")
                 opt.setUsedVariableRatio(std::get<double>(value));
+            else if (key == "selectVariablesByLevel")
+                opt.setSelectVariablesByLevel(std::get<bool>(value));
             else if (key == "topVariableCount")
                 opt.setTopVariableCount(std::get<size_t>(value));
             else if (key == "minAbsSampleWeight")
@@ -111,6 +113,7 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["maxDepth"] = opt.maxDepth();
     pyOpt["usedSampleRatio"] = opt.usedSampleRatio();
     pyOpt["usedVariableRatio"] = opt.usedVariableRatio();
+    pyOpt["selectVariablesByLevel"] = opt.selectVariablesByLevel();
     pyOpt["topVariableCount"] = opt.topVariableCount();
     pyOpt["minAbsSampleWeight"] = opt.minAbsSampleWeight();
     pyOpt["minRelSampleWeight"] = opt.minRelSampleWeight();

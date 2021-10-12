@@ -16,6 +16,7 @@ public:
     size_t maxDepth() const { return maxDepth_; }
     double usedSampleRatio() const { return usedSampleRatio_; }
     double usedVariableRatio() const { return usedVariableRatio_; }
+    bool selectVariablesByLevel() const { return selectVariablesByLevel_; }
     size_t topVariableCount() const { return topVariableCount_; }
     double minAbsSampleWeight() const { return minAbsSampleWeight_; }
     double minRelSampleWeight() const { return minRelSampleWeight_; }
@@ -29,6 +30,7 @@ public:
     void setMaxDepth(size_t d);
     void setUsedSampleRatio(double r);
     void setUsedVariableRatio(double r);
+    void setSelectVariablesByLevel(bool b);
     void setTopVariableCount(size_t n);
     void setMinAbsSampleWeight(double w);
     void setMinRelSampleWeight(double w);
@@ -46,6 +48,7 @@ private:
     size_t maxDepth_{ 1 };
     double usedSampleRatio_{ 1.0 };
     double usedVariableRatio_{ 1.0 };
+    bool selectVariablesByLevel_{ false };
     size_t topVariableCount_{ numeric_limits<size_t>::max() };
     double minAbsSampleWeight_{ 0.0 };
     double minRelSampleWeight_{ 0.0 };

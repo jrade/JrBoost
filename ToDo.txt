@@ -1,9 +1,6 @@
-one more general review
+test moving around the zero calibration and see how stable it is
 
-push to GitHub
-	ask David to download, compile with other compilers
-
-sedan
+review TreeTrainerImpl one more time
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -39,10 +36,11 @@ features to add:
 	multiple inData and multiple variable counts (to handle feature engineering)
 
 optimizations (accuracy):
+	test the new selectVariablesByLevel option
 	boosted forests
 		maybe train with forestSize = 1, then build with a larger forestSize
+	boost stop criteria
 	pruning
-	used variable subset by level option (would require saveMemory = True)
 	multi-label stratification when generating folds and selecting active samples
 	
 optimizations (speed):
@@ -76,6 +74,8 @@ optimizations (speed):
 		if performance is the same or better, delete the old code
 	PGO
 	test with the Intel C++ compiler (how does the generated code perform with AMD processors?)
+	maybe some caches ordered samples mechanism to use with usedVariableByLayer = true?
+	test fast sums in TreeTrainerImpl_::updateSampleStatus_()
 
 minor things:
 	predict() overload that takes a one-dim array and returns a double (use in QD Demo)
