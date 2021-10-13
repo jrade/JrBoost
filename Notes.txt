@@ -1,0 +1,62 @@
+
+Visual studio compiler flags:
+	/W4
+	/WX
+	/sdl			???
+	/O2				in Release mode, same as /Og /Oi /Ot /Oy /Ob2 /GF /Gy )
+	/GL				in Release mode, does it make any difference?
+	/arch:AVX2		faster than /arch:AVX, mainly due to vectorized exp() in BoostTrainer
+	/fp:fast		much faster than /fp:strict and /fp:precise
+	/std:c++17
+	/permissive-
+	/openmp
+    /Zc:__cplusplus         pdqsort uses __cplusplus to detect C++11
+
+========================================================================================================================
+
+some profiling numbers from Visual Studio 2019, providing justification for using 
+splitmix, pdq_sort, VeryFastBernoulliDistribution and FastBernoulliDistribution
+
+............................................
+
+clock cycles per call
+
+splitmix			2.8
+pcg					3.5
+xorshift			3.6
+std::mt19937		7.5
+std::minstd_rand	8.7
+std::minstd_rand0	8.9
+std::mt19937_64		8.9
+
+..........................................
+
+pdqsort_branchless is 2.2 times faster than std::sort
+
+..........................................
+
+the following code snippets were used to profile different implementations of the Bernoulli distribution
+the rng is an instance of splitmix
+
+while (n != 0) {
+    bool b = VeryFastBernoulliDistribution(m, n)(rng);
+    bool b = BD(m, n)(rng);
+    m -= b;
+    --n;
+}
+3.8 clock cycles per iteration
+
+while (n != 0) {
+    bool b = FastBernoulliDistribution(m, n)(rng);
+    bool b = BD(m, n)(rng);
+    m -= b;
+    --n;
+}
+8.9 clock cycles per iteration
+
+while (n != 0) {
+    bool b = std::bernoulli_distribution(double(m) / n)(rng);
+    m -= b;
+    --n;
+}
+51.7 clock cycles per iteration!

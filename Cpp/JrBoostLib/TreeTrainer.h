@@ -13,7 +13,7 @@ class TreeTrainer
 {
 public:
     TreeTrainer(CRefXXfc inData, CRefXs strata);
-    ~TreeTrainer() = default;
+    ~TreeTrainer();
 
     unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const;
 
@@ -22,7 +22,7 @@ public:
     TreeTrainer& operator=(const TreeTrainer&) = delete;
 
 private:
-    static shared_ptr<TreeTrainerImplBase> createImpl_(CRefXXfc inData, CRefXs strata);
+    static unique_ptr<TreeTrainerImplBase> createImpl_(CRefXXfc inData, CRefXs strata);
 
-    const shared_ptr<const TreeTrainerImplBase> impl_;
+    const unique_ptr<const TreeTrainerImplBase> impl_;
 };

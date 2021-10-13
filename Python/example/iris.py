@@ -10,7 +10,6 @@ import jrboost
 #-----------------------------------------------------------------------------------------------------------------------
 
 validationParam = {
-    'threadCount': os.cpu_count() // 2,
     'parallelTree': False,
     'outerFoldCount': 10,
 }
@@ -60,7 +59,6 @@ def validate():
 
     if 'threadCount' in validationParam: jrboost.setThreadCount(validationParam['threadCount'])
     if 'parallelTree' in validationParam: jrboost.setParallelTree(validationParam['parallelTree'])
-    if 'outerThreadCount' in validationParam: jrboost.setOuterThreadCount(validationParam['outerThreadCount'])
 
     outerFoldCount = validationParam['outerFoldCount']
 

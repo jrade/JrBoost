@@ -15,6 +15,7 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptio
     sumW_ = node.sumW;
     sumWY_ = node.sumWY;
     minNodeWeight_ = std::max(options.minNodeWeight(), 1e-6 * sumW_);
+    minNodeSize_ = options.minNodeSize();
 
     splitFound_ = false;
     score_ = sumWY_ * sumWY_ / sumW_ + options.minGain();
@@ -33,6 +34,7 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeTrainer& other)
     sumW_ = other.sumW_;
     sumWY_ = other.sumWY_;
     minNodeWeight_ = other.minNodeWeight_;
+    minNodeSize_ = other.minNodeSize_;
 
     splitFound_ = false;
     score_ = other.score_;
@@ -49,7 +51,6 @@ void TreeNodeTrainer<SampleIndex>::update(
     CRefXXfc inData,
     CRefXd outData,
     CRefXd weights,
-    const TreeOptions& options,
     const SampleIndex* pSortedSamplesBegin,
     const SampleIndex* pSortedSamplesEnd,
     size_t j
@@ -59,13 +60,11 @@ void TreeNodeTrainer<SampleIndex>::update(
 
     ASSERT(static_cast<size_t>(pSortedSamplesEnd - pSortedSamplesBegin) == sampleCount_);
 
+    if (sumW_ == 0) return;
+
     const float* pInDataColJ = std::data(inData.col(j));
     const double* pOutData = std::data(outData);
     const double* pWeights = std::data(weights);
-
-    if (sumW_ == 0) return;
-
-    const size_t minNodeSize = options.minNodeSize();
 
     double leftSumW = 0.0;
     double leftSumWY = 0.0;
@@ -92,11 +91,11 @@ void TreeNodeTrainer<SampleIndex>::update(
 
         ++slowBranchCount_;
 
-        if (p < pSortedSamplesBegin + minNodeSize
-            || p > pSortedSamplesEnd - minNodeSize
+        if (p < pSortedSamplesBegin + minNodeSize_
+            || p > pSortedSamplesEnd - minNodeSize_
             || leftSumW < minNodeWeight_
             || rightSumW < minNodeWeight_
-            ) continue;
+        ) continue;
 
         const float leftX = pInDataColJ[i];
         const float rightX = pInDataColJ[nextI];     // leftX <= rightX
@@ -111,8 +110,6 @@ void TreeNodeTrainer<SampleIndex>::update(
         leftSampleCount_ = p - pSortedSamplesBegin;
         leftSumW_ = leftSumW;
         leftSumWY_ = leftSumWY;
-        rightSumW_ = rightSumW;
-        rightSumWY_ = rightSumWY;
     }
 
     iterationCount_ += sampleCount_;
@@ -127,7 +124,7 @@ void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
 
     if (!other.splitFound_) return;
     if (splitFound_ && other.score_ < score_) return;
-    if (splitFound_ && other.score_ == score_ && j_ < other.j_) return;     // makes the code deterministic
+    if (splitFound_ && other.score_ == score_ && j_ < other.j_) return;     // makes joining deterministic
 
     splitFound_ = true;
     score_ = other.score_;
@@ -136,8 +133,6 @@ void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
     leftSampleCount_ = other.leftSampleCount_;
     leftSumW_ = other.leftSumW_;
     leftSumWY_ = other.leftSumWY_;
-    rightSumW_ = other.rightSumW_;
-    rightSumWY_ = other.rightSumWY_;
 }
 
 
@@ -173,11 +168,15 @@ size_t TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNo
     ++*ppChildNode;
     pParentNode->rightChild = rightChildNode;
 
+    size_t rightSampleCount = sampleCount_ - leftSampleCount_;
+    double rightSumW = sumW_ - leftSumW_;
+    double rightSumWY = sumWY_ - leftSumWY_;
+
     rightChildNode->isLeaf = true;
-    rightChildNode->y = static_cast<float>(rightSumWY_ / rightSumW_);
-    rightChildNode->sampleCount = sampleCount_ - leftSampleCount_;
-    rightChildNode->sumW = rightSumW_;
-    rightChildNode->sumWY = rightSumWY_;
+    rightChildNode->y = static_cast<float>(rightSumWY / rightSumW);
+    rightChildNode->sampleCount = rightSampleCount;
+    rightChildNode->sumW = rightSumW;
+    rightChildNode->sumWY = rightSumWY;
 
     return sampleCount_;
 }

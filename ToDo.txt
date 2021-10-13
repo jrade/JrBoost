@@ -1,6 +1,21 @@
-test moving around the zero calibration and see how stable it is
-
 review TreeTrainerImpl one more time
+	continue with initSampleStatus_
+
+commit
+
+improved profiling log
+	group into unthreaded, partially threaded, fully threaded and thread synch
+
+t-test and F-test:
+	is the following analysis correct?
+		if the data matrix fits in the cache we can parallelize and vectorize as much as possible
+		but if the data matrix does not fit in the cache, then things are different
+			each element in the data matrix as accessed twice
+				we need locality so that the the element still is in the cache the second time it is accessed
+	the following should handle all cases
+		divde the variables into large blocks, one for each thread
+			then divide each block into strips, each one cashe line wide
+	faster with single precision for intermediate values? how much would precision be hurt?
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -22,7 +37,7 @@ major tasks:
 	improved Higgs example (see "Higgs Notes.txt")
 	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 	BART
-	improved Otto example
+	improved Otto example (see "Otto Notes.txt")
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
 	histogram-based tree builder (would speed up Otto a lot)
@@ -44,41 +59,28 @@ optimizations (accuracy):
 	multi-label stratification when generating folds and selecting active samples
 	
 optimizations (speed):
-	improved profiling log
-		group into unthreaded, partially threaded, fully threaded and thread synch
-	t-test and F-test:
-		is the following analysis correct?
-			if the data matrix fits in the cache we can parallelize and vectorize as much as possible
-			but if the data matrix does not fit in the cache, then things are different
-				each element in the data matrix as accessed twice
-					we need locality so that the the element still is in the cache the second time it is accessed
-		the following should handle all cases
-			divde the variables into large blocks, one for each thread
-				then divide each block into strips, each one cashe line wide
-	make updateSampleStatus() code branch-free by introducing dummy nodes corresponding to status = 0 (unusued)
+	make updateSampleStatus() code branch-free by introducing dummy nodes that conain unused samples
 		maybe maintain sorted lists of active samples to speed up this further
 		improved cost function when ordering options objects in parallel train
-	vectorization and parallelixation:
-		parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
-		joinNodeTrainers_ could be parallelized, but this requires cache line alignment of TreeNodeBuilder
-			this seems not to work with the Intel compiler
-		TreeTrainerImpl::train() - parallelize outside the d-loop
-			profile with Leukemia and 64 threads
-			does this make the code too messy?
+		higgs_quick.py is a suitable test case
 	data:
 		narrower type for strata
-		float or double for outdata and weights?
-		outData and weights interleaved in a single array
-	rerun the profiling with different instruction sets and floating point flags
-	compare performance with the old StumpTrainer
-		if performance is the same or better, delete the old code
+		outdata and weights interleaved in a single array
+		outdata and weights as float?
+	Schraudolph:
+		_mm256_cvtpd_epi32   double to int32
+		is there any int32 to int64 conversion?
+		I may have to write my own code with intrinsics instead of relying on the autovectorizer
+	parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
+	maybe some cached ordered samples mechanism to use with usedVariableByLayer = true?
+    narrower TreeTrainerImpl::SampleStatus??
+	look into fast/precise sums
+		does it make any difference for speed and accuracy?
 	PGO
 	test with the Intel C++ compiler (how does the generated code perform with AMD processors?)
-	maybe some caches ordered samples mechanism to use with usedVariableByLayer = true?
-	test fast sums in TreeTrainerImpl_::updateSampleStatus_()
 
 minor things:
-	predict() overload that takes a one-dim array and returns a double (use in QD Demo)
+	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
 	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
 	save and load:
 		check that dataset does not have more than 2G variables
@@ -87,57 +89,5 @@ minor things:
 	clang code formatting
 	how fast can a column major implementation of the t-statistic be?
 	look more into Eigen arrays and std::data
-	seems PyBind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
+	seems pybind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
 		that would be useful for passing sample lists to t-test and F-test
-	simpler way of selecting used samples; pick each sample with probability usedSampleRatio, count may vary
-
-------------------------------------------------------------------------------------------------------------------------
-
-Otto:
-	run an explorative round with full dataset
-		usedSampleRatio = [0.01, 0.02, .... 1]
-		minNodeSize = [1,2,5,10, 20, , .... 10000]
-	test regularized log loss with some gamma around 0.1?
-	fit hyperparams jointly or separately for the different labels?
-	try again with linloss, logloss and auc
-	otto with frac = 0.001, assertion weights >= 0 fails  --- investigate
-
-Eigen issues:
-	read Eigen 3.4 docs
-	report that
-			ArrayXf a = {0, 4, 5};
-		compiles but gives unexpected result
-	no select with two constants
-	    StumpTrainerImpl(CRefXXfc inData, RefXs strata)
-			second argument should be CRefXs, but that leads to problems ...
-	is BoostTrainer::trainAda_ slower with Eigen 3.4 than with Eigen 3.3.9?
-
-------------------------------------------------------------------------------------------------------------------------
-
-Notes:
-
-The Visual Studio project uses the environment variables EIGEN_DIR, PYTHON_DIR and PYBIND11_DIR
-to find third party header and library files
-
-/O2 = /Og /Oi /Ot /Oy /Ob2 /GF /Gy
-
-/GL /O2 and /Ot make a big difference
-
-/arch:AVX is faster than /arch:SSE and /arch:SSE2
-/arch:AVX2 is not faster than /arch:AVX
-
-/fp:strict, /fp:pecise, /fp:fast: no clear difference, but there is no reason not to choose /fp:fast
-
-splitmix is the fastest rng
-
-FastBernoulliDistribution: uint64_t is much faster than double
-  turning the class into a function does not increase speed
-
-other MSVS 2019 settings:
-    Tools > Options > Python > Conda: ..../conda.exe
-    compiler flag:  /permissive-
-    Run-time Library = Multi-threaded DLL (/MD) (for all configurations!)
-    mixed debugging
-
-numpy arrays are by default row major ("C storage order")
-Eigen arrays are by default column major ("Fortran storage order")

@@ -22,17 +22,11 @@
     <ClInclude Include="Clock.h">
       <Filter>Profiling</Filter>
     </ClInclude>
-    <ClInclude Include="AGRandom.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
     <ClInclude Include="BernoulliDistribution.h">
       <Filter>Tools</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
     <ClInclude Include="SortedIndices.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="pdqsort.h">
       <Filter>Tools</Filter>
     </ClInclude>
     <ClInclude Include="InterruptHandler.h">
@@ -80,12 +74,6 @@
     <ClInclude Include="TreeTrainerImpl.h">
       <Filter>Base Trainer</Filter>
     </ClInclude>
-    <ClInclude Include="TreeTrainerImplBase.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="StumpTrainerImpl.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
     <ClInclude Include="TreeNode.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
@@ -97,6 +85,9 @@
     </ClInclude>
     <ClInclude Include="Submatrix.h">
       <Filter>Extra</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerImplBase.h">
+      <Filter>Base Trainer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -145,9 +136,6 @@
     </ClCompile>
     <ClCompile Include="TreePredictor.cpp">
       <Filter>Base Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpTrainerImpl.cpp">
-      <Filter>Base Trainer</Filter>
     </ClCompile>
     <ClCompile Include="TreeTrainerImpl.cpp">
       <Filter>Base Trainer</Filter>

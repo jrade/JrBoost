@@ -14,6 +14,3 @@ JrBoost has been built on Windows 10 with:
 The code comes with Visual Studio 2019 solution and project files.
 These use the environment variables EIGEN_DIR, PYBIND11_DIR and PYTHON_DIR
 to find the C++ library and the python installation root directories.
-
-JrBoost also uses pdqsort by Orson Peters and C++ Pseudo Random Number Generators by Arvid Gerstmann.
-Patched versions of these are included in the JrBoost source tree (pdq_sort.h and AGRandom.h).

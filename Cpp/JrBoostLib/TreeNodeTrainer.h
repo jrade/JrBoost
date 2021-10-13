@@ -27,20 +27,21 @@ public:
     void init(const TreeNodeExt& node, const TreeOptions& options);
     void init(const TreeNodeTrainer& other);
     void update(
-        CRefXXfc inData, CRefXd outData, CRefXd weights, const TreeOptions& options,
+        CRefXXfc inData, CRefXd outData, CRefXd weights,
         const SampleIndex* pSortedSamplesBegin, const SampleIndex* pSortedSamplesEnd, size_t j);
     void join(const TreeNodeTrainer& other);
     size_t finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;
 
     // not really used, but required by vector<TreeNodeTrainer>
     TreeNodeTrainer(const TreeNodeTrainer&) {};
-    TreeNodeTrainer& operator=(const TreeNodeTrainer&) {};
+    TreeNodeTrainer& operator=(const TreeNodeTrainer&) { return *this; };
 
 private:
     size_t sampleCount_;
     double sumW_;
     double sumWY_;
     double minNodeWeight_;
+    size_t minNodeSize_;
 
     bool splitFound_;
     double score_;
@@ -50,8 +51,6 @@ private:
     size_t leftSampleCount_;
     double leftSumW_;
     double leftSumWY_;
-    double rightSumW_;
-    double rightSumWY_;
 
     size_t iterationCount_;
     size_t slowBranchCount_;

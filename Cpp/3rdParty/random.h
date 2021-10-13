@@ -1,14 +1,4 @@
-/*
-    Fast random number engines by Arvid Gerstmann
-    See https://arvid.io/2018/07/02/better-cxx-prng/
-    and https://gist.github.com/Leandros/6dc334c22db135b033b57e9ee0311553
-
-    Changes by Johan Råde:
-        Added inline to operator== and operator!= (bug fix)
-        Added constructors that take r-values. This makes code such as
-            split_max rng((std::random_device()));
-        compile
-*/
+// Bug fix by Johan Rade: added inline to the free functions operator==() and operator!=()
 
 /* Copyright (c) 2018 Arvid Gerstmann. */
 /* This code is licensed under MIT license. */
@@ -26,10 +16,6 @@ public:
 
     splitmix() : m_seed(1) {}
     explicit splitmix(std::random_device& rd)
-    {
-        seed(rd);
-    }
-    explicit splitmix(std::random_device&& rd)
     {
         seed(rd);
     }
@@ -77,10 +63,6 @@ public:
 
     xorshift() : m_seed(0xc1f651c67c62c6e0ull) {}
     explicit xorshift(std::random_device& rd)
-    {
-        seed(rd);
-    }
-    explicit xorshift(std::random_device&& rd)
     {
         seed(rd);
     }
@@ -132,10 +114,6 @@ public:
         , m_inc(0xda3e39cb94b95bdbULL)
     {}
     explicit pcg(std::random_device& rd)
-    {
-        seed(rd);
-    }
-    explicit pcg(std::random_device&& rd)
     {
         seed(rd);
     }

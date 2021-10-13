@@ -13,7 +13,7 @@ class BoostTrainer
 {
 public:
     BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> weights);
-    ~BoostTrainer() = default;
+    ~BoostTrainer();
 
     shared_ptr<BoostPredictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
 
@@ -36,5 +36,5 @@ private:
     const ArrayXd outData_;
     const optional<ArrayXd> weights_;
     const double lor0_;
-    const shared_ptr<TreeTrainer> baseTrainer_;
+    const unique_ptr<TreeTrainer> baseTrainer_;
 };

@@ -33,7 +33,6 @@ void prune(TreeNode* node, float pruneLimit)
         node->isLeaf = true;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
 
 TreeNode* cloneDepthFirstImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
 {
@@ -52,6 +51,7 @@ vector<TreeNode> cloneDepthFirst(const TreeNode* sourceNode)
     cloneDepthFirstImpl_(sourceNode, targetNode);
     return targetNodes;
 }
+
 
 vector<TreeNode> cloneBreadthFirst(const TreeNode* sourceNode)
 {

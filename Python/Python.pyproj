@@ -14,6 +14,7 @@
     <InterpreterId />
     <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
     <Name>Python</Name>
+    <SuppressConfigureTestFrameworkPrompt>true</SuppressConfigureTestFrameworkPrompt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />

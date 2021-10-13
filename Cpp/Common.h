@@ -61,7 +61,8 @@ using std::vector;
 #ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable: 4127 )    // conditional expression is constant
-#endif
+#pragma warning( disable: 4805 )    // '|': unsafe mix of type 'const bool' and type 'int' in operation                                 
+#endif                              //  // (disabling 4805 only needed when compiling with AVX512)
 
 #include <Eigen/Dense>
 
@@ -69,13 +70,13 @@ using std::vector;
 #pragma warning( pop )
 #endif
 
-using ArrayXXdc = Eigen::ArrayXXd;      // column major
+using ArrayXXdc = Eigen::ArrayXX<double>;      // column major
 using ArrayXXdr = Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using ArrayXXfc = Eigen::ArrayXXf;      // column major
+using ArrayXXfc = Eigen::ArrayXX<float>;      // column major
 using ArrayXXfr = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using ArrayXd   = Eigen::ArrayXd;
-using ArrayXf   = Eigen::ArrayXf;
-using ArrayXs   = Eigen::Array<size_t, Eigen::Dynamic, 1>;
+using ArrayXd   = Eigen::ArrayX<double>;
+using ArrayXf   = Eigen::ArrayX<float>;
+using ArrayXs   = Eigen::ArrayX<size_t>;
 
 using RefXXdc = Eigen::Ref<ArrayXXdc>;
 using RefXXdr = Eigen::Ref<ArrayXXdr>;
@@ -94,26 +95,65 @@ using CRefXf   = Eigen::Ref<const ArrayXf>;
 using CRefXs   = Eigen::Ref<const ArrayXs>;
 
 
+// Fast random number generators (by Arvid Gerstmann)
+
+#include "3rdParty/random.h"
+
+
+// pdqsort (by Orson Peters)
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable: 4267 )    // '=': conversion from 'size_t' to 'unsigned char', possible loss of data
+#endif
+
+#include "3rdParty/pdqsort.h"
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+
+
 // Tools
 
-#include "JrBoostLib/AGRandom.h"
 #include "JrBoostLib/Assert.h"
 #include "JrBoostLib/Profile.h"
 
 
-// Globals
+// Miscellaneous
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJOR_VERSION) "." STR(EIGEN_MINOR_VERSION);
 
-inline bool theParallelTree = true;
-inline size_t theOuterThreadCount = 0;
+inline bool globParallelTree = true;
+inline size_t globOuterThreadCount = 0;
 
 inline const std::thread::id theMainThreadId = std::this_thread::get_id();
 
+
 using RandomNumberEngine = splitmix;
-inline thread_local RandomNumberEngine theRne((std::random_device()));
+
+class InitializedRandomNumberEngine : public RandomNumberEngine
+{
+public:
+    InitializedRandomNumberEngine() {
+        std::random_device rd;
+        seed(rd);
+    }
+};
+
+inline thread_local InitializedRandomNumberEngine theRne;
+
+
+template<class Iter, class Compare>
+inline void fastSort(Iter begin, Iter end, Compare comp) {
+    size_t n = end - begin;
+    size_t ITEM_COUNT = static_cast<size_t>(std::round(n * std::log(n)));
+    PROFILE::PUSH(PROFILE::SORT);
+    pdqsort_branchless(begin, end, comp);
+    PROFILE::POP(ITEM_COUNT);
+}
 
 
 #ifdef _MSC_VER

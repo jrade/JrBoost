@@ -7,6 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		Higgs Notes.txt = Higgs Notes.txt
 		License.txt = License.txt
+		Notes.txt = Notes.txt
 		Profile.txt = Profile.txt
 		ReadMe.txt = ReadMe.txt
 		ToDo.txt = ToDo.txt
@@ -22,6 +23,13 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JrBoostLib", "Cpp\JrBoostLib\JrBoostLib.vcxproj", "{5E1798B2-CBDB-45A1-811A-884850C61C3C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PythonModule", "Cpp\PythonModule\PythonModule.vcxproj", "{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3rdParty", "3rdParty", "{D566AA2D-51AA-4618-894D-D2234478B6F3}"
+	ProjectSection(SolutionItems) = preProject
+		Cpp\3rdParty\Notes.txt = Cpp\3rdParty\Notes.txt
+		Cpp\3rdParty\pdqsort.h = Cpp\3rdParty\pdqsort.h
+		Cpp\3rdParty\random.h = Cpp\3rdParty\random.h
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,6 +66,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
+		{D566AA2D-51AA-4618-894D-D2234478B6F3} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1D96605-E60B-47D3-87A4-5190D6AD3139}

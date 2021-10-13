@@ -14,7 +14,7 @@ class BasePredictor;
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-class TreeTrainerImpl : public TreeTrainerImplBase 
+class TreeTrainerImpl : public TreeTrainerImplBase
 {
 public:
     TreeTrainerImpl(CRefXXfc inData, CRefXs strata);
@@ -24,6 +24,7 @@ public:
 
 private:
     struct ThreadLocalData_;
+    using SampleStatus = SampleIndex;
 
 private:
     vector<vector<SampleIndex>> createSortedSamples_() const;
@@ -31,10 +32,12 @@ private:
     void validateData_(CRefXd outData, CRefXd weights) const;
     size_t usedVariableCount_(const TreeOptions& options) const;
     size_t initUsedVariables_(const TreeOptions& options) const;
-    size_t initSampleStatus_(CRefXd weights, const TreeOptions& options) const;
-    void initRoot_(CRefXd outData, CRefXd weights, size_t usedSampleCount) const;
+    size_t initRoot_(CRefXd outData, CRefXd weights) const;
 
-    const SampleIndex* initOrderedSamplesFast_(
+    void initSampleStatus_(CRefXd weights, const TreeOptions& options) const;
+    void updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
+
+    const SampleIndex* initOrderedSamplesLayer0_(
         size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
     const SampleIndex* initOrderedSamples_(
         size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
@@ -42,12 +45,11 @@ private:
         size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
 
     void initNodeTrainers_(const TreeOptions& options, size_t d, size_t threadCount) const;
-    void updateNodeTrainers_(CRefXd outData, CRefXd weights, const TreeOptions& options,
+    void updateNodeTrainers_(CRefXd outData, CRefXd weights,
         const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
     void joinNodeTrainers_(size_t d, size_t threadCount) const;
     size_t finalizeNodeTrainers_(size_t d) const;
 
-    void updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
     unique_ptr<BasePredictor> createPredictor_() const;
 
 private:
@@ -72,7 +74,7 @@ private:
         vector<vector<TreeNodeExt>> tree;
         vector<CacheLineAligned<TreeNodeTrainer<SampleIndex>>> treeNodeTrainers;
 
-        vector<SampleIndex> sampleStatus;
+        vector<SampleStatus> sampleStatus;
         // status of each sample in the current layer of the tree
         // status`= 0 means the sample is unused
         // status = k + 1 means the sample belongs to node number k in the layer; k = 0, 1, ..., node count - 1

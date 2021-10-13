@@ -30,12 +30,11 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
     vector<shared_ptr<BoostPredictor>> pred(optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
-    const bool isNested = ::theParallelTree;
 
     size_t outerThreadCount;
-    if (isNested) {
+    if (::globParallelTree) {
         omp_set_nested(true);
-        outerThreadCount = ::theOuterThreadCount;
+        outerThreadCount = ::globOuterThreadCount;
         if (outerThreadCount == 0)
             // the square root of the total thread count is a reasonable default for the outer thread count
             outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
@@ -48,7 +47,7 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
         outerThreadCount = optCount;
 
     vector<size_t> innerThreadCounts(outerThreadCount);
-    if (isNested)
+    if (::globParallelTree)
         // each inner thread count is approximately the total thread count divided by the outer thread count
         // and the sum of the inner thread counts is exactly the total thread count
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
@@ -108,12 +107,11 @@ ArrayXXdc parallelTrainAndPredict(
     ArrayXXdc predData(sampleCount, optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
-    const bool isNested = ::theParallelTree;
 
     size_t outerThreadCount;
-    if (isNested) {
+    if (::globParallelTree) {
         omp_set_nested(true);
-        outerThreadCount = ::theOuterThreadCount;
+        outerThreadCount = ::globOuterThreadCount;
         if (outerThreadCount == 0)
             outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
@@ -125,7 +123,7 @@ ArrayXXdc parallelTrainAndPredict(
         outerThreadCount = optCount;
 
     vector<size_t> innerThreadCounts(outerThreadCount);
-    if (isNested)
+    if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
             innerThreadCounts[outerThreadIndex]
             = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
@@ -176,12 +174,11 @@ ArrayXd parallelTrainAndEval(
     ArrayXd scores(optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
-    const bool isNested = ::theParallelTree;
 
     size_t outerThreadCount;
-    if (isNested) {
+    if (::globParallelTree) {
         omp_set_nested(true);
-        outerThreadCount = ::theOuterThreadCount;
+        outerThreadCount = ::globOuterThreadCount;
         if (outerThreadCount == 0)
             outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
@@ -193,7 +190,7 @@ ArrayXd parallelTrainAndEval(
         outerThreadCount = optCount;
 
     vector<size_t> innerThreadCounts(outerThreadCount);
-    if (isNested)
+    if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
             innerThreadCounts[outerThreadIndex]
             = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
@@ -250,12 +247,11 @@ ArrayXd parallelTrainAndEvalWeighted(
     ArrayXd scores(optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
-    const bool isNested = ::theParallelTree;
 
     size_t outerThreadCount;
-    if (isNested) {
+    if (::globParallelTree) {
         omp_set_nested(true);
-        outerThreadCount = ::theOuterThreadCount;
+        outerThreadCount = ::globOuterThreadCount;
         if (outerThreadCount == 0)
             outerThreadCount = static_cast<size_t>(std::round(std::sqrt(totalThreadCount)));
         if (outerThreadCount > totalThreadCount)
@@ -267,7 +263,7 @@ ArrayXd parallelTrainAndEvalWeighted(
         outerThreadCount = optCount;
 
     vector<size_t> innerThreadCounts(outerThreadCount);
-    if (isNested)
+    if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
             innerThreadCounts[outerThreadIndex]
             = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)

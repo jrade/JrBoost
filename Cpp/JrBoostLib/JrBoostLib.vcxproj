@@ -67,8 +67,6 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -88,9 +86,7 @@
     <ClInclude Include="Submatrix.h" />
     <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />
-    <ClInclude Include="pdqsort.h" />
     <ClInclude Include="BasePredictor.h" />
-    <ClInclude Include="AGRandom.h" />
     <ClInclude Include="Assert.h" />
     <ClInclude Include="BernoulliDistribution.h" />
     <ClInclude Include="BoostOptions.h" />
@@ -105,7 +101,6 @@
     <ClInclude Include="SortedIndices.h" />
     <ClInclude Include="StaticStack.h" />
     <ClInclude Include="StumpPredictor.h" />
-    <ClInclude Include="StumpTrainerImpl.h" />
     <ClInclude Include="TreeNode.h" />
     <ClInclude Include="TreeOptions.h" />
     <ClInclude Include="TreePredictor.h" />
@@ -132,7 +127,6 @@
     <ClCompile Include="Predictor.cpp" />
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="StumpPredictor.cpp" />
-    <ClCompile Include="StumpTrainerImpl.cpp" />
     <ClCompile Include="TreeNode.cpp" />
     <ClCompile Include="TreeOptions.cpp" />
     <ClCompile Include="TreePredictor.cpp" />

@@ -7,7 +7,6 @@
 
 #include "ExceptionSafeOmp.h"
 #include "InterruptHandler.h"
-#include "pdqsort.h"
 #include "StumpPredictor.h"
 #include "TreeOptions.h"
 #include "TreePredictor.h"
@@ -21,8 +20,8 @@
         maximizing a gain function subject to various constraints as described in any machine learning text book.
    
         The tricky part is keeping track of the samples.
-        In each layer of the tree a sample is either unused or assigned to one of the nodes.
-        When splitting a node, we need to find the samples assigned to the node and sort them
+        In each layer of the tree each sample is either unused or assigned to one of the nodes.
+        When splitting a node, we need to know which samples assigned to that node and then sort them
         with respect to each of the variables used.
 
         Thus we define the status of a sample in layer d as
@@ -30,9 +29,9 @@
             k + 1 if the sample is assigned to node number k in the layer.
 
         Note that for layer 0 the status of every sample is 0 or 1; this observation is used in the implementation of
-        initSampleStatus_(), initRoot_(), and initOrderedSamplesFast_().
+        initSampleStatus_(), initRoot_(), and initOrderedSamplesLayer0_().
 
-        In the constructor we sort all samples with respect to every variable once and for all.
+        In the constructor we sort all samples with respect to each variable once and for all.
         No further sorting is done in the code, we just extract sorted sublists from these presorted lists.
 
         The main tasks carried out by the code are:
@@ -42,24 +41,25 @@
                 The buffer (or buffers) may or may not contain the unused samples (status = 0) as an initial group.
             3. Using the ouput from 2, find the best split of each node in the current layer.
 
-
-    Common one letter variable names:
+    One letter variable names:
         d depth (used to index the layers in the tree, d = 0 being the root)
         i sample index
         j variable index
         k node and node trainer index
-        s sample status, sample stratum
+        s sample status
         t threadlocal data
         w weight
         x indata value
         y outdata value
+        z sample stratum
 
      Optimizations:
         fast sorting algorithm (not std::sort)
         fast random number generator (not std::mt19937)
         fast Bernoulli distribution (not std::bernoulli_distribution)
         branchfree code
-            the only if-statement in an inner loop is in TreeNodeTrainer::update(), and that one is fairly predictable
+            the only if-statements in inner loops are in updateSampleStatus_() 
+            and TreeNodeTrainer::update(), and the latter is fairly predictable
         memory optimized storage of vectors of sample indices
             using the template parameter SampleIndex
         very few memory allocations
@@ -80,7 +80,6 @@ TreeTrainerImpl<SampleIndex>::TreeTrainerImpl(CRefXXfc inData, CRefXs strata) :
     stratum1Count_{ (strata == 1).cast<size_t>().sum() }
 {
 }
-
 
 // The next function creates lists of sorted samples for each variable.
 // These lists are then used by initSortedSamplesFast_() and initSortedSamples_().
@@ -107,7 +106,7 @@ vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::createSortedSamples_()
             const float* pInDataColJ = std::data(inData_.col(j));
             for (size_t i = 0; i != sampleCount_; ++i)
                 tmp[i] = { pInDataColJ[i], static_cast<SampleIndex>(i) };
-            pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
+            fastSort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
 
             sortedSamples[j].resize(sampleCount_);
             SampleIndex* pSortedSamplesJ = data(sortedSamples[j]);
@@ -134,27 +133,23 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
     size_t usedVariableCount = usedVariableCount_(options);
 
     if (threadCount == 0)
-        threadCount = ::theParallelTree ? omp_get_max_threads() : 1;
+        threadCount = ::globParallelTree ? omp_get_max_threads() : 1;
     threadCount = std::min<size_t>(threadCount, omp_get_max_threads());
     threadCount = std::min<size_t>(threadCount, usedVariableCount);
     size_t threadShift = std::uniform_int_distribution<size_t>(0, threadCount - 1)(theRne);
 
-    // profiling zero calibration
-    PROFILE::PUSH(PROFILE::ZERO);
-    size_t ITEM_COUNT = 1;
-
-    // validate data
-    //PROFILE::SWITCH(ITEM_COUNT, PROFILE::VALIDATE);
+    //// validate data
+    //PROFILE::PUSH(PROFILE::VALIDATE);
     //validateData_(outData, weights);
-    //ITEM_COUNT = sampleCount_;
+    //size_t ITEM_COUNT = sampleCount_;
 
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_SAMPLE_STATUS);
-    ITEM_COUNT = sampleCount_;
-    size_t usedSampleCount = initSampleStatus_(weights, options);
+    PROFILE::PUSH(PROFILE::INIT_SAMPLE_STATUS);
+    size_t ITEM_COUNT = sampleCount_;
+    initSampleStatus_(weights, options);
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_TREE);
     ITEM_COUNT = sampleCount_;
-    initRoot_(outData, weights, usedSampleCount);
+    size_t usedSampleCount = initRoot_(outData, weights);
 
     for (size_t d = 0; d != options.maxDepth(); ++d) {
 
@@ -194,7 +189,7 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
                 if (d == 0) {
                     PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES_FAST);
                     ITEM_COUNT = sampleCount_;
-                    pOrderedSamples = initOrderedSamplesFast_(usedVariableIndex, usedSampleCount, options, d);
+                    pOrderedSamples = initOrderedSamplesLayer0_(usedVariableIndex, usedSampleCount, options, d);
                 }
                 else if (options.saveMemory() || options.selectVariablesByLevel()) {
                     PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES);
@@ -209,11 +204,10 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
 
                 PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SPLITS);
                 ITEM_COUNT = usedSampleCount;
-                updateNodeTrainers_(outData, weights, options, pOrderedSamples, usedVariableIndex, d);
+                updateNodeTrainers_(outData, weights, pOrderedSamples, usedVariableIndex, d);
+
             }   // end variable index loop
-
             threadLocalData_.parent = nullptr;
-
             PROFILE::SWITCH(ITEM_COUNT, PROFILE::INNER_THREAD_SYNCH);
         }   // end omp parallel
         ITEM_COUNT = 0;
@@ -231,16 +225,20 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::train(
         PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SAMPLE_STATUS);
         ITEM_COUNT = sampleCount_;
         updateSampleStatus_(outData, weights, d);
+
     }   // end d loop
 
     // TO DO: PRUNE TREE
+
+    // profiling zero calibration
+    PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
+    ITEM_COUNT = 1;
 
     PROFILE::SWITCH(ITEM_COUNT, PROFILE::CREATE_PREDICTOR);
     ITEM_COUNT = 0;
     unique_ptr<BasePredictor> predictor = createPredictor_();
 
     PROFILE::POP(ITEM_COUNT);
-
     return predictor;
 };
 
@@ -256,7 +254,7 @@ void TreeTrainerImpl<SampleIndex>::validateData_(CRefXd outData, CRefXd weights)
 
     if (static_cast<size_t>(weights.rows()) != sampleCount_)
         throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-    if (!(weights.abs() < numeric_limits<float>::infinity()).all())
+    if (!(weights.abs() < numeric_limits<double>::infinity()).all())
         throw std::invalid_argument("Train weights have values that are infinity or NaN.");
     if (!(weights >= 0.0).all())
         throw std::invalid_argument("Train weights have non-negative values.");
@@ -299,25 +297,64 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(const TreeOptions& optio
         ++j;
     }
 
-    if (!options.saveMemory() && !options.selectVariablesByLevel())
+    if (!options.saveMemory() && !options.selectVariablesByLevel() && options.maxDepth() != 1)
         t.orderedSamplesByVariable.resize(std::max(usedVariableCount, size(t.orderedSamplesByVariable)));
 
     return candidateVariableCount;
 }
 
+// The next function creates the root of the tree.
+// It also calculates sampleCount, sumW and sumWY for the root.
+
+template<typename SampleIndex>
+size_t TreeTrainerImpl<SampleIndex>::initRoot_(
+    CRefXd outData, CRefXd weights) const
+{
+    ThreadLocalData_& t = threadLocalData_;
+
+    const SampleStatus* pSampleStatus = data(t.sampleStatus);
+    const double* pOutData = std::data(outData);
+    const double* pWeights = std::data(weights);
+
+    size_t usedSampleCount = 0;
+    double sumW = 0.0;
+    double sumWY = 0.0;
+    for (size_t i = 0; i != sampleCount_; ++i) {
+        SampleStatus s = pSampleStatus[i];       // 0 or 1
+        double w = pWeights[i];
+        double y = pOutData[i];
+        usedSampleCount += s;
+        sumW += s * w;
+        sumWY += s * w * y;
+    }
+
+    if (empty(t.tree)) {
+        t.tree.resize(1);
+        t.tree.front().resize(1);
+    }
+
+    TreeNodeExt& root = t.tree.front().front();
+    root.isLeaf = true;
+    root.sampleCount = usedSampleCount;
+    root.sumW = sumW;
+    root.sumWY = sumWY;
+    root.y = (sumW == 0.0) ? 0.0f : static_cast<float>(sumWY / sumW);
+
+    return usedSampleCount;
+}
+
+//......................................................................................................................
 
 // The next function randomly assigns status 0 (unused) or 1 (belongs to the root) to each sample
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const TreeOptions& options) const
+void TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const TreeOptions& options) const
 {
-    size_t usedSampleCount;
-
     RandomNumberEngine& rne = theRne;
     ThreadLocalData_& t = threadLocalData_;
 
     t.sampleStatus.resize(sampleCount_);
-    SampleIndex* pSampleStatus = data(t.sampleStatus);
+    SampleStatus* pSampleStatus = data(t.sampleStatus);
 
     double minSampleWeight = options.minAbsSampleWeight();
     const double minRelSampleWeight = options.minRelSampleWeight();
@@ -328,20 +365,19 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const Tre
 
         if (options.usedSampleRatio() == 1.0) {
             // select all samples
-            usedSampleCount = sampleCount_;
-            std::fill(pSampleStatus, pSampleStatus + sampleCount_, static_cast<SampleIndex>(1));
+            std::fill(pSampleStatus, pSampleStatus + sampleCount_, static_cast<SampleStatus>(1));
         }
 
         else if (!options.isStratified()) {
 
             size_t n = sampleCount_;
-            size_t m = usedSampleCount = static_cast<size_t>(std::round(options.usedSampleRatio() * sampleCount_));
+            size_t m = static_cast<size_t>(std::round(options.usedSampleRatio() * sampleCount_));
 
             // randomly select m of n samples
             for (size_t i = 0; i != sampleCount_; ++i) {
-                bool b = BernoulliDistribution_(m, n) (rne);
-                pSampleStatus[i] = b;
-                m -= b;
+                bool s = BernoulliDistribution_(m, n) (rne);
+                pSampleStatus[i] = s;
+                m -= s;
                 --n;
             }
             ASSERT(m == 0);
@@ -352,23 +388,22 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const Tre
         else {
             const size_t* pStrata = std::data(strata_);
 
-            // n[s] number of samples in stratum s
+            // n[z] number of samples in stratum z
             array<size_t, 2> n{ stratum0Count_, stratum1Count_ };
 
-            // m[s] number of used samples in stratum s
+            // m[z] number of used samples in stratum z
             array<size_t, 2> m{
                 static_cast<size_t>(std::round(options.usedSampleRatio() * n[0])),
                 static_cast<size_t>(std::round(options.usedSampleRatio() * n[1]))
             };
-            usedSampleCount = m[0] + m[1];
 
-            // randomly select m[s] of n[s] samples from each stratum s = 0, 1
+            // randomly select m[z] of n[z] samples from each stratum
             for (size_t i = 0; i != sampleCount_; ++i) {
-                size_t s = pStrata[i];
-                bool b = BernoulliDistribution_(m[s], n[s]) (rne);
-                pSampleStatus[i] = b;
-                m[s] -= b;
-                --n[s];
+                size_t z = pStrata[i];
+                bool s = BernoulliDistribution_(m[z], n[z]) (rne);
+                pSampleStatus[i] = s;
+                m[z] -= s;
+                --n[z];
             }
             ASSERT(m[0] == 0 && m[1] == 0);
         }
@@ -380,11 +415,9 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const Tre
 
         if (options.usedSampleRatio() == 1.0) {
             // select all samples with weight >= min weight
-            usedSampleCount = 0;
             for (size_t i = 0; i != sampleCount_; ++i) {
-                bool b = pWeights[i] >= minSampleWeight;
-                pSampleStatus[i] = b;
-                usedSampleCount += b;
+                bool s = pWeights[i] >= minSampleWeight;
+                pSampleStatus[i] = s;
             }
         }
 
@@ -404,14 +437,14 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const Tre
             size_t n = size(t.sampleBuffer);
 
             // m = numer of used samples
-            size_t m = usedSampleCount = static_cast<size_t>(std::round(options.usedSampleRatio() * n));
+            size_t m = static_cast<size_t>(std::round(options.usedSampleRatio() * n));
 
             // randomly select m of n samples with weight >= min weight
-            std::fill(pSampleStatus, pSampleStatus + sampleCount_, static_cast<SampleIndex>(0));
+            std::fill(pSampleStatus, pSampleStatus + sampleCount_, static_cast<SampleStatus>(0));
             for (SampleIndex i : t.sampleBuffer) {
-                bool b = BernoulliDistribution_(m, n) (rne);
-                pSampleStatus[i] = b;
-                m -= b;
+                bool s = BernoulliDistribution_(m, n) (rne);
+                pSampleStatus[i] = s;
+                m -= s;
                 --n;
             }
             ASSERT(m == 0);
@@ -421,7 +454,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const Tre
             const size_t* pStrata = std::data(strata_);
 
             // store all samples with weight >= min weight in sample buffer
-            // n[s] = number of samples in stratum s with weight >= min weight
+            // n[z] = number of samples in stratum z with weight >= min weight
             array<size_t, 2> n = { 0, 0 };
             t.sampleBuffer.resize(sampleCount_);
             SampleIndex* p = data(t.sampleBuffer);
@@ -429,67 +462,87 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd weights, const Tre
                 *p = static_cast<SampleIndex>(i);
                 bool b = pWeights[i] >= minSampleWeight;
                 p += b;
-                size_t s = pStrata[i];
-                n[s] += b;
+                size_t z = pStrata[i];
+                n[z] += b;
             }
             t.sampleBuffer.resize(p - data(t.sampleBuffer));
 
-            // m[s] = number of used samples in stratum s
+            // m[z] = number of used samples in stratum z
             array<size_t, 2> m{
                 static_cast<size_t>(std::round(options.usedSampleRatio() * n[0])),
                 static_cast<size_t>(std::round(options.usedSampleRatio() * n[1]))
             };
-            usedSampleCount = m[0] + m[1];
 
-            // randomly select m[s] of n[s] samples with weight >= min weight from each stratum s = 0, 1
-            std::fill(pSampleStatus, pSampleStatus + sampleCount_, static_cast<SampleIndex>(0));
+            // randomly select m[z] of n[z] samples with weight >= min weight from each stratum
+            std::fill(pSampleStatus, pSampleStatus + sampleCount_, static_cast<SampleStatus>(0));
             for (SampleIndex i : t.sampleBuffer) {
-                size_t s = pStrata[i];
-                bool b = BernoulliDistribution_(m[s], n[s]) (rne);
-                pSampleStatus[i] = b;
-                m[s] -= b;
-                --n[s];
+                size_t z = pStrata[i];
+                bool s = BernoulliDistribution_(m[z], n[z]) (rne);
+                pSampleStatus[i] = s;
+                m[z] -= s;
+                --n[z];
             }
             ASSERT(m[0] == 0 && m[1] == 0);
         }
     }
-
-    return usedSampleCount;
 }
 
-
-// The next function creates the root of the tree.
-// It also calculates sampleCount, sumW and sumWY for the root.
+// The next function updates the status of each sample based on layer d to the status based on layer d + 1.
+// It also recalculates nodeCount, sumW, sumWY any y with better precision for each node in layer d + 1.
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initRoot_(
-    CRefXd outData, CRefXd weights, size_t usedSampleCount) const
+void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const
 {
+#define PRECISE_SUMS 1
+
     ThreadLocalData_& t = threadLocalData_;
 
-    const SampleIndex* pSampleStatus = data(t.sampleStatus);
-    const double* pOutData = std::data(outData);
-    const double* pWeights = std::data(weights);
+    const TreeNodeExt* pParentNodes = data(t.tree[d]);
+    vector<TreeNodeExt>& childNodes = t.tree[d + 1];
+    TreeNodeExt* pChildNodes = data(childNodes);
+    SampleStatus* pSampleStatus = data(t.sampleStatus);
 
-    double sumW = 0.0;
-    double sumWY = 0.0;
-    for (size_t i = 0; i != sampleCount_; ++i) {
-        double s = static_cast<double>(pSampleStatus[i]);       // 0 or 1
-        double w = pWeights[i];
-        double y = pOutData[i];
-        sumW += s * w;
-        sumWY += s * w * y;
+#if PRECISE_SUMS
+    for (TreeNodeExt& childNode : childNodes) {
+        childNode.sampleCount = 0;
+        childNode.sumW = 0.0;
+        childNode.sumWY = 0.0;
     }
 
-    t.tree.resize(std::max<size_t>(1, size(t.tree)));
-    t.tree.front().resize(1);
+    const double* pOutData = std::data(outData);
+    const double* pWeights = std::data(weights);
+#endif
 
-    TreeNodeExt& root = t.tree.front().front();
-    root.isLeaf = true;
-    root.sampleCount = usedSampleCount;
-    root.sumW = sumW;
-    root.sumWY = sumWY;
-    root.y = (sumW == 0.0) ? 0.0f : static_cast<float>(sumWY / sumW);
+    for (size_t i = 0; i != sampleCount_; ++i) {
+
+        SampleStatus s = pSampleStatus[i];
+        if (s == 0) continue;
+
+        const TreeNodeExt* pParentNode = &pParentNodes[s - 1];
+        if (pParentNode->isLeaf) {
+            pSampleStatus[i] = 0;
+            continue;
+        }
+
+        TreeNodeExt* pChildNode = (inData_(i, pParentNode->j) < pParentNode->x)
+            ? static_cast<TreeNodeExt*>(pParentNode->leftChild)
+            : static_cast<TreeNodeExt*>(pParentNode->rightChild);
+        s = static_cast<SampleStatus>((pChildNode - pChildNodes) + 1);
+        pSampleStatus[i] = s;
+
+#if PRECISE_SUMS
+        double w = pWeights[i];
+        double y = pOutData[i];
+        ++pChildNode->sampleCount;
+        pChildNode->sumW += w;
+        pChildNode->sumWY += w * y;
+#endif
+    }
+
+#if PRECISE_SUMS
+    for (TreeNodeExt& childNode : childNodes)
+        childNode.y = (childNode.sumW == 0) ? 0.0f : static_cast<float>(childNode.sumWY / childNode.sumW);
+#endif
 }
 
 //......................................................................................................................
@@ -500,7 +553,7 @@ void TreeTrainerImpl<SampleIndex>::initRoot_(
 // 
 // This buffer is then used as input to updateNodeTrainers_().
 //
-// The function initOrderedSamplesFast_() does this for layer 0 which consists of the root only.
+// The function initOrderedSamplesLayer0_() does this for layer 0 which consists of the root only.
 // The function uses sortedSamples_[j] which contains all samples sorted according to variable j.
 //
 // The function initOrderedSamples_() does the same thing for the general case with any number of nodes.
@@ -513,7 +566,7 @@ void TreeTrainerImpl<SampleIndex>::initRoot_(
 
 
 template<typename SampleIndex>
-const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesFast_(
+const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesLayer0_(
     size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& options, size_t d) const
 {
     // called from the inner threads so be careful to distinguish between t and t.parent
@@ -531,13 +584,13 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesFast_(
     const SampleIndex* pSortedSamples = data(sortedSamples_[j]);
     SampleIndex* pOrderedSamples = data(t.sampleBuffer);
     SampleIndex* pOrderedSamplesEnd = data(t.sampleBuffer) + usedSampleCount;
-    const SampleIndex* pSampleStatus = data(t.parent->sampleStatus);
+    const SampleStatus* pSampleStatus = data(t.parent->sampleStatus);
     // slightly tricky branch-free code
     while (pOrderedSamples != pOrderedSamplesEnd) {
         SampleIndex i = *pSortedSamples;
         ++pSortedSamples;
         *pOrderedSamples = i;
-        size_t s = pSampleStatus[i];    // 0 or 1
+        SampleStatus s = pSampleStatus[i];    // 0 or 1
         pOrderedSamples += s;
     }
 
@@ -561,7 +614,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
     const size_t nodeCount = size(nodes);
     const size_t unusedSampleCount = sampleCount_ - usedSampleCount;
     const size_t j = t.parent->usedVariables[usedVariableIndex];
-    const SampleIndex* pSampleStatus = data(t.parent->sampleStatus);
+    const SampleStatus* pSampleStatus = data(t.parent->sampleStatus);
 
     t.sampleBuffer.resize(sampleCount_);
     SampleIndex* pOrderedSamples = data(t.sampleBuffer);
@@ -579,7 +632,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
     // where we will store samples with status = k sorted according to variable j
 
     for (SampleIndex i : sortedSamples_[j]) {
-        SampleIndex s = pSampleStatus[i];
+        SampleStatus s = pSampleStatus[i];
         *(ppOrderedSamples[s]++) = i;
     }
 
@@ -599,7 +652,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
     const vector<TreeNodeExt>& prevNodes = t.parent->tree[d - 1];
     const vector<TreeNodeExt>& nodes = t.parent->tree[d];
     const size_t nodeCount = size(nodes);
-    const SampleIndex* pSampleStatus = data(t.parent->sampleStatus);
+    const SampleStatus* pSampleStatus = data(t.parent->sampleStatus);
     const SampleIndex* pPrevOrderedSamples = data(t.parent->orderedSamplesByVariable[usedVariableIndex]);
 
     t.sampleBuffer.resize(usedSampleCount);
@@ -627,7 +680,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
             // process these samples, they are used in layer d
             for (; pPrevOrderedSamples != pBlockEnd; ++pPrevOrderedSamples) {
                 SampleIndex i = *pPrevOrderedSamples;
-                SampleIndex s = pSampleStatus[i];
+                SampleStatus s = pSampleStatus[i];
                 *(ppOrderedSamples[s]++) = i;
             }
     }
@@ -659,14 +712,12 @@ void TreeTrainerImpl<SampleIndex>::initNodeTrainers_(const TreeOptions& options,
     }
 }
 
-
 // The next function determines the best split of each node in layer d with respect to variable j.
 
 template<typename SampleIndex>
 void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
     CRefXd outData,
     CRefXd weights,
-    const TreeOptions& options,
     const SampleIndex* orderedSamples,
     size_t usedVariableIndex,
     size_t d
@@ -680,19 +731,17 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
     const size_t parentNodeCount = size(parentNodes);
 
     const size_t threadIndex = omp_get_thread_num();
-
+    const size_t k0 = threadIndex * parentNodeCount;
+    const SampleIndex* p0 = orderedSamples;
     size_t j = t.parent->usedVariables[usedVariableIndex];
 
-    const SampleIndex* p0 = orderedSamples;
-    const size_t k0 = threadIndex * parentNodeCount;
     for (size_t k = 0; k != parentNodeCount; ++k) {
         const SampleIndex * p1 = p0 + parentNodes[k].sampleCount;
         t.parent->treeNodeTrainers[k0 + k].update(
-            inData_, outData, weights, options, p0, p1, j);
+            inData_, outData, weights, p0, p1, j);
         p0 = p1;
     }
 }
-
 
 // The next function combines the best split found by each thread to a single best split for each node.
 
@@ -710,7 +759,6 @@ void TreeTrainerImpl<SampleIndex>::joinNodeTrainers_(size_t d, size_t threadCoun
             t.treeNodeTrainers[k].join(t.treeNodeTrainers[k0 + k]);
     }
 }
-
 
 // The next function creates layer d + 1 in the tree based on the best split for each node in layer d
 // It also calculates y for each node in layer d + 1.
@@ -743,65 +791,6 @@ size_t TreeTrainerImpl<SampleIndex>::finalizeNodeTrainers_(size_t d) const
 }
 
 //......................................................................................................................
-
-// The next function updates the status of each sample based on layer d to the status based on layer d + 1.
-// It also calculates nodeCount, sumW and sumWY and recalculates (with better precision) y for each node in layer d + 1.
-
-#define PRECISE_SUMS 1
-
-template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const
-{
-    ThreadLocalData_& t = threadLocalData_;
-
-    const TreeNodeExt* pParentNodes = data(t.tree[d]);
-    vector<TreeNodeExt>& childNodes = t.tree[d + 1];
-    TreeNodeExt* pChildNodes = data(childNodes);
-    SampleIndex* pSampleStatus = data(t.sampleStatus);
-
-#if PRECISE_SUMS
-    for (TreeNodeExt& childNode : childNodes) {
-        childNode.sampleCount = 0;
-        childNode.sumW = 0.0;
-        childNode.sumWY = 0.0;
-    }
-
-    const double* pOutData = std::data(outData);
-    const double* pWeights = std::data(weights);
-#endif
-
-    for (size_t i = 0; i != sampleCount_; ++i) {
-
-        SampleIndex s = pSampleStatus[i];
-        if (s == 0) continue;
-
-        const TreeNodeExt* pParentNode = &pParentNodes[s - 1];
-        if (pParentNode->isLeaf) {
-            pSampleStatus[i] = 0;
-            continue;
-        }
-
-        TreeNodeExt* pChildNode = (inData_(i, pParentNode->j) < pParentNode->x)
-            ? static_cast<TreeNodeExt*>(pParentNode->leftChild)
-            : static_cast<TreeNodeExt*>(pParentNode->rightChild);
-        s = static_cast<SampleIndex>((pChildNode - pChildNodes) + 1);
-        pSampleStatus[i] = s;
-
-#if PRECISE_SUMS
-        double w = pWeights[i];
-        double y = pOutData[i];
-        ++pChildNode->sampleCount;
-        pChildNode->sumW += w;
-        pChildNode->sumWY += w * y;
-#endif
-    }
-
-#if PRECISE_SUMS
-    for (TreeNodeExt& childNode : childNodes)
-        childNode.y = (childNode.sumW == 0) ? 0.0f : static_cast<float>(childNode.sumWY / childNode.sumW);
-#endif
-}
-
 
 template<typename SampleIndex>
 unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::createPredictor_() const

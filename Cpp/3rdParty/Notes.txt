@@ -1,0 +1,18 @@
+Fast random number engines by Arvid Gerstmann
+
+Source from https://gist.github.com/Leandros/6dc334c22db135b033b57e9ee0311553
+See also https://arvid.io/2018/07/02/better-cxx-prng/
+
+Bug fix, added inline to the free functions operator==() and operator!=().
+Otherwise the code will not compile if random.h is included in more than one source file.
+
+-----------------------------------------------------
+
+pdqsort by Orson Peters
+
+Source from https://github.com/orlp/pdqsort
+
+The pdqsort code uses the predefined macro __cplusplus to detect C++11.
+This macro is not correctly defined by Visual Studio,
+unless you compile with the switch /Zc:__cplusplus.
+See for instance https://devblogs.microsoft.com/cppblog/msvc-now-correctly-reports-__cplusplus/

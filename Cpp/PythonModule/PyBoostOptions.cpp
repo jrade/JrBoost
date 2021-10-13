@@ -18,7 +18,7 @@ using tcBO = py::detail::type_caster<BoostOptions>;
 // This conversion may fail
 // Take care to provide clear error messages
 // By throwing exceptions instead of returning false, the user gets better error messages
-// (This also means that PyBind11 will not be able to handle muliple overloads.)
+// (This also means that pybind11 will not be able to handle muliple overloads.)
 
 bool tcBO::load(py::handle h, bool)
 {

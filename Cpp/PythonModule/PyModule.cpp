@@ -130,11 +130,11 @@ PYBIND11_MODULE(_jrboostext, mod)
     mod.def("getThreadCount", &omp_get_max_threads);
     mod.def("setThreadCount", &omp_set_num_threads);
 
-    mod.def("getParallelTree", []() { return ::theParallelTree; });
-    mod.def("setParallelTree", [](bool b) { ::theParallelTree = b; });
+    mod.def("getParallelTree", []() { return ::globParallelTree; });
+    mod.def("setParallelTree", [](bool b) { ::globParallelTree = b; });
 
-    mod.def("getOuterThreadCount", []() { return ::theOuterThreadCount; });
-    mod.def("setOuterThreadCount", [](size_t n) { ::theOuterThreadCount = n; });
+    mod.def("getOuterThreadCount", []() { return ::globOuterThreadCount; });
+    mod.def("setOuterThreadCount", [](size_t n) { ::globOuterThreadCount = n; });
 
     mod.attr("eigenVersion") = py::str(theEigenVersion);
     mod.attr("pybind11Version") = py::str(thePybind11Version);

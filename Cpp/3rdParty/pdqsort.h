@@ -1,12 +1,4 @@
 /*
-    Branch-free implementation of quick sort by Orson Peters
-    See https://github.com/orlp/pdqsort
-
-    Changes by Johan Råde:
-        Added workaround for broken __cplusplus on Visual Studio
-*/
-
-/*
     pdqsort.h - Pattern-defeating quicksort.
 
     Copyright (c) 2021 Orson Peters
@@ -37,12 +29,7 @@
 #include <utility>
 #include <iterator>
 
-#ifndef PDQSORT_HAS_CPP11
-    #define PDQSORT_HAS_CPP11 (__cplusplus >= 201103L || _MSVC_LANG >= 201103L)
-    // Visual Studio has broken __cplusplus
-#endif
-
-#if PDQSORT_HAS_CPP11
+#if __cplusplus >= 201103L
     #include <cstdint>
     #include <type_traits>
     #define PDQSORT_PREFER_MOVE(x) std::move(x)
@@ -71,7 +58,7 @@ namespace pdqsort_detail {
 
     };
 
-#if PDQSORT_HAS_CPP11
+#if __cplusplus >= 201103L
     template<class T> struct is_default_compare : std::false_type { };
     template<class T> struct is_default_compare<std::less<T>> : std::true_type { };
     template<class T> struct is_default_compare<std::greater<T>> : std::true_type { };
@@ -175,7 +162,7 @@ namespace pdqsort_detail {
 
     template<class T>
     inline T* align_cacheline(T* p) {
-#if defined(UINTPTR_MAX) && PDQSORT_HAS_CPP11
+#if defined(UINTPTR_MAX) && __cplusplus >= 201103L
         std::uintptr_t ip = reinterpret_cast<std::uintptr_t>(p);
 #else
         std::size_t ip = reinterpret_cast<std::size_t>(p);
@@ -258,7 +245,7 @@ namespace pdqsort_detail {
 
                 // Fill the offset blocks.
                 if (left_split >= block_size) {
-                    for (unsigned char i = 0; i < block_size;) {
+                    for (size_t i = 0; i < block_size;) {
                         offsets_l[num_l] = i++; num_l += !comp(*first, pivot); ++first;
                         offsets_l[num_l] = i++; num_l += !comp(*first, pivot); ++first;
                         offsets_l[num_l] = i++; num_l += !comp(*first, pivot); ++first;
@@ -269,13 +256,13 @@ namespace pdqsort_detail {
                         offsets_l[num_l] = i++; num_l += !comp(*first, pivot); ++first;
                     }
                 } else {
-                    for (unsigned char i = 0; i < left_split;) {
+                    for (size_t i = 0; i < left_split;) {
                         offsets_l[num_l] = i++; num_l += !comp(*first, pivot); ++first;
                     }
                 }
 
                 if (right_split >= block_size) {
-                    for (unsigned char i = 0; i < block_size;) {
+                    for (size_t i = 0; i < block_size;) {
                         offsets_r[num_r] = ++i; num_r += comp(*--last, pivot);
                         offsets_r[num_r] = ++i; num_r += comp(*--last, pivot);
                         offsets_r[num_r] = ++i; num_r += comp(*--last, pivot);
@@ -286,7 +273,7 @@ namespace pdqsort_detail {
                         offsets_r[num_r] = ++i; num_r += comp(*--last, pivot);
                     }
                 } else {
-                    for (unsigned char i = 0; i < right_split;) {
+                    for (size_t i = 0; i < right_split;) {
                         offsets_r[num_r] = ++i; num_r += comp(*--last, pivot);
                     }
                 }
@@ -509,7 +496,7 @@ template<class Iter, class Compare>
 inline void pdqsort(Iter begin, Iter end, Compare comp) {
     if (begin == end) return;
 
-#if PDQSORT_HAS_CPP11
+#if __cplusplus >= 201103L
     pdqsort_detail::pdqsort_loop<Iter, Compare,
         pdqsort_detail::is_default_compare<typename std::decay<Compare>::type>::value &&
         std::is_arithmetic<typename std::iterator_traits<Iter>::value_type>::value>(
