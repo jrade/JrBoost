@@ -31,7 +31,6 @@
 #include <vector>
 
 using std::array;
-using std::cout;
 using std::function;
 using std::ifstream;
 using std::istream;
@@ -54,6 +53,11 @@ using std::vector;
 #include <omp.h>
 
 
+// Intel intrinsics
+
+#include <immintrin.h>
+
+
 // Eigen
 
 #define EIGEN_DONT_PARALLELIZE
@@ -62,7 +66,7 @@ using std::vector;
 #pragma warning( push )
 #pragma warning( disable: 4127 )    // conditional expression is constant
 #pragma warning( disable: 4805 )    // '|': unsafe mix of type 'const bool' and type 'int' in operation                                 
-#endif                              //  // (disabling 4805 only needed when compiling with AVX512)
+#endif                              // disabling 4805 only needed when compiling with AVX512
 
 #include <Eigen/Dense>
 

@@ -8,18 +8,19 @@
 #include "BasePredictor.h"
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
+#include "FastExp.h"
 #include "TreeTrainer.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> weights) :
-    inData_{ (PROFILE::PUSH(PROFILE::BOOST_INIT), std::move(inData)) },
+    inData_{ std::move(inData) },
     sampleCount_{ static_cast<size_t>(inData_.rows()) },
     variableCount_{ static_cast<size_t>(inData_.cols()) },
     rawOutData_{ std::move(outData) },
     outData_{ 2.0 * rawOutData_.cast<double>() - 1.0 },
     weights_{ std::move(weights) },
     lor0_{ calculateLor0_() },
-    baseTrainer_{ std::make_shared<TreeTrainer>(inData_, rawOutData_) }
+    baseTrainer_{ std::make_unique<TreeTrainer>(inData_, rawOutData_) }
 {
     if (sampleCount_ == 0)
         throw std::invalid_argument("Train indata has 0 samples.");
@@ -36,14 +37,15 @@ BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> 
     if (weights_) {
         if (static_cast<size_t>(weights_->rows()) != sampleCount_)
             throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-        if (!(weights_->abs() < numeric_limits<float>::infinity()).all())
+        if (!(weights_->abs() < numeric_limits<double>::infinity()).all())
             throw std::invalid_argument("Train weights have values that are infinity or NaN.");
         if ((*weights_ <= 0.0).any())
             throw std::invalid_argument("Train weights have non-positive values.");
     }
-
-    PROFILE::POP();
 }
+
+BoostTrainer::~BoostTrainer() = default;
+
 
 double BoostTrainer::calculateLor0_() const
 {
@@ -64,6 +66,7 @@ double BoostTrainer::calculateLor0_() const
 shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
+    const size_t ITEM_COUNT = sampleCount_ * opt.iterationCount();
 
     shared_ptr<BoostPredictor> pred;
     double gamma = opt.gamma();
@@ -74,7 +77,6 @@ shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt, size_t t
     else
         pred = trainRegularizedLogit_(opt, threadCount);
     
-    const size_t ITEM_COUNT = sampleCount_ *  opt.iterationCount();
     PROFILE::POP(ITEM_COUNT);
 
     return pred;
@@ -85,40 +87,139 @@ shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt, size_t t
 shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
-
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
 
     ArrayXd F = ArrayXd::Constant(sampleCount, lor0_ / 2.0);
     ArrayXd adjWeights(sampleCount);
 
+    const double* pWeights = weights_ ? std::data(*weights_) : nullptr;
+    const double* pF = &F(0);
+    const double* pOutData = &outData_(0);
+    double* pAdjWeights = &adjWeights(0);
+
     vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
     for (size_t i = 0; i != iterationCount; ++i) {
-        /*
-        // time per element with different enhanced instruction sets
-        // none:    ?
-        // SSE2:  27cc
-        // AVX:   15cc
-        // AVX2:  11cc
-        adjWeights = (-F * outData_).exp();
-        */
 
-        const double* pF = &F(0);
-        const double* pOutData = &outData_(0);
-        double* pAdjWeights = &adjWeights(0);
-        // time per element with different enhanced instruction sets
-        // none: 22cc
-        // SSE2: 11cc
-        // AVX:  11cc
-        // AVX2:  6cc
-        for (size_t j = 0; j != sampleCount; ++j)
-            pAdjWeights[j] = std::exp(-pF[j] * pOutData[j]);
+        double m = 0.0;
 
-        if (weights_)
-            adjWeights *= (*weights_);
+        if (!opt.fastExp()) {
 
-        if (!(adjWeights < numeric_limits<float>::infinity()).all())
+            if (pWeights == nullptr) {
+                // this loop should be auto-vectorized
+                for (size_t j = 0; j != sampleCount; ++j) {
+                    const double x = std::exp(-pF[j] * pOutData[j]);
+                    pAdjWeights[j] = x;
+                    m = (x > m) ? x : m;
+                }
+            }
+            else {
+                // this loop should be auto-vectorized
+                for (size_t j = 0; j != sampleCount; ++j) {
+                    const double x = pWeights[j] * std::exp(-pF[j] * pOutData[j]);
+                    pAdjWeights[j] = x;
+                    m = (x > m) ? x : m;
+                }
+            }
+        }
+
+        else {
+
+            size_t j = 0;
+
+ #if defined(__AVX512F__) && defined(__AVX512DQ__)
+
+            // WARNING: NOT TESTED!
+
+            __m512d m8 = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+
+            constexpr __m512d negZero8 = { -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0 };
+            if (pWeights == nullptr) {
+                while (j + 8 <= sampleCount) {
+                    const __m512d F8 = _mm512_load_pd(pF + j);
+                    const __m512d y8 = _mm512_load_pd(pOutData + j);
+                    __m512d x8 = _mm512_mul_pd(F8, y8);
+                    x8 = _mm512_xor_pd(x8, negZero8);       // x8 = -x8
+                    x8 = fastExp(x8);
+                    _mm512_store_pd(pAdjWeights + j, x8);
+                    m8 = _mm512_max_pd(m8, x8);
+                    j += 8;
+                }
+            }
+            else {
+                while (j + 8 <= sampleCount) {
+                    const __m512d F8 = _mm512_load_pd(pF + j);
+                    const __m512d y8 = _mm512_load_pd(pOutData + j);
+                    const __m512d w8 = _mm512_loadu_pd(pWeights + j);     // allocated by client, alignment unknown
+                    __m512d x8 = _mm512_mul_pd(F8, y8);
+                    x8 = _mm512_xor_pd(x8, negZero8);       // x8 = -x8
+                    x8 = fastExp(x8);
+                    x8 = _mm512_mul_pd(x8, w8);
+                    _mm512_store_pd(pAdjWeights + j, x8);
+                    m8 = _mm512_max_pd(m8, x8);
+                    j += 8;
+                }
+            }
+
+            m = *std::max_element(std::begin(m8.m512d_f64), std::end(m8.m512d_f64));
+
+#elif defined(__AVX2__)
+
+            __m256d m4 = { 0.0, 0.0, 0.0, 0.0 };
+
+            constexpr __m256d negZero4 = { -0.0, -0.0, -0.0, -0.0 };
+            if (pWeights == nullptr) {
+                while (j + 4 <= sampleCount) {
+                    const  __m256d F4 = _mm256_load_pd(pF + j);
+                    const __m256d y4 = _mm256_load_pd(pOutData + j);
+                    __m256d x4 = _mm256_mul_pd(F4, y4);
+                    x4 = _mm256_xor_pd(x4, negZero4);       // x4 = -x4
+                    x4 = fastExp(x4);
+                    _mm256_store_pd(pAdjWeights + j, x4);
+                    m4 = _mm256_max_pd(m4, x4);
+                    j += 4;
+                }
+            }
+            else {
+                while (j + 4 <= sampleCount) {
+                    const __m256d F4 = _mm256_load_pd(pF + j);
+                    const __m256d y4 = _mm256_load_pd(pOutData + j);
+                    const __m256d w4 = _mm256_loadu_pd(pWeights + j);     // allocated by client, alignment unknown
+                    __m256d x4 = _mm256_mul_pd(F4, y4);
+                    x4 = _mm256_xor_pd(x4, negZero4);       // x4 = -x4
+                    x4 = fastExp(x4);
+                    x4 = _mm256_mul_pd(x4, w4);
+                    _mm256_store_pd(pAdjWeights + j, x4);
+                    m4 = _mm256_max_pd(m4, x4);
+                    j += 4;
+                }
+            }
+
+            m = *std::max_element(std::begin(m4.m256d_f64), std::end(m4.m256d_f64));
+#endif
+            if (pWeights == nullptr) {
+                // this loop should not be auto-vectorized
+                while (j < sampleCount) {
+                    const double x = fastExp(-pF[j] * pOutData[j]);
+                    pAdjWeights[j] = x;
+                    m = (x > m) ? x : m;
+                    ++j;
+                }
+            }
+            else {
+                // this loop should not  be auto-vectorized
+                while (j < sampleCount) {
+                    const double x = pWeights[j] * fastExp(-pF[j] * pOutData[j]);
+                    pAdjWeights[j] = x;
+                    m = (x > m) ? x : m;
+                    ++j;
+                }
+            }
+
+        }  // end if (!opt.fastExp())
+
+        if (m == numeric_limits<double>::infinity())
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt, threadCount);
@@ -164,7 +265,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, si
         if (weights_)
             adjWeights *= (*weights_);
 
-        if (!(adjWeights < numeric_limits<float>::infinity()).all())
+        if (adjWeights.maxCoeff() == numeric_limits<double>::infinity())
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
@@ -211,7 +312,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
         if (weights_)
             adjWeights *= (*weights_);
 
-        if (!(adjWeights < numeric_limits<float>::infinity()).all())
+        if (adjWeights.maxCoeff() == numeric_limits<double>::infinity())
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);

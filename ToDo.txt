@@ -1,21 +1,21 @@
-review TreeTrainerImpl one more time
-	continue with initSampleStatus_
 
-commit
+TreeTrainerImpl:
 
-improved profiling log
-	group into unthreaded, partially threaded, fully threaded and thread synch
+	review TreeTrainerImpl one more time
+		continue with initSampleStatus_()
 
-t-test and F-test:
-	is the following analysis correct?
-		if the data matrix fits in the cache we can parallelize and vectorize as much as possible
-		but if the data matrix does not fit in the cache, then things are different
-			each element in the data matrix as accessed twice
-				we need locality so that the the element still is in the cache the second time it is accessed
-	the following should handle all cases
-		divde the variables into large blocks, one for each thread
-			then divide each block into strips, each one cashe line wide
-	faster with single precision for intermediate values? how much would precision be hurt?
+	TreeNodeTrainer fork and join
+		move join into finalize node builders (just as fork will be in initialize node builders)
+
+	narrower SampleStatus type?
+		templatized TreeTrainerImpl::train() function?
+		move static threadlocal data to base class
+
+	narrower sample strata type
+
+	outdata and weights interleaved in a single array
+
+	test fast bernoulli with r % n < k condition; profile
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -57,25 +57,24 @@ optimizations (accuracy):
 	boost stop criteria
 	pruning
 	multi-label stratification when generating folds and selecting active samples
+	truncated logot boost?
 	
 optimizations (speed):
+	improved profiling log
+		group into unthreaded, partially threaded, fully threaded and thread synch
+	t-test and F-test:
+		divide the variables into large blocks, one for each thread
+		then divide each block into __m256 columns
 	make updateSampleStatus() code branch-free by introducing dummy nodes that conain unused samples
 		maybe maintain sorted lists of active samples to speed up this further
-		improved cost function when ordering options objects in parallel train
-		higgs_quick.py is a suitable test case
-	data:
-		narrower type for strata
-		outdata and weights interleaved in a single array
-		outdata and weights as float?
-	Schraudolph:
-		_mm256_cvtpd_epi32   double to int32
-		is there any int32 to int64 conversion?
-		I may have to write my own code with intrinsics instead of relying on the autovectorizer
+	improved cost function when ordering options objects in parallel train
+	outdata and weights as float??
 	parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
 	maybe some cached ordered samples mechanism to use with usedVariableByLayer = true?
-    narrower TreeTrainerImpl::SampleStatus??
-	look into fast/precise sums
-		does it make any difference for speed and accuracy?
+	look into fast/precise sums; does it make any difference for speed and accuracy?
+	submatrix functions perform poorly with too many threads? limit number of threads to say 8??
+	can GCC/clang autovectorize the scalar fast exp loops in BoostTrainer::trainAda_() ?
+		if so, we do not need the SIMD intrinsics code with GCC/clang
 	PGO
 	test with the Intel C++ compiler (how does the generated code perform with AMD processors?)
 
@@ -84,10 +83,11 @@ minor things:
 	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
 	save and load:
 		check that dataset does not have more than 2G variables
-		get rid of uint32 nonsense
+		get rid of uint32 nonsense?
 	compare performance (speed and accuracy) with xgboost
 	clang code formatting
 	how fast can a column major implementation of the t-statistic be?
 	look more into Eigen arrays and std::data
 	seems pybind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
 		that would be useful for passing sample lists to t-test and F-test
+	runtime checks for AVX2 and AVX512

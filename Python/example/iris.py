@@ -24,14 +24,14 @@ trainParam = {
         'iterationCount': [300],
         'eta':  [0.001, 0.0015, 0.002, 0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        'usedVariableRatio': [0.25, 0.5, 0.75, 1.0],
-        'minNodeSize': [1],
+        'usedVariableRatio': [0.5],
+        'minNodeSize': [1, 2, 3],
         'maxDepth': [1, 2, 3, 4],
-        'minRelSampleWeight': [0.001],
+        'minRelSampleWeight': [0.01],
 
         #'saveMemory': [True],
         #'isStratified': [False],
-        #'selectVariablesByLevel': [True],
+        'selectVariablesByLevel': [True],
     },
 
     'minimizeParam' : {
@@ -73,10 +73,12 @@ def validate():
     confusionFrame = pd.DataFrame(index = labels, columns = labels, data = 0)
 
     inData = inDataFrame.to_numpy(dtype = np.float32)
-    for i in range(100):  
-    #for i in itertools.count():
+    #for i in range(100):  
+    for i in itertools.count():
+
 
         print(f'-------------------- {i} --------------------\n')
+
         t = -time.time()
         jrboost.PROFILE.START() 
         predOutDataFrame = pd.DataFrame(index = samples, columns = labels, dtype = np.float64)
@@ -101,14 +103,15 @@ def validate():
             print()
 
         print()
+        t += time.time()
+        print(jrboost.PROFILE.STOP())
+        print(f'{t:.2f}s')
+        print()
+
         predOutDataSeries = predOutDataFrame.idxmax(axis = 1)
         for sample in samples:
             confusionFrame.loc[outDataSeries[sample], predOutDataSeries[sample]] += 1
 
-        t += time.time()
-        print(jrboost.PROFILE.STOP()); print()
-        print(f'{t:.2f}s')
-        print()
         print(confusionFrame / (i + 1))
         print()
 
@@ -171,7 +174,8 @@ def formatBoostParam(boostParam):
     md = boostParam.get('maxDepth', 1)
     usr = boostParam['usedSampleRatio']
     uvr = boostParam['usedVariableRatio']
-    return f'eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.2f}'
+    mns = boostParam['minNodeSize']
+    return f'eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.2f}  mns = {mns}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 

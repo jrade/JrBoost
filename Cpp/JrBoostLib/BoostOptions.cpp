@@ -25,6 +25,11 @@ void BoostOptions::setEta(double eta)
     eta_ = eta;
 }
 
+void BoostOptions::setFastExp(bool b)
+{
+    fastExp_ = b;
+}
+
 double BoostOptions::cost() const
 {
     return TreeOptions::cost() * iterationCount_ / eta_;
