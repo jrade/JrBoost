@@ -8,14 +8,14 @@
 class AssertionError : public std::logic_error
 {
 public:
-    AssertionError(string condition, string file, int line) : 
+    AssertionError(const string& condition, const string& file, int line) : 
         logic_error(message_(condition, file, line))
     {}
 
 private:
-    static string message_(string condition, string file, int line)
+    static string message_(const string& condition, const string& file, int line)
     {
-        std::stringstream ss;
+        stringstream ss;
         ss << "\nCondition: " << condition << "\nFile: " << file << "\nLine: " << line;
         return ss.str();
     }

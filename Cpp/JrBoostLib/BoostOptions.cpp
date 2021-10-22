@@ -8,7 +8,7 @@
 
 void BoostOptions::setGamma(double gamma)
 {
-    if (!(gamma >= 0.0 && gamma <= 1.0))
+    if (!(gamma >= 0.0 && gamma <= 1.0))        // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval [0.0, 1.0].");
     gamma_ = gamma;
 }
@@ -20,7 +20,7 @@ void BoostOptions::setIterationCount(size_t n)
 
 void BoostOptions::setEta(double eta)
 {
-    if (!(eta > 0.0))
+    if (!(eta > 0.0))       // carefully written to trap NaN
         throw std::invalid_argument("eta must be positive.");
     eta_ = eta;
 }

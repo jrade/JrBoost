@@ -12,29 +12,31 @@ class TreeTrainer;
 class BoostTrainer
 {
 public:
-    BoostTrainer(ArrayXXfc inData, ArrayXs outData, optional<ArrayXd> weights);
+    BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights);
     ~BoostTrainer();
 
     shared_ptr<BoostPredictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
 
  // deleted:
     BoostTrainer(const BoostTrainer&) = delete;
-    BoostTrainer& operator=(const  BoostTrainer&) = delete;
+    BoostTrainer& operator=(const BoostTrainer&) = delete;
 
 private:
-    double calculateLor0_() const;
+    static void validateData_(CRefXXfc inData, CRefXu8 outData, optional<CRefXd> weights);
+    double getGlobalLogOddsRatio_() const;
+
     shared_ptr<BoostPredictor> trainAda_(const BoostOptions& opt, size_t threadCount) const;
     shared_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt, size_t threadCount) const;
     shared_ptr<BoostPredictor> trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const;
     static void overflow_ [[noreturn]] (const BoostOptions& opt);
 
 private:
-    const ArrayXXfc inData_;
     const size_t sampleCount_;
     const size_t variableCount_;
-    const ArrayXs rawOutData_;
+    const ArrayXXfc inData_;
     const ArrayXd outData_;
     const optional<ArrayXd> weights_;
-    const double lor0_;
+    const ArrayXu8 strata_;
+    const double globaLogOddsRatio_;
     const unique_ptr<TreeTrainer> baseTrainer_;
 };

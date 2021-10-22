@@ -15,14 +15,14 @@ void TreeOptions::setMaxDepth(size_t d)
 
 void TreeOptions::setUsedSampleRatio(double r)
 {
-    if (!(r >= 0.0 && r <= 1.0))
+    if (!(r >= 0.0 && r <= 1.0))        // carefully written to trap NaN
         throw std::invalid_argument("usedSampleRatio must lie in the interval [0.0, 1.0].");
     usedSampleRatio_ = r;
 }
 
 void TreeOptions::setUsedVariableRatio(double r)
 {
-    if (!(r >= 0.0 && r <= 1.0))
+    if (!(r >= 0.0 && r <= 1.0))        // carefully written to trap NaN
         throw std::invalid_argument("usedVariableRatio must lie in the interval [0.0, 1.0].");
     usedVariableRatio_ = r;
 }
@@ -41,14 +41,14 @@ void TreeOptions::setTopVariableCount(size_t n)
 
 void TreeOptions::setMinAbsSampleWeight(double w)
 {
-    if (!(w >= 0.0))
+    if (!(w >= 0.0))        // carefully written to trap NaN
         throw std::invalid_argument("minAbsSampleWeight must be non-negative.");
     minAbsSampleWeight_ = w;
 }
 
 void TreeOptions::setMinRelSampleWeight(double w)
 {
-    if (!(w >= 0.0 && w <= 1.0))
+    if (!(w >= 0.0 && w <= 1.0))        // carefully written to trap NaN
         throw std::invalid_argument("minRelSampleWeight must lie in the interval [0.0, 1.0].");
     minRelSampleWeight_ = w;
 }
@@ -62,14 +62,14 @@ void TreeOptions::setMinNodeSize(size_t n)
 
 void TreeOptions::setMinNodeWeight(double w)
 {
-    if (!(w >= 0))
+    if (!(w >= 0))      // carefully written to trap NaN
         throw std::invalid_argument("minNodeWeight must be nonnegative.");
     minNodeWeight_ = w;
 }
 
 void TreeOptions::setMinGain(double g)
 {
-    if (!(g >= 0))
+    if (!(g >= 0))      // carefully written to trap NaN
         throw std::invalid_argument("minGain must be nonnegative.");
     minGain_ = g;
 }
@@ -81,7 +81,7 @@ void TreeOptions::setIsStratified(bool b)
 
 void TreeOptions::setPruneFactor(double p)
 {
-    if (!(p >= 0.0 && p <= 1.0))
+    if (!(p >= 0.0 && p <= 1.0))        // carefully written to trap NaN
         throw std::invalid_argument("pruneFactor must lie in the interval [0.0, 1.0].");
     pruneFactor_ = p;
 }
@@ -89,6 +89,11 @@ void TreeOptions::setPruneFactor(double p)
 void TreeOptions::setSaveMemory(bool b)
 {
     saveMemory_ = b;
+}
+
+void TreeOptions::setTest(size_t n)
+{
+    test_ = n;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -77,6 +77,8 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setPruneFactor(std::get<double>(value));
             else if (key == "saveMemory")
                 opt.setSaveMemory(std::get<bool>(value));
+            else if (key == "test")
+                opt.setTest(std::get<size_t>(value));
             else {
                 string msg = "The key '" + key + "' is not a valid boost parameters key.";
                 throw std::invalid_argument(msg);
@@ -126,6 +128,7 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["isStratified"] = opt.isStratified();
     pyOpt["pruneFactor"] = opt.pruneFactor();
     pyOpt["saveMemory"] = opt.saveMemory();
+    pyOpt["test"] = opt.test();
 
     return pyOpt;
 }

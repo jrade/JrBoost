@@ -2,7 +2,7 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import datetime, math, os, random, time
+import datetime, gc, math, os, random, time
 import numpy as np
 import pandas as pd
 import jrboost
@@ -12,26 +12,28 @@ PROFILE = jrboost.PROFILE
 #-----------------------------------------------------------------------------------------------------------------------
 
 param = {
-    'threadCount': os.cpu_count() - 2,
+    'threadCount': os.cpu_count() // 2,
     'profile': True,
-    'trainFraction': 1.0,
+    #'trainFraction': 0.1,
 }
 
 trainParam = {
 
     'minimizeAlgorithm': jrboost.minimizePopulation,
+    'foldCount': 5,
     #'lossFun': jrboost.negAucWeighted,
     'lossFun': jrboost.LogLossWeighted(0.001),
     #'lossFun': lambda a, b, c: -optimalCutoff(a, b, c)[1],
 
     'boostParamGrid': {
         #'minRelSampleWeight': [0.001],          #??????????????????????????+
-        'iterationCount': [1000],
+        #'iterationCount': [1000],
+        'iterationCount': [300],
         'eta':  [0.005, 0.007, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1],
         'usedSampleRatio': [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        'maxDepth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-        'minNodeSize': [1, 2, 3, 5, 7, 10, 15, 20, 30, 50, 100, 150, 200],
+        'maxDepth': [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        'minNodeSize': [100, 150, 200, 300, 500, 700, 1000],
         #'pruneFactor': [0.0, 0.1, 0.2, 0.5],
     },
 
@@ -45,9 +47,7 @@ trainParam = {
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def main(foo):
-
-    trainParam['lossFun'] = foo
+def main():
 
     logFilePath = f'../Log {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.txt'
     with open(logFilePath, 'w', 1) as logFile:
@@ -70,9 +70,11 @@ def main(foo):
         trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
         trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint64)
         trainWeights = trainWeightSeries.to_numpy(dtype = np.float64)
+
         testInData = testInDataFrame.to_numpy(dtype = np.float32)
         testOutData = testOutDataSeries.to_numpy(dtype = np.uint64)
         testWeights = testWeightSeries.to_numpy(dtype = np.float64)
+
         validationInData = validationInDataFrame.to_numpy(dtype = np.float32)
         validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint64)
         validationWeights = validationWeightSeries.to_numpy(dtype = np.float64)
@@ -92,9 +94,7 @@ def main(foo):
         t = -time.time()
         if profile: PROFILE.START()
 
-        predictor, cutoff, msg = train(
-            trainInData, trainOutData, trainWeights,
-           testInData, testOutData, testWeights)
+        predictor, cutoff, msg = train(trainInData, trainOutData, trainWeights)
         log(msg + '\n')
 
         t += time.time()
@@ -115,7 +115,6 @@ def main(foo):
 
         # create and save  .........................................................
 
-
         testPredDataSeries = pd.Series(index = testOutDataSeries.index, data = testPredData)
         validationPredDataSeries = pd.Series(index = validationOutDataSeries.index, data = validationPredData)
         submissionPredDataSeries = pd.concat((testPredDataSeries, validationPredDataSeries)).sort_index()
@@ -131,47 +130,72 @@ def main(foo):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def train(trainInData, trainOutData, trainWeights, testInData, testOutData, testWeights):
+def train(inData, outData, weights):
 
     optimizeFun = trainParam['minimizeAlgorithm']
-    lossFun = trainParam['lossFun']
 
     # determine the best hyperparameters
     boostParamGrid = trainParam['boostParamGrid']
     minimizeParam = trainParam['minimizeParam']
     bestOptList = optimizeFun(
         lambda optionList: evaluateBoostParam(
-            trainInData, trainOutData, trainWeights, testInData, testOutData, testWeights, optionList, lossFun),
+            optionList, inData, outData, weights),
         boostParamGrid,
         minimizeParam
     )
     msg = formatOptions(bestOptList[0])
 
+    # determine optimal cutoff
+    predOutData = np.zeros((len(outData),))
+    foldCount = trainParam['foldCount']
+    folds = jrboost.stratifiedRandomFolds(outData, foldCount)
+    for trainSamples, testSamples in folds:
+
+        trainInData = jrboost.selectRows(inData, trainSamples)
+        trainOutData = outData[trainSamples]
+        trainWeights = weights[trainSamples]
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+        predictor = jrboost.EnsemblePredictor(jrboost.parallelTrain(trainer, bestOptList))
+
+        testInData = jrboost.selectRows(inData, testSamples)
+        predOutData[testSamples] = predictor.predict(testInData)
+
+    estCutoff, _ = optimalCutoff(outData, predOutData, weights)
+
     # build predictor
-    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+    trainer = jrboost.BoostTrainer(inData, outData, weights)
     predictor = jrboost.EnsemblePredictor(jrboost.parallelTrain(trainer, bestOptList))
-
-    predOutData = predictor.predict(testInData)
-
-    estCutoff, _ = optimalCutoff(testOutData, predOutData, testWeights)
-
-    #estSignalRatio = sum(trainOutData) / len(trainOutData)
-    #estCutoff = np.quantile(predOutData, 1.0 - estSignalRatio)
 
     return predictor, estCutoff, msg
 
 
-def evaluateBoostParam(
-    trainInData, trainOutData, trainWeights,
-    testInData, testOutData, testWeights,
-    optionList, lossFun
-):
-    optionCount = len(optionList)
-    loss = np.zeros((optionCount,))
+def evaluateBoostParam(boostParamList, inData, outData, weights):
 
-    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
-    loss =  jrboost.parallelTrainAndEvalWeighted(trainer, optionList, testInData, testOutData, testWeights, lossFun)
+    foldCount = trainParam['foldCount']
+    lossFun = trainParam['lossFun']
+
+    boostParamCount = len(boostParamList)
+    loss = np.zeros((boostParamCount,))
+    folds = jrboost.stratifiedRandomFolds(outData, foldCount)
+    for trainSamples, testSamples in folds:
+
+        print('.', end = '', flush = True)
+
+        trainInData = jrboost.selectRows(inData, trainSamples)
+        trainOutData = outData[trainSamples]
+        trainWeights = weights[trainSamples]
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+
+        testInData = jrboost.selectRows(inData, testSamples)
+        testOutData = outData[testSamples]
+        testWeights = weights[testSamples]
+
+        loss += jrboost.parallelTrainAndEvalWeighted(trainer, boostParamList, testInData, testOutData, testWeights, lossFun)
+
+    print()
+
     return loss
+
 
 #-----------------------------------------------------------------------------------------------
 
@@ -296,8 +320,6 @@ def optimalCutoff(outData, predData, weights):
 
 #---------------------------------------------------------------------------------------------
 
-#main()
+while True:
+    main()
 
-main(jrboost.negAucWeighted)
-main(jrboost.LogLossWeighted(0.001))
-main(lambda a, b, c: -optimalCutoff(a, b, c)[1])

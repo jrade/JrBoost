@@ -245,6 +245,6 @@ def optimalCutoff(outData, predData, weights):
 
     return bestCutoff, bestScore
 
-
+#-------------------------------------------
 
 main()

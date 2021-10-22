@@ -18,7 +18,7 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptio
     minNodeSize_ = options.minNodeSize();
 
     splitFound_ = false;
-    score_ = sumWY_ * sumWY_ / sumW_ + options.minGain();
+    score_ = square(sumWY_) / sumW_ + options.minGain();
 
     iterationCount_ = 0;
     slowBranchCount_ = 0;
@@ -26,21 +26,21 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptio
 
 
 template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::init(const TreeNodeTrainer& other)
+void TreeNodeTrainer<SampleIndex>::fork(TreeNodeTrainer* other) const
 {
-    ASSERT(!other.splitFound_);
+    ASSERT(!splitFound_);
 
-    sampleCount_ = other.sampleCount_;
-    sumW_ = other.sumW_;
-    sumWY_ = other.sumWY_;
-    minNodeWeight_ = other.minNodeWeight_;
-    minNodeSize_ = other.minNodeSize_;
+    other->sampleCount_ = sampleCount_;
+    other->sumW_ = sumW_;
+    other->sumWY_ = sumWY_;
+    other->minNodeWeight_ = minNodeWeight_;
+    other->minNodeSize_ = minNodeSize_;
 
-    splitFound_ = false;
-    score_ = other.score_;
+    other->splitFound_ = false;
+    other->score_ = score_;
 
-    iterationCount_ = 0;
-    slowBranchCount_ = 0;
+    other->iterationCount_ = 0;
+    other->slowBranchCount_ = 0;
 }
 
 
@@ -85,7 +85,7 @@ void TreeNodeTrainer<SampleIndex>::update(
         const double rightSumW = sumW_ - leftSumW;
         const double rightSumWY = sumWY_ - leftSumWY;
 
-        const double score = leftSumWY * leftSumWY / leftSumW + rightSumWY * rightSumWY / rightSumW;
+        const double score = square(leftSumWY) / leftSumW + square(rightSumWY) / rightSumW;
 
         if (score <= score_) continue;  // usually true .......................
 
@@ -152,7 +152,7 @@ size_t TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNo
     pParentNode->isLeaf = false;
     pParentNode->j = j_;
     pParentNode->x = x_;
-    pParentNode->gain = static_cast<float>(score_ - sumWY_ * sumWY_ / sumW_);
+    pParentNode->gain = static_cast<float>(score_ - square(sumWY_) / sumW_);
 
     TreeNodeExt* leftChildNode = *ppChildNode;
     ++*ppChildNode;

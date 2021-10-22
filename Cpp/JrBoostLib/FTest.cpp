@@ -127,7 +127,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
         ).cast<float>();
     }
 
-    if (!(f.abs() < numeric_limits<float>::infinity()).all()) {
+    if (!(f.abs() < numeric_limits<float>::infinity()).all()) {     // carefully written to trap NaN
         if (!(inData.abs() < numeric_limits<float>::infinity()).all())
             throw std::invalid_argument("Indata has values that are infinity or NaN.");
         else
@@ -147,9 +147,9 @@ ArrayXs fTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optS
     ArrayXs ind(variableCount);
 
     sortedIndices(
-        &f(0),
-        &f(0) + variableCount,
-        &ind(0),
+        std::data(f),
+        std::data(f) + variableCount,
+        std::data(ind),
         [](auto x) { return -x; }
     );
 

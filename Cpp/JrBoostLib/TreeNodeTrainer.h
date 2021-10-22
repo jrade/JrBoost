@@ -25,7 +25,7 @@ public:
     ~TreeNodeTrainer() = default;
 
     void init(const TreeNodeExt& node, const TreeOptions& options);
-    void init(const TreeNodeTrainer& other);
+    void fork(TreeNodeTrainer* other) const;
     void update(
         CRefXXfc inData, CRefXd outData, CRefXd weights,
         const SampleIndex* pSortedSamplesBegin, const SampleIndex* pSortedSamplesEnd, size_t j);

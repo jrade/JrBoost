@@ -11,7 +11,7 @@ inline void lossFunValidate_(CRefXs outData, CRefXd predData)
         throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
     if ((outData > 1).any())
         throw std::invalid_argument("True outdata has values that are not 0 or 1.");
-    if (!(predData >= 0.0f && predData <= 1.0f).all())
+    if (!(predData >= 0.0f && predData <= 1.0f).all())      // carefully written to trap NaN
         throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
 }
 
@@ -38,7 +38,7 @@ inline double linLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.001)
 {
     lossFunValidate_(outData, predData);
-    if (!(gamma > 0 && gamma <= 1.0))
+    if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     const double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     const double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
@@ -48,7 +48,7 @@ inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.001)
 inline double logLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights, double gamma = 0.001)
 {
     lossFunValidate_(outData, predData);
-    if (!(gamma > 0 && gamma <= 1.0))
+    if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     const double falsePos = (weights * (1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
@@ -59,7 +59,7 @@ class LogLoss {
 public:
     LogLoss(double gamma) : gamma_(gamma)
     {
-        if (!(gamma > 0 && gamma <= 1.0))
+        if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
             throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     }
 
@@ -83,7 +83,7 @@ class LogLossWeighted {
 public:
     LogLossWeighted(double gamma) : gamma_(gamma)
     {
-        if (!(gamma > 0 && gamma <= 1.0))
+        if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
             throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     }
 

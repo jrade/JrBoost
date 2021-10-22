@@ -51,7 +51,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-// This class is only safe if n and R:max() are < (1L << 32).
+// This class is only safe if n and R:max() are < (1LL << 32).
 // Otherwise the products can overflow.
 
 class VeryFastBernoulliDistribution {

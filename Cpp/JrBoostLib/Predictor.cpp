@@ -15,7 +15,7 @@ ArrayXd Predictor::predict(CRefXXfc inData) const
 
     if (static_cast<size_t>(inData.cols()) != variableCount())
         throw std::invalid_argument("Train and test indata have different numbers of variables.");
-    if (!(inData.abs() < numeric_limits<float>::infinity()).all())
+    if (!(inData.abs() < numeric_limits<float>::infinity()).all())      // carefully written to trap NaN
         throw std::invalid_argument("Test indata has values that are infinity or NaN.");
 
     ArrayXd pred = predict_(inData);

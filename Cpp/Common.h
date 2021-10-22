@@ -81,22 +81,25 @@ using ArrayXXfr = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::Row
 using ArrayXd   = Eigen::ArrayX<double>;
 using ArrayXf   = Eigen::ArrayX<float>;
 using ArrayXs   = Eigen::ArrayX<size_t>;
+using ArrayXu8  = Eigen::ArrayX<uint8_t>;
 
-using RefXXdc = Eigen::Ref<ArrayXXdc>;
-using RefXXdr = Eigen::Ref<ArrayXXdr>;
-using RefXXfc = Eigen::Ref<ArrayXXfc>;
-using RefXXfr = Eigen::Ref<ArrayXXfr>;
-using RefXd   = Eigen::Ref<ArrayXd>;
-using RefXf   = Eigen::Ref<ArrayXf>;
-using RefXs   = Eigen::Ref<ArrayXs>;
+using RefXXdc   = Eigen::Ref<ArrayXXdc>;
+using RefXXdr   = Eigen::Ref<ArrayXXdr>;
+using RefXXfc   = Eigen::Ref<ArrayXXfc>;
+using RefXXfr   = Eigen::Ref<ArrayXXfr>;
+using RefXd     = Eigen::Ref<ArrayXd>;
+using RefXf     = Eigen::Ref<ArrayXf>;
+using RefXs     = Eigen::Ref<ArrayXs>;
+using RefXu8    = Eigen::Ref<ArrayXu8>;
 
-using CRefXXdc = Eigen::Ref<const ArrayXXdc>;
-using CRefXXdr = Eigen::Ref<const ArrayXXdr>;
-using CRefXXfc = Eigen::Ref<const ArrayXXfc>;
-using CRefXXfr = Eigen::Ref<const ArrayXXfr>;
-using CRefXd   = Eigen::Ref<const ArrayXd>;
-using CRefXf   = Eigen::Ref<const ArrayXf>;
-using CRefXs   = Eigen::Ref<const ArrayXs>;
+using CRefXXdc  = Eigen::Ref<const ArrayXXdc>;
+using CRefXXdr  = Eigen::Ref<const ArrayXXdr>;
+using CRefXXfc  = Eigen::Ref<const ArrayXXfc>;
+using CRefXXfr  = Eigen::Ref<const ArrayXXfr>;
+using CRefXd    = Eigen::Ref<const ArrayXd>;
+using CRefXf    = Eigen::Ref<const ArrayXf>;
+using CRefXs    = Eigen::Ref<const ArrayXs>;
+using CRefXu8   = Eigen::Ref<const ArrayXu8>;
 
 
 // Fast random number generators (by Arvid Gerstmann)
@@ -125,6 +128,9 @@ using CRefXs   = Eigen::Ref<const ArrayXs>;
 
 
 // Miscellaneous
+
+template<typename T>
+T square(const T& a) { return a * a;  }
 
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)

@@ -26,6 +26,7 @@ public:
     bool isStratified() const { return isStratified_; }
     double pruneFactor() const { return pruneFactor_; }
     bool saveMemory() const { return saveMemory_; }
+    size_t test() const { return test_; }
 
     void setMaxDepth(size_t d);
     void setUsedSampleRatio(double r);
@@ -40,6 +41,7 @@ public:
     void setIsStratified(bool b);
     void setPruneFactor(double p);
     void setSaveMemory(bool b);
+    void setTest(size_t n);
 
 protected:
     double cost() const;
@@ -58,4 +60,5 @@ private:
     bool isStratified_{ true };
     double pruneFactor_{ 0.0 };
     bool saveMemory_{ false };
+    bool test_{ 0 };
 };

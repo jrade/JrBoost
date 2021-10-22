@@ -9,7 +9,7 @@
 #include "TreeTrainerImpl.h"
 
 
-TreeTrainer::TreeTrainer(CRefXXfc inData, CRefXs strata) :
+TreeTrainer::TreeTrainer(CRefXXfc inData, CRefXu8 strata) :
     impl_(createImpl_(inData, strata))
 {
 }
@@ -17,14 +17,14 @@ TreeTrainer::TreeTrainer(CRefXXfc inData, CRefXs strata) :
 TreeTrainer::~TreeTrainer() = default;
 
 
-unique_ptr<TreeTrainerImplBase> TreeTrainer::createImpl_(CRefXXfc inData, CRefXs strata)
+unique_ptr<TreeTrainerImplBase> TreeTrainer::createImpl_(CRefXXfc inData, CRefXu8 strata)
 {
     const size_t sampleCount = static_cast<size_t>(inData.rows());
-    if (sampleCount < 0x100)
+    if (sampleCount <= 1 << 8)
         return std::make_unique<TreeTrainerImpl<uint8_t>>(inData, strata);
-    else if (sampleCount < 0x10000)
+    else if (sampleCount <= 1 << 16)
         return std::make_unique<TreeTrainerImpl<uint16_t>>(inData, strata);
-    else if (sampleCount < 0x100000000)
+    else if (sampleCount <= 1LL << 32)
         return std::make_unique<TreeTrainerImpl<uint32_t>>(inData, strata);
     else
         return std::make_unique<TreeTrainerImpl<uint64_t>>(inData, strata);

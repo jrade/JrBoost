@@ -14,7 +14,8 @@ ArrayXXfc selectRows(CRefXXfc inData, const vector<size_t>& samples)
     const size_t outSampleCount = size(samples);
     const size_t variableCount = static_cast<size_t>(inData.cols());
 
-    ArrayXXfr outData(outSampleCount, variableCount);
+    ArrayXXfc outData(outSampleCount, variableCount);
+    if (outSampleCount == 0 || variableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), variableCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -48,6 +49,7 @@ ArrayXXfr selectRows(CRefXXfr inData, const vector<size_t>& samples)
     const size_t variableCount = static_cast<size_t>(inData.cols());
 
     ArrayXXfr outData(outSampleCount, variableCount);
+    if (outSampleCount == 0 || variableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outSampleCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -78,7 +80,8 @@ ArrayXXdc selectRows(CRefXXdc inData, const vector<size_t>& samples)
     const size_t outSampleCount = size(samples);
     const size_t variableCount = static_cast<size_t>(inData.cols());
 
-    ArrayXXdr outData(outSampleCount, variableCount);
+    ArrayXXdc outData(outSampleCount, variableCount);
+    if (outSampleCount == 0 || variableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), variableCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -112,6 +115,7 @@ ArrayXXdr selectRows(CRefXXdr inData, const vector<size_t>& samples)
     const size_t variableCount = static_cast<size_t>(inData.cols());
 
     ArrayXXdr outData(outSampleCount, variableCount);
+    if (outSampleCount == 0 || variableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outSampleCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -143,7 +147,8 @@ ArrayXXfc selectColumns(CRefXXfc inData, const vector<size_t>& variables)
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
     const size_t outVariableCount = size(variables);
 
-    ArrayXXfr outData(sampleCount, outVariableCount);
+    ArrayXXfc outData(sampleCount, outVariableCount);
+    if (sampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outVariableCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -175,6 +180,7 @@ ArrayXXfr selectColumns(CRefXXfr inData, const vector<size_t>& variables)
     const size_t outVariableCount = size(variables);
 
     ArrayXXfr outData(sampleCount, outVariableCount);
+    if (sampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), sampleCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -207,7 +213,8 @@ ArrayXXdc selectColumns(CRefXXdc inData, const vector<size_t>& variables)
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
     const size_t outVariableCount = size(variables);
 
-    ArrayXXdr outData(sampleCount, outVariableCount);
+    ArrayXXdc outData(sampleCount, outVariableCount);
+    if (sampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outVariableCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -239,6 +246,7 @@ ArrayXXdr selectColumns(CRefXXdr inData, const vector<size_t>& variables)
     const size_t outVariableCount = size(variables);
 
     ArrayXXdr outData(sampleCount, outVariableCount);
+    if (sampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), sampleCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -273,7 +281,8 @@ ArrayXXfc select(CRefXXfc inData, const vector<size_t>& samples, const vector<si
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
     const size_t outVariableCount = size(variables);
 
-    ArrayXXfr outData(outSampleCount, outVariableCount);
+    ArrayXXfc outData(outSampleCount, outVariableCount);
+    if (outSampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outVariableCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -309,6 +318,7 @@ ArrayXXfr select(CRefXXfr inData, const vector<size_t>& samples, const vector<si
     const size_t outVariableCount = size(variables);
 
     ArrayXXfr outData(outSampleCount, outVariableCount);
+    if (outSampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outSampleCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -343,7 +353,8 @@ ArrayXXdc select(CRefXXdc inData, const vector<size_t>& samples, const vector<si
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
     const size_t outVariableCount = size(variables);
 
-    ArrayXXdr outData(outSampleCount, outVariableCount);
+    ArrayXXdc outData(outSampleCount, outVariableCount);
+    if (outSampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outVariableCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))
@@ -379,6 +390,7 @@ ArrayXXdr select(CRefXXdr inData, const vector<size_t>& samples, const vector<si
     const size_t outVariableCount = size(variables);
 
     ArrayXXdr outData(outSampleCount, outVariableCount);
+    if (outSampleCount == 0 || outVariableCount == 0) return outData;
 
     size_t threadCount = std::min<size_t>(omp_get_max_threads(), outSampleCount);
 #pragma omp parallel num_threads(static_cast<int>(threadCount))

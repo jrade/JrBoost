@@ -1,34 +1,42 @@
+simple buffer management API with capacity() and clear() functions
+	look more into memory issues (see Higgs Notes)
 
 TreeTrainerImpl:
 
-	review TreeTrainerImpl one more time
-		continue with initSampleStatus_()
+	parallelize updateSampleStatus   [faster update sample status]
+		separate updateSums_() function, not parallelized
+		at level 0:
+			initRoot_()
+			initSampleStatus_()
+			initSumsLevel0_()
+		at other levels:
+			finalizeNodeTrainers_()
+			updateSampleStatus()
+			initSums_()
+		maybe name everything at level 0 init and at other levels update
+			updateSaveMemory
 
-	TreeNodeTrainer fork and join
-		move join into finalize node builders (just as fork will be in initialize node builders)
+	outdata and weights interleaved in a single array   [faster update splits]  
+		Array2f and Array2Xf types
+		each entry could be { w, w * y }
+		this array could be created in BoostTrainer inside the loop that calculates w and y
+		use row major eigen array with fixed second dimension, or just a vector of pairs?
+		after this, test logit boost again
 
-	narrower SampleStatus type?
-		templatized TreeTrainerImpl::train() function?
-		move static threadlocal data to base class
+	make sure right child always = left child + 1?    [faster tree predict]
+		will let us optimize predict code, update status code
+		requires breadth first storage always
+			better use a breadth first file format for tree classifiers
+		run some preliminary tests before implementing the whole thing
 
-	narrower sample strata type
+better stratification when training multigroup classifiers
 
-	outdata and weights interleaved in a single array
+write some simple documentation of the different boost methods
+	then test logit boost with   f' / (f'' + delta * f' * f')?
 
-	test fast bernoulli with r % n < k condition; profile
-
-------------------------------------------------------------------------------------------------------------------------
-
-Test with the Intel C++ compiler:
-	Does it have better support for 128 threads?
-	Does it have better support for SIMD vectorization?
-	To do:	
-		1. report that vectors of overaligned data do not compile
-		2. check the alignment of buffers of such vectors
-		3. report internal compiler error to
-			https://community.intel.com/t5/Intel-C-Compiler/bd-p/c-compiler
-		4. test how well the compiler handles 128 threads and SIMD vectorization
-		5. how well does the generated code work with AMD processors?
+are the submatrix functions needed at all?
+	or are they a useless optimization based on faulty profiling data?
+		profile again with TCGA data
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -40,11 +48,12 @@ major tasks:
 	improved Otto example (see "Otto Notes.txt")
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
-	histogram-based tree builder (would speed up Otto a lot)
+	histogram-based tree builder (would speed up Otto a lot, Higgs also)
 	multinomial predictors
 	documentation of regularized logit boost method
 
 features to add:
+	simpler high level API that does cross-validation and applies preprocessing
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
 	set seed to make the code deterministic (how to handle dynamic scheduling? doable, but a bit tricky)
 	U-test (with correct handling of ties)
@@ -57,28 +66,27 @@ optimizations (accuracy):
 	boost stop criteria
 	pruning
 	multi-label stratification when generating folds and selecting active samples
-	truncated logot boost?
+	other ways of regularizing logit boost?
 	
 optimizations (speed):
 	improved profiling log
 		group into unthreaded, partially threaded, fully threaded and thread synch
 	t-test and F-test:
 		divide the variables into large blocks, one for each thread
-		then divide each block into __m256 columns
-	make updateSampleStatus() code branch-free by introducing dummy nodes that conain unused samples
-		maybe maintain sorted lists of active samples to speed up this further
+		then divide the variables into subblocks of 4 each (__m128 that will be cast to __m256d)
 	improved cost function when ordering options objects in parallel train
-	outdata and weights as float??
-	parallelize predict function (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
-	maybe some cached ordered samples mechanism to use with usedVariableByLayer = true?
+	parallelize predict function?? (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
+	make TreeTrainerImpl::updateSampleStatus_() code branchfree by introducing dummy nodes that contain the unused samples
+		maybe maintain sorted lists of active samples to speed this up further
 	look into fast/precise sums; does it make any difference for speed and accuracy?
-	submatrix functions perform poorly with too many threads? limit number of threads to say 8??
-	can GCC/clang autovectorize the scalar fast exp loops in BoostTrainer::trainAda_() ?
-		if so, we do not need the SIMD intrinsics code with GCC/clang
 	PGO
-	test with the Intel C++ compiler (how does the generated code perform with AMD processors?)
+	Test with other compilers:
+		can they autovectorize fast exp (then the manually vectorized code is not needed)
+		can they handle 128 threads?
+		does the Intel compiler produce code that runs fast on an AMD processor
 
 minor things:
+	replace size_t by uint64_t throghout the code (32-bit build not supported, nor 128-bit)
 	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
 	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
 	save and load:
@@ -91,3 +99,8 @@ minor things:
 	seems pybind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
 		that would be useful for passing sample lists to t-test and F-test
 	runtime checks for AVX2 and AVX512
+	Eigen:
+		why does std::data() not work here? (see Select.cpp)
+			const float* pInDataRowI = std::data(inData.row(inI));
+			float* pOutDataRowI = &outData(outI, 0);
+

@@ -13,7 +13,7 @@ public:
     EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors);
 
     virtual ~EnsemblePredictor() = default;
-    virtual size_t variableCount() const { return predictors_[0]->variableCount(); }
+    virtual size_t variableCount() const { return predictors_.front()->variableCount(); }
 
 private:
     virtual ArrayXd predict_(CRefXXfc inData) const;

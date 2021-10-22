@@ -61,7 +61,7 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     py::class_<BoostTrainer>{ mod, "BoostTrainer" }
         .def(
-            py::init<ArrayXXfc, ArrayXs, optional<ArrayXd>>(),
+            py::init<ArrayXXfc, ArrayXu8, optional<ArrayXd>>(),
             py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
         )
         .def("train", [](const BoostTrainer& trainer, const BoostOptions& opt) { return trainer.train(opt); });

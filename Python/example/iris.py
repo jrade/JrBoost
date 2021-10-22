@@ -10,6 +10,7 @@ import jrboost
 #-----------------------------------------------------------------------------------------------------------------------
 
 validationParam = {
+    'threadCount': os.cpu_count() // 2,
     'parallelTree': False,
     'outerFoldCount': 10,
 }
@@ -31,7 +32,7 @@ trainParam = {
 
         #'saveMemory': [True],
         #'isStratified': [False],
-        'selectVariablesByLevel': [True],
+        #'selectVariablesByLevel': [True],
     },
 
     'minimizeParam' : {
