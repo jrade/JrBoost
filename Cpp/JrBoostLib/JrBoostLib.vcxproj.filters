@@ -152,6 +152,9 @@
     <ClCompile Include="Submatrix.cpp">
       <Filter>Extra</Filter>
     </ClCompile>
+    <ClCompile Include="TreeTrainerImplBase.cpp">
+      <Filter>Base Trainer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Profiling">

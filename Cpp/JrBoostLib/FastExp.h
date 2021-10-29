@@ -40,7 +40,7 @@
 //    -709.06 <  x < -708.37:   absolute error < 1e-307
 //    -708.37 <  x <  709.81:   relative error < 0.0299
 //     709.81 <  x <=    inf:   return value = inf
-//               x =     nan:   unspecified return value
+//               x =     nan:   return value = inf
 
 inline double fastExp(double x)
 {
@@ -48,12 +48,14 @@ inline double fastExp(double x)
     const double b = (1LL << 52) * (1023 - 0.0436774489036);
     x = a * x + b;
 
-    // if overflow, return positive infinity
-    const double c = 2047LL << 52;
-    x = std::min(x, c);
-
     // if underflow, return 0
     x = std::max(x, 0.0);
+
+    // if overflow, return positive infinity
+    const double c = 2047LL << 52;
+    x = std::min(c, x);
+
+    // std::min and std::max return the first argument if any argument is nan
 
     int64_t n = static_cast<int64_t>(x);
 
@@ -70,12 +72,15 @@ inline __m512d fastExp(__m512d x8)          // requires AVX512F + AVX512DQ
     const double b = (1LL << 52) * (1023 - 0.0436774489036);
     x8 = _mm512_fmadd_pd(x8, _mm512_set1_pd(a), _mm512_set1_pd(b));
 
+    // if underflow, return 0
+    x8 = _mm512_max_pd(_mm512_setzero_pd(), x8);
+
     // if overflow, return positive infinity
     const double c = 2047LL << 52;
     x8 = _mm512_min_pd(x8, _mm512_set1_pd(c));
 
-    // if underflow, return 0
-    x8 = _mm512_max_pd(x8, _mm512_setzero_pd());
+    // _mm512_max_pd etc. return the second argument if any argument is nan
+
 
     __m512i n8 = _mm512_cvtpd_epi64(x8);
 
@@ -89,16 +94,16 @@ inline __m256d fastExp(__m256d x4)          // requires AVX2
     // AVX2 does not support conversion from double to int64_t.
     // This implementation avoids that conversion.
 
-    const double a = (1LL << 20) / 0.6931471805599453;
-    const double b = (1LL << 20) * (1023 - 0.0436774489036) + 0.5;
+    const double a = (1 << 20) / 0.6931471805599453;
+    const double b = (1 << 20) * (1023 - 0.0436774489036) + 0.5;
     x4 = _mm256_fmadd_pd(x4, _mm256_set1_pd(a), _mm256_set1_pd(b));
 
-    // if overflow, return positive infinity
-    const double c = 2047LL << 20;
-    x4 = _mm256_min_pd(x4, _mm256_set1_pd(c));
-
     // if underflow, return 0
-    x4 = _mm256_max_pd(x4, _mm256_setzero_pd());
+    x4 = _mm256_max_pd(_mm256_setzero_pd(), x4);
+
+    // if overflow, return positive infinity
+    const double c = 2047 << 20;
+    x4 = _mm256_min_pd(x4, _mm256_set1_pd(c));
 
     __m128i m4 = _mm256_cvtpd_epi32(x4);
     __m256i n4 = _mm256_cvtepi32_epi64(m4);
@@ -109,10 +114,10 @@ inline __m256d fastExp(__m256d x4)          // requires AVX2
     return x4;
 
 /*
-    A scalar version of this code would be
+    A scalar version of this code would be:
         x = a * x + b;
-        x = std::min(x, c);
         x = std::max(x, 0.0);
+        x = std::min(c, x);
         int32_t m = static_cast<int32_t>(x);
         int64_t n = static_cast<int64_t>(m);
         n <<= 32;
@@ -128,7 +133,7 @@ inline __m256d fastExp(__m256d x4)          // requires AVX2
 //    -88.00 <  x < -87.30:   absolute error < 1e-38
 //    -87.30 <  x <  88.72:   relative error < 0.0299
 //     88.72 <  x <=   inf:   return value = inf
-//              x =    nan:   unspecified return value
+//              x =    nan:   return value = inf
 
 inline float fastExp(float x)
 {
@@ -136,12 +141,12 @@ inline float fastExp(float x)
     constexpr float b = (1 << 23) * (127 - 0.04368f) + 0.5f;
     x = a * x + b;
 
-    // if overflow, return positive infinity
-    const float c = 255 << 23;
-    x = std::min(x, c);
-
     // if underflow, return 0
     x = std::max(x, 0.0f);
+
+    // if overflow, return positive infinity
+    const float c = 255 << 23;
+    x = std::min(c, x);
 
     uint32_t n = static_cast<uint32_t>(x);
 
@@ -158,12 +163,12 @@ inline __m512 fastExp(__m512 x16)           // requires AVX512F + AVX512DQ
     constexpr float b = (1 << 23) * (127 - 0.04368f) + 0.5f;
     x16 = _mm512_fmadd_ps(x16, _mm512_set1_ps(a), _mm512_set1_ps(b));
 
+    // if underflow, return 0
+    x16 = _mm512_max_ps(_mm512_setzero_ps(), x16);
+
     // if overflow, return positive infinity
     const float c = 255 << 23;
     x16 = _mm512_min_ps(x16, _mm512_set1_ps(c));
-
-    // if underflow, return 0
-    x16 = _mm512_max_ps(x16, _mm512_setzero_ps());
 
     __m512i n16 = _mm512_cvtps_epi32(x16);
 
@@ -178,12 +183,12 @@ inline __m256 fastExp(__m256 x8)            // requires AVX2
     constexpr float b = (1 << 23) * (127 - 0.04368f) + 0.5f;
     x8 = _mm256_fmadd_ps(x8, _mm256_set1_ps(a), _mm256_set1_ps(b));
 
+    // if underflow, return 0
+    x8 = _mm256_max_ps(_mm256_setzero_ps(), x8);
+
     // if overflow, return positive infinity
     const float c = 255 << 23;
     x8 = _mm256_min_ps(x8, _mm256_set1_ps(c));
-
-    // if underflow, return 0
-    x8 = _mm256_max_ps(x8, _mm256_setzero_ps());
 
     __m256i n8 = _mm256_cvtps_epi32(x8);
 

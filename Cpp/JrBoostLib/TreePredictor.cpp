@@ -72,7 +72,7 @@ unique_ptr<BasePredictor> TreePredictor::load_(istream& is, int version)
     is.read(reinterpret_cast<char*>(&nodeCount), sizeof(nodeCount));
     vector<TreeNode> nodes = vector<TreeNode>(nodeCount);
 
-    TreeNode* root = &(nodes.front());
+    TreeNode* root = data(nodes);
     TreeNode* node = load_(is, root, version);
     if (node != data(nodes) + size(nodes))
         parseError_(is);

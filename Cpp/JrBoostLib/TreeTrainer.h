@@ -24,5 +24,6 @@ public:
 private:
     static unique_ptr<TreeTrainerImplBase> createImpl_(CRefXXfc inData, CRefXu8 strata);
 
+private:
     const unique_ptr<const TreeTrainerImplBase> impl_;
 };

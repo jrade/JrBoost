@@ -5,7 +5,6 @@
 #pragma once
 
 #include "BernoulliDistribution.h"
-#include "TreeNodeTrainer.h"
 #include "TreeTrainerImplBase.h"
 
 class TreeOptions;
@@ -37,9 +36,9 @@ private:
     template<typename SampleStatus> void initSampleStatus_(CRefXd weights, const TreeOptions& options) const;
     template<typename SampleStatus> void updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
 
-    template<typename SampleStatus> const SampleIndex* initOrderedSamplesLayer0_(
-        size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
     template<typename SampleStatus> const SampleIndex* initOrderedSamples_(
+        size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
+    template<typename SampleStatus> const SampleIndex* updateOrderedSampleSaveMemory_(
         size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
     template<typename SampleStatus> const SampleIndex* updateOrderedSamples_(
         size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;

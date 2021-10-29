@@ -49,7 +49,7 @@ trainParam = {
 
 def main():
 
-    logFilePath = f'../Log {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.txt'
+    logFilePath = f'../Log OptTree {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.txt'
     with open(logFilePath, 'w', 1) as logFile:
         def log(msg = ''): print(msg); logFile.write(msg + '\n')
 

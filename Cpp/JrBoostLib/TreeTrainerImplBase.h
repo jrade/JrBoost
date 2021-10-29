@@ -4,15 +4,19 @@
 
 #pragma once
 
+#include "TreeNodeTrainer.h"
+
+
 class BasePredictor;
 class TreeOptions;
-
 
 class TreeTrainerImplBase
 {
 public:
     virtual ~TreeTrainerImplBase() = default;
     virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const = 0;
+
+    static size_t bufferSize();
 
 protected:
     TreeTrainerImplBase() = default;
@@ -61,4 +65,8 @@ protected:
     inline static thread_local ThreadLocalData0_ threadLocalData0_;
     template<typename SampleIndex> static thread_local ThreadLocalData1_<SampleIndex> threadLocalData1_;
     template<typename SampleStatus> static thread_local ThreadLocalData2_<SampleStatus> threadLocalData2_;
+
+private:
+    template<typename T> static size_t byteCount_(const T& t);
+    template<typename T> static size_t bufferSizeImpl_();
 };

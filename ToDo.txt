@@ -1,20 +1,6 @@
-simple buffer management API with capacity() and clear() functions
-	look more into memory issues (see Higgs Notes)
+test Higgs with more outer threads - any speedup
 
 TreeTrainerImpl:
-
-	parallelize updateSampleStatus   [faster update sample status]
-		separate updateSums_() function, not parallelized
-		at level 0:
-			initRoot_()
-			initSampleStatus_()
-			initSumsLevel0_()
-		at other levels:
-			finalizeNodeTrainers_()
-			updateSampleStatus()
-			initSums_()
-		maybe name everything at level 0 init and at other levels update
-			updateSaveMemory
 
 	outdata and weights interleaved in a single array   [faster update splits]  
 		Array2f and Array2Xf types
@@ -23,11 +9,17 @@ TreeTrainerImpl:
 		use row major eigen array with fixed second dimension, or just a vector of pairs?
 		after this, test logit boost again
 
-	make sure right child always = left child + 1?    [faster tree predict]
-		will let us optimize predict code, update status code
-		requires breadth first storage always
-			better use a breadth first file format for tree classifiers
-		run some preliminary tests before implementing the whole thing
+	simplify the profiling
+		log at profiling logs for a few different examples and remove items that are not useful
+
+	profile depth first and breadth first trees again with higgs
+		control with the test parameter
+
+then work on improving the Higgs score
+
+test fastExp() again, make sure to test NaN handling
+
+.............................................................................................................
 
 better stratification when training multigroup classifiers
 
@@ -78,6 +70,8 @@ optimizations (speed):
 	parallelize predict function?? (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
 	make TreeTrainerImpl::updateSampleStatus_() code branchfree by introducing dummy nodes that contain the unused samples
 		maybe maintain sorted lists of active samples to speed this up further
+	parallelize updateSampleStatus
+		maybe easier if we first add dummy nodes and then break ut sum calculations from updateSampleStatus to a separate function
 	look into fast/precise sums; does it make any difference for speed and accuracy?
 	PGO
 	Test with other compilers:
@@ -103,4 +97,3 @@ minor things:
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
-

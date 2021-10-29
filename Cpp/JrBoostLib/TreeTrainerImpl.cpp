@@ -29,7 +29,7 @@
             k + 1 if the sample is assigned to node number k in the layer.
 
         Note that for layer 0 the status of every sample is 0 or 1; this observation is used in the implementation of
-        initSampleStatus_(), initRoot_(), and initOrderedSamplesLayer0_().
+        initSampleStatus_(), initRoot_(), and initOrderedSamples_().
 
         In the constructor we sort all samples with respect to each variable once and for all.
         No further sorting is done, we simply extract sorted sublists from these presorted lists.
@@ -176,11 +176,12 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl_(
     //validateData_(outData, weights);
     //size_t ITEM_COUNT = sampleCount_;
 
+
     PROFILE::PUSH(PROFILE::INIT_SAMPLE_STATUS);
     size_t ITEM_COUNT = sampleCount_;
     initSampleStatus_<SampleStatus>(weights, options);
 
-    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_TREE);
+    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ROOT);
     ITEM_COUNT = sampleCount_;
     size_t usedSampleCount = initRoot_<SampleStatus>(outData, weights);
 
@@ -227,17 +228,20 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl_(
                 if (d == 0) {
                     PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES_FAST);
                     ITEM_COUNT = sampleCount_;
-                    pOrderedSamples = initOrderedSamplesLayer0_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+                    pOrderedSamples = initOrderedSamples_<SampleStatus>(
+                        usedVariableIndex, usedSampleCount, options, d);
                 }
                 else if (options.saveMemory() || options.selectVariablesByLevel()) {
                     PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES);
                     ITEM_COUNT = sampleCount_;
-                    pOrderedSamples = initOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+                    pOrderedSamples = updateOrderedSampleSaveMemory_<SampleStatus>(
+                        usedVariableIndex, usedSampleCount, options, d);
                 }
                 else {
                     PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_ORDERED_SAMPLES);
                     ITEM_COUNT = usedSampleCount;
-                    pOrderedSamples = updateOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+                    pOrderedSamples = updateOrderedSamples_<SampleStatus>(
+                        usedVariableIndex, usedSampleCount, options, d);
                 }
 
                 PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SPLITS);
@@ -346,8 +350,7 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(const TreeOptions& optio
     return j;       // number of iterations of the loop
 }
 
-// The next function creates the root of the tree.
-// It also calculates sampleCount, sumW and sumWY for the root.
+// The next function creates the root of the tree and initializes sampleCount, sumW and sumWY for the root
 
 template<typename SampleIndex>
 template<typename SampleStatus>
@@ -356,6 +359,18 @@ size_t TreeTrainerImpl<SampleIndex>::initRoot_(
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
+
+    // create root if needed
+
+    if (empty(t0.tree)) {
+        t0.tree.resize(1);
+        t0.tree.front().resize(1);
+    }
+
+    TreeNodeExt& root = t0.tree.front().front();
+    root.isLeaf = true;
+
+    // init sums
 
     const SampleStatus* pSampleStatus = data(t2.sampleStatus);
     const double* pOutData = std::data(outData);
@@ -374,13 +389,6 @@ size_t TreeTrainerImpl<SampleIndex>::initRoot_(
         sumWY += s * w * y;
     }
 
-    if (empty(t0.tree)) {
-        t0.tree.resize(1);
-        t0.tree.front().resize(1);
-    }
-
-    TreeNodeExt& root = t0.tree.front().front();
-    root.isLeaf = true;
     root.sampleCount = usedSampleCount;
     root.sumW = sumW;
     root.sumWY = sumWY;
@@ -614,10 +622,10 @@ void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd we
 // 
 // This buffer is then used as input to updateNodeTrainers_().
 //
-// The function initOrderedSamplesLayer0_() does this for layer 0 which consists of the root only.
+// The function initOrderedSamples_() does this for layer 0 which consists of the root only.
 // The function uses sortedSamples_[j] which contains all samples sorted according to variable j.
 //
-// The function initOrderedSamples_() does the same thing for the general case with any number of nodes.
+// The function updateOrderedSampleSaveMemory_() does the same thing for the general case with any number of nodes.
 // It also uses sortedSamples_[j].
 // Note that this function actually creates a buffer where the first block contains the unused samples,
 // but it returns a pointer to the beginning of the next block.
@@ -628,7 +636,7 @@ void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd we
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesLayer0_(
+const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
     size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& options, size_t d) const
 {
     // called from the inner threads so be careful to distinguish between t0 and t0.parent etc.
@@ -665,7 +673,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamplesLayer0_(
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
+const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(
     size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& /*options*/, size_t d) const
 {
     // called from the inner threads so be careful to distinguish between t0 and t0.parent etc.

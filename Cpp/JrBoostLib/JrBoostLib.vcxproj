@@ -133,6 +133,7 @@
     <ClCompile Include="TreePredictor.cpp" />
     <ClCompile Include="TreeTrainer.cpp" />
     <ClCompile Include="TreeTrainerImpl.cpp" />
+    <ClCompile Include="TreeTrainerImplBase.cpp" />
     <ClCompile Include="TrivialPredictor.cpp" />
     <ClCompile Include="TTest.cpp" />
   </ItemGroup>

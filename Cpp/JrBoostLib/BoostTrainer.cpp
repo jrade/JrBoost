@@ -278,7 +278,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
 #endif
         }  // end if (!opt.fastExp())
 
-        if (adjWeightSum == numeric_limits<double>::infinity())
+        if (!(adjWeightSum < numeric_limits<double>::infinity()))   // carefully written to trap NaN
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt, threadCount);
@@ -337,7 +337,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, si
             }
         }
 
-        if (absAdjOutDataSum == numeric_limits<double>::infinity())
+        if (!(absAdjOutDataSum == numeric_limits<double>::infinity()))      // carefully written to trap NaN
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
@@ -397,7 +397,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
             }
         }
 
-        if (adjWeightSum == numeric_limits<double>::infinity())
+        if (!(adjWeightSum < numeric_limits<double>::infinity()))   // carefully written to trap NaN
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
