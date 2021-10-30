@@ -7,6 +7,7 @@
 #include "TreeNode.h"
 
 class TreeOptions;
+struct WyPack;
 
 struct TreeNodeExt : public TreeNode
 {
@@ -27,7 +28,12 @@ public:
     void init(const TreeNodeExt& node, const TreeOptions& options);
     void fork(TreeNodeTrainer* other) const;
     void update(
-        CRefXXfc inData, CRefXd outData, CRefXd weights,
+        CRefXXfc inData,
+#if PACKED_DATA
+        const WyPack* pWyPacks,
+#else
+        CRefXd outData, CRefXd weights,
+#endif
         const SampleIndex* pSortedSamplesBegin, const SampleIndex* pSortedSamplesEnd, size_t j);
     void join(const TreeNodeTrainer& other);
     size_t finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;

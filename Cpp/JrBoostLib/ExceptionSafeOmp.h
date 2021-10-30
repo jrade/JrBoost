@@ -26,7 +26,7 @@ class ThreadAborted : public std::exception {};
             try {
 
 
-#define END_EXCEPTION_SAFE_OMP_PARALLEL(A) \
+#define END_EXCEPTION_SAFE_OMP_PARALLEL \
             } \
             catch (const ThreadAborted&) {} \
             catch (const std::exception&) { \
@@ -36,9 +36,7 @@ class ThreadAborted : public std::exception {};
                     abortThreads = true; \
                 } \
             } \
-            PROFILE::PUSH(A); \
         } \
-        PROFILE::POP(); \
         if (ep) { \
             abortThreads = omp_in_parallel(); \
             std::rethrow_exception(ep); \

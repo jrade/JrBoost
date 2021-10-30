@@ -8,7 +8,7 @@
 
 ArrayXXfc selectRows(CRefXXfc inData, const vector<size_t>& samples)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSamplesCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -34,7 +34,7 @@ ArrayXXfc selectRows(CRefXXfc inData, const vector<size_t>& samples)
         }
     }
 
-    PROFILE::POP(outSampleCount * variableCount);
+    //PROFILE::POP(outSampleCount * variableCount);
 
     return outData;
 }
@@ -42,7 +42,7 @@ ArrayXXfc selectRows(CRefXXfc inData, const vector<size_t>& samples)
 
 ArrayXXfr selectRows(CRefXXfr inData, const vector<size_t>& samples)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSampleCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -66,7 +66,7 @@ ArrayXXfr selectRows(CRefXXfr inData, const vector<size_t>& samples)
         }
     }
 
-    PROFILE::POP(outSampleCount * variableCount);
+    //PROFILE::POP(outSampleCount * variableCount);
 
     return outData;
 }
@@ -74,7 +74,7 @@ ArrayXXfr selectRows(CRefXXfr inData, const vector<size_t>& samples)
 
 ArrayXXdc selectRows(CRefXXdc inData, const vector<size_t>& samples)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSamplesCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -100,7 +100,7 @@ ArrayXXdc selectRows(CRefXXdc inData, const vector<size_t>& samples)
         }
     }
 
-    PROFILE::POP(outSampleCount * variableCount);
+    //PROFILE::POP(outSampleCount * variableCount);
 
     return outData;
 }
@@ -108,7 +108,7 @@ ArrayXXdc selectRows(CRefXXdc inData, const vector<size_t>& samples)
 
 ArrayXXdr selectRows(CRefXXdr inData, const vector<size_t>& samples)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSampleCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -132,7 +132,7 @@ ArrayXXdr selectRows(CRefXXdr inData, const vector<size_t>& samples)
         }
     }
 
-    PROFILE::POP(outSampleCount * variableCount);
+    //PROFILE::POP(outSampleCount * variableCount);
 
     return outData;
 }
@@ -141,7 +141,7 @@ ArrayXXdr selectRows(CRefXXdr inData, const vector<size_t>& samples)
 
 ArrayXXfc selectColumns(CRefXXfc inData, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
@@ -165,7 +165,7 @@ ArrayXXfc selectColumns(CRefXXfc inData, const vector<size_t>& variables)
         }
     }
 
-    PROFILE::POP(sampleCount * outVariableCount);
+    //PROFILE::POP(sampleCount * outVariableCount);
 
     return outData;
 }
@@ -173,7 +173,7 @@ ArrayXXfc selectColumns(CRefXXfc inData, const vector<size_t>& variables)
 
 ArrayXXfr selectColumns(CRefXXfr inData, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
@@ -199,7 +199,7 @@ ArrayXXfr selectColumns(CRefXXfr inData, const vector<size_t>& variables)
         }
     }
 
-    PROFILE::POP(sampleCount * outVariableCount);
+    //PROFILE::POP(sampleCount * outVariableCount);
 
     return outData;
 }
@@ -207,7 +207,7 @@ ArrayXXfr selectColumns(CRefXXfr inData, const vector<size_t>& variables)
 
 ArrayXXdc selectColumns(CRefXXdc inData, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
@@ -231,7 +231,7 @@ ArrayXXdc selectColumns(CRefXXdc inData, const vector<size_t>& variables)
         }
     }
 
-    PROFILE::POP(sampleCount * outVariableCount);
+    //PROFILE::POP(sampleCount * outVariableCount);
 
     return outData;
 }
@@ -239,7 +239,7 @@ ArrayXXdc selectColumns(CRefXXdc inData, const vector<size_t>& variables)
 
 ArrayXXdr selectColumns(CRefXXdr inData, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     //const size_t inVariableCount = static_cast<size_t>(inData.cols());
@@ -265,7 +265,7 @@ ArrayXXdr selectColumns(CRefXXdr inData, const vector<size_t>& variables)
         }
     }
 
-    PROFILE::POP(sampleCount * outVariableCount);
+    //PROFILE::POP(sampleCount * outVariableCount);
 
     return outData;
 }
@@ -274,7 +274,7 @@ ArrayXXdr selectColumns(CRefXXdr inData, const vector<size_t>& variables)
 
 ArrayXXfc select(CRefXXfc inData, const vector<size_t>& samples, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSampleCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -302,7 +302,7 @@ ArrayXXfc select(CRefXXfc inData, const vector<size_t>& samples, const vector<si
         }
     }
 
-    PROFILE::POP(outSampleCount * outVariableCount);
+    //PROFILE::POP(outSampleCount * outVariableCount);
 
     return outData;
 }
@@ -310,7 +310,7 @@ ArrayXXfc select(CRefXXfc inData, const vector<size_t>& samples, const vector<si
 
 ArrayXXfr select(CRefXXfr inData, const vector<size_t>& samples, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSampleCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -338,7 +338,7 @@ ArrayXXfr select(CRefXXfr inData, const vector<size_t>& samples, const vector<si
         }
     }
 
-    PROFILE::POP(outSampleCount * outVariableCount);
+    //PROFILE::POP(outSampleCount * outVariableCount);
 
     return outData;
 }
@@ -346,7 +346,7 @@ ArrayXXfr select(CRefXXfr inData, const vector<size_t>& samples, const vector<si
 
 ArrayXXdc select(CRefXXdc inData, const vector<size_t>& samples, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSampleCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -374,7 +374,7 @@ ArrayXXdc select(CRefXXdc inData, const vector<size_t>& samples, const vector<si
         }
     }
 
-    PROFILE::POP(outSampleCount * outVariableCount);
+    //PROFILE::POP(outSampleCount * outVariableCount);
 
     return outData;
 }
@@ -382,7 +382,7 @@ ArrayXXdc select(CRefXXdc inData, const vector<size_t>& samples, const vector<si
 
 ArrayXXdr select(CRefXXdr inData, const vector<size_t>& samples, const vector<size_t>& variables)
 {
-    PROFILE::PUSH(PROFILE::SUBMATRIX);
+    //PROFILE::PUSH(PROFILE::SUBMATRIX);
 
     //const size_t inSampleCount = static_cast<size_t>(inData.rows());
     const size_t outSampleCount = size(samples);
@@ -410,7 +410,7 @@ ArrayXXdr select(CRefXXdr inData, const vector<size_t>& samples, const vector<si
         }
     }
 
-    PROFILE::POP(outSampleCount * outVariableCount);
+    //PROFILE::POP(outSampleCount * outVariableCount);
 
     return outData;
 }

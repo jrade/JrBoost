@@ -10,6 +10,14 @@
 class BasePredictor;
 class TreeOptions;
 
+
+struct alignas(2 * sizeof(double)) WyPack
+{
+    double w;
+    double wy;
+};
+
+
 class TreeTrainerImplBase
 {
 public:
@@ -17,6 +25,7 @@ public:
     virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const = 0;
 
     static size_t bufferSize();
+    static void freeBuffers();
 
 protected:
     TreeTrainerImplBase() = default;
@@ -29,6 +38,9 @@ protected:
     struct ThreadLocalData0_
     {
         ThreadLocalData0_* parent = nullptr;     // thread local data of parent thread
+#if PACKED_DATA
+        vector<WyPack> wyPacks;
+#endif
         vector<size_t> usedVariables;
         vector<vector<TreeNodeExt>> tree;
     };
@@ -63,10 +75,13 @@ protected:
 
 protected:
     inline static thread_local ThreadLocalData0_ threadLocalData0_;
-    template<typename SampleIndex> static thread_local ThreadLocalData1_<SampleIndex> threadLocalData1_;
-    template<typename SampleStatus> static thread_local ThreadLocalData2_<SampleStatus> threadLocalData2_;
+    template<typename SampleIndex> inline static thread_local ThreadLocalData1_<SampleIndex> threadLocalData1_;
+    template<typename SampleStatus> inline static thread_local ThreadLocalData2_<SampleStatus> threadLocalData2_;
 
 private:
-    template<typename T> static size_t byteCount_(const T& t);
     template<typename T> static size_t bufferSizeImpl_();
+    template<typename T> static size_t bufferSize0_(const vector<T>& t);
+    template<typename T> static size_t bufferSize0_(const vector<vector<T>>& t);
+    template<typename T> static void deleteBuffersImpl_();
+    template<typename T> static void deleteBuffer0_(vector<T>* t);
 };

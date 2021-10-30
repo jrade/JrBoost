@@ -20,7 +20,7 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
     while (p != p1)
         *(r++) = std::make_pair(f(*(p++)), i++);
 
-    fastSort(
+    pdqsort_branchless(
         r0,
         r1,
         [](const auto& x, const auto& y) { return x.first < y.first; }

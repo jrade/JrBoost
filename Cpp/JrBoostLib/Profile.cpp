@@ -139,12 +139,29 @@ string PROFILE::result_()
     ss << "profiling overhead: "
         << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
     ss << "slow branch: " << (100.0 * slowBranchCount_) / splitIterationCount_ << "%" << '\n';
-    ss << "buffer size: " << TreeTrainerImplBase::bufferSize() << '\n';
+    ss << "buffer size: " << formatByteCount_(TreeTrainerImplBase::bufferSize()) << '\n';
 
     for (int id = 0; id < CLOCK_COUNT; ++id)
         clocks_[id].reset();
     slowBranchCount_ = 0;
     splitIterationCount_ = 0;
+
+    return ss.str();
+}
+
+string PROFILE::formatByteCount_(size_t n)
+{
+    stringstream ss;
+    ss << std::setprecision(3);
+
+    if (n < (1 << 10))
+        ss << n << " bytes";
+    else if (n < (1 << 20))
+        ss << static_cast<double>(n) / (1 << 10) << " KB";
+    else if (n < (1 << 30))
+        ss << static_cast<double>(n) / (1 << 20) << " MB";
+    else
+        ss << static_cast<double>(n) / (1 << 30) << " GB";
 
     return ss.str();
 }

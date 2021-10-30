@@ -1,38 +1,20 @@
-test Higgs with more outer threads - any speedup
+do some more profiling with Higgs and try to improve the sore, see Higgs Notes
 
-TreeTrainerImpl:
-
-	outdata and weights interleaved in a single array   [faster update splits]  
-		Array2f and Array2Xf types
-		each entry could be { w, w * y }
-		this array could be created in BoostTrainer inside the loop that calculates w and y
-		use row major eigen array with fixed second dimension, or just a vector of pairs?
-		after this, test logit boost again
-
-	simplify the profiling
-		log at profiling logs for a few different examples and remove items that are not useful
-
-	profile depth first and breadth first trees again with higgs
-		control with the test parameter
-
-then work on improving the Higgs score
-
-test fastExp() again, make sure to test NaN handling
-
-.............................................................................................................
+evaluate packed data
+	why does inner thread synch take so much time with packed data?
+		do some more detailed profiling?
+	test with Higgs cv on Laptop
+	if we keep it, don't pass around outData and weights
 
 better stratification when training multigroup classifiers
 
 write some simple documentation of the different boost methods
 	then test logit boost with   f' / (f'' + delta * f' * f')?
 
-are the submatrix functions needed at all?
-	or are they a useless optimization based on faulty profiling data?
-		profile again with TCGA data
-
 ------------------------------------------------------------------------------------------------------------------------
 
 major tasks:
+	simpler high level API that does cross-validation and applies preprocessing
 	release 0.1 (reset file format version?)
 	improved Higgs example (see "Higgs Notes.txt")
 	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
@@ -45,14 +27,13 @@ major tasks:
 	documentation of regularized logit boost method
 
 features to add:
-	simpler high level API that does cross-validation and applies preprocessing
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
 	set seed to make the code deterministic (how to handle dynamic scheduling? doable, but a bit tricky)
 	U-test (with correct handling of ties)
-	multiple inData and multiple variable counts (to handle feature engineering)
+	multiple indata and multiple variable counts (to handle feature engineering)
 
 optimizations (accuracy):
-	test the new selectVariablesByLevel option
+	test the new selectVariablesByLevel option (with Higgs for instance)
 	boosted forests
 		maybe train with forestSize = 1, then build with a larger forestSize
 	boost stop criteria
@@ -61,18 +42,17 @@ optimizations (accuracy):
 	other ways of regularizing logit boost?
 	
 optimizations (speed):
-	improved profiling log
-		group into unthreaded, partially threaded, fully threaded and thread synch
 	t-test and F-test:
 		divide the variables into large blocks, one for each thread
-		then divide the variables into subblocks of 4 each (__m128 that will be cast to __m256d)
+		then each blocks into vertical strips, each one __128 wide (to be converted to __m256d)
 	improved cost function when ordering options objects in parallel train
 	parallelize predict function?? (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
-	make TreeTrainerImpl::updateSampleStatus_() code branchfree by introducing dummy nodes that contain the unused samples
-		maybe maintain sorted lists of active samples to speed this up further
-	parallelize updateSampleStatus
-		maybe easier if we first add dummy nodes and then break ut sum calculations from updateSampleStatus to a separate function
-	look into fast/precise sums; does it make any difference for speed and accuracy?
+	TreeTrainerImpl::updateSampleStatus_:
+		make branchfree by introducing dummy nodes that contain the unused samples
+			maybe maintain sorted lists of active samples to speed this up further
+		parallelize
+		look into fast/precise sums; does it make any difference for speed and accuracy?
+	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
 	PGO
 	Test with other compilers:
 		can they autovectorize fast exp (then the manually vectorized code is not needed)
@@ -89,10 +69,9 @@ minor things:
 	compare performance (speed and accuracy) with xgboost
 	clang code formatting
 	how fast can a column major implementation of the t-statistic be?
-	look more into Eigen arrays and std::data
 	seems pybind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
 		that would be useful for passing sample lists to t-test and F-test
-	runtime checks for AVX2 and AVX512
+	runtime checks for AVX2 and AVX512?
 	Eigen:
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));

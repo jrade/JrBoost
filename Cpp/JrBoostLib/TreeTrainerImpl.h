@@ -27,13 +27,15 @@ private:
     template<typename SampleStatus> unique_ptr<BasePredictor> trainImpl_(
         CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const;
 
-    void validateData_(CRefXd outData, CRefXd weights) const;
+    //void validateData_(CRefXd outData, CRefXd weights) const;
+#if PACKED_DATA
+    void initWyPacks(CRefXd outData, CRefXd weights) const;
+#endif
     size_t usedVariableCount_(const TreeOptions& options) const;
     size_t initUsedVariables_(const TreeOptions& options) const;
+    void initTree_() const;
 
-    template<typename SampleStatus> size_t initRoot_(CRefXd outData, CRefXd weights) const;
-
-    template<typename SampleStatus> void initSampleStatus_(CRefXd weights, const TreeOptions& options) const;
+    template<typename SampleStatus> size_t initSampleStatus_(CRefXd outData, CRefXd weights, const TreeOptions& options) const;
     template<typename SampleStatus> void updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
 
     template<typename SampleStatus> const SampleIndex* initOrderedSamples_(
@@ -44,7 +46,10 @@ private:
         size_t usedVariableIndex, size_t usedSampleCount, const TreeOptions& opions, size_t d) const;
 
     void initNodeTrainers_(const TreeOptions& options, size_t d, size_t threadCount) const;
-    void updateNodeTrainers_(CRefXd outData, CRefXd weights,
+    void updateNodeTrainers_(
+#if !PACKED_DATA
+        CRefXd outData, CRefXd weights,
+#endif
         const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
     size_t finalizeNodeTrainers_(size_t d, size_t threadCount) const;
 

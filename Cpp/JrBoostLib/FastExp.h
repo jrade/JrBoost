@@ -40,7 +40,11 @@
 //    -709.06 <  x < -708.37:   absolute error < 1e-307
 //    -708.37 <  x <  709.81:   relative error < 0.0299
 //     709.81 <  x <=    inf:   return value = inf
-//               x =     nan:   return value = inf
+//               x =     nan:   return value undefined (scalar version)
+//                                           = infinity (SIMD version)
+//
+// Note: The Intel documentation specifies how _mm512_max_pd etc. handle nan.
+// The C++ standard does not specify how std::max and std::min handle nan.
 
 inline double fastExp(double x)
 {
@@ -49,11 +53,11 @@ inline double fastExp(double x)
     x = a * x + b;
 
     // if underflow, return 0
-    x = std::max(x, 0.0);
+    x = std::max(0.0, x);
 
     // if overflow, return positive infinity
     const double c = 2047LL << 52;
-    x = std::min(c, x);
+    x = std::min(x, c);
 
     // std::min and std::max return the first argument if any argument is nan
 
@@ -78,9 +82,6 @@ inline __m512d fastExp(__m512d x8)          // requires AVX512F + AVX512DQ
     // if overflow, return positive infinity
     const double c = 2047LL << 52;
     x8 = _mm512_min_pd(x8, _mm512_set1_pd(c));
-
-    // _mm512_max_pd etc. return the second argument if any argument is nan
-
 
     __m512i n8 = _mm512_cvtpd_epi64(x8);
 
@@ -116,8 +117,8 @@ inline __m256d fastExp(__m256d x4)          // requires AVX2
 /*
     A scalar version of this code would be:
         x = a * x + b;
-        x = std::max(x, 0.0);
-        x = std::min(c, x);
+        x = std::max(0.0, x);
+        x = std::min(x, c);
         int32_t m = static_cast<int32_t>(x);
         int64_t n = static_cast<int64_t>(m);
         n <<= 32;
@@ -133,7 +134,11 @@ inline __m256d fastExp(__m256d x4)          // requires AVX2
 //    -88.00 <  x < -87.30:   absolute error < 1e-38
 //    -87.30 <  x <  88.72:   relative error < 0.0299
 //     88.72 <  x <=   inf:   return value = inf
-//              x =    nan:   return value = inf
+//              x =    nan:   return value undefined (scalar version)
+//                                         = infinity (SIMD version)
+//
+// Note: The Intel documenation specifies how _mm512_max_ps etc. handle nan.
+// The C++ standard does not specify how std::max and std::min handle nan.
 
 inline float fastExp(float x)
 {
@@ -142,11 +147,11 @@ inline float fastExp(float x)
     x = a * x + b;
 
     // if underflow, return 0
-    x = std::max(x, 0.0f);
+    x = std::max(0.0f, x);
 
     // if overflow, return positive infinity
     const float c = 255 << 23;
-    x = std::min(c, x);
+    x = std::min(x, c);
 
     uint32_t n = static_cast<uint32_t>(x);
 
@@ -196,3 +201,61 @@ inline __m256 fastExp(__m256 x8)            // requires AVX2
 
     return x8;
 }
+
+//------------------------------------------------------------------------------
+
+/*
+void fastExpTest_(double x)
+{
+    double y0 = std::exp(x);
+    //double y1 = fastExp(x);
+    double y1 = fastExp(_mm256_set1_pd(x)).m256d_f64[2];
+    double absErr = y1 - y0;
+    double relErr = (y1 - y0) / y0;
+    std::cout << x << ":  " << y0 << "  " << y1 << "  " << relErr << "  " << absErr << std::endl;
+}
+
+void fastExpTest_(float x)
+{
+    float y0 = std::exp(x);
+    //float y1 = fastExp(x);
+    float y1 = fastExp(_mm256_set1_ps(x)).m256_f32[6];
+    float absErr = y1 - y0;
+    float relErr = (y1 - y0) / y0;
+    std::cout << x << ":  " << y0 << "  " << y1 << "  " << relErr << "  " << absErr << std::endl;
+}
+
+void fastExpTestDouble()
+{
+    for (double x = -710; x < -708; x += 0.005)
+        fastExpTest_(x);
+
+    std::cout << std::endl;
+
+    for (double x = 709; x < 710; x += 0.005)
+        fastExpTest_(x);
+
+    std::cout << std::endl;
+
+    fastExpTest_(-std::numeric_limits<double>::infinity());
+    fastExpTest_(std::numeric_limits<double>::infinity());
+    fastExpTest_(std::numeric_limits<double>::quiet_NaN());
+}
+
+void fastExpTestFloat()
+{
+    for (double x = -89; x < -87; x += 0.005)
+        fastExpTest_(static_cast<float>(x));
+
+    std::cout << std::endl;
+
+    for (double x = 88; x < 89; x += 0.005)
+        fastExpTest_(static_cast<float>(x));
+
+    std::cout << std::endl;
+
+    fastExpTest_(-std::numeric_limits<float>::infinity());
+    fastExpTest_(std::numeric_limits<float>::infinity());
+    fastExpTest_(std::numeric_limits<float>::quiet_NaN());
+}
+*/

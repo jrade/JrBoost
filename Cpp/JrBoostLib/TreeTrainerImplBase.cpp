@@ -11,10 +11,11 @@ size_t TreeTrainerImplBase::bufferSize()
     size_t n = 0;
 #pragma omp parallel reduction(+: n)
     {
-        n += byteCount_(threadLocalData0_.usedVariables);
-        n += byteCount_(threadLocalData0_.tree);
-        for (const auto& layer : threadLocalData0_.tree)
-            n += byteCount_(layer);
+#if PACKED_DATA
+        n += bufferSize0_(threadLocalData0_.wyPacks);
+#endif
+        n += bufferSize0_(threadLocalData0_.usedVariables);
+        n += bufferSize0_(threadLocalData0_.tree);
 
         n += bufferSizeImpl_<uint8_t>();
         n += bufferSizeImpl_<uint16_t>();
@@ -29,20 +30,64 @@ size_t TreeTrainerImplBase::bufferSizeImpl_()
 {
     size_t n = 0;
 
-    n += byteCount_(threadLocalData1_<T>.orderedSamplesByVariable);
-    for (const auto& orderedSamples : threadLocalData1_<T>.orderedSamplesByVariable)
-        n += byteCount_(orderedSamples);
-    n += byteCount_(threadLocalData1_<T>.sampleBuffer);
-    n += byteCount_(threadLocalData1_<T>.samplePointerBuffer);
-    n += byteCount_(threadLocalData1_<T>.treeNodeTrainers);
+    n += bufferSize0_(threadLocalData1_<T>.orderedSamplesByVariable);
+    n += bufferSize0_(threadLocalData1_<T>.sampleBuffer);
+    n += bufferSize0_(threadLocalData1_<T>.samplePointerBuffer);
+    n += bufferSize0_(threadLocalData1_<T>.treeNodeTrainers);
 
-    n += byteCount_(threadLocalData2_<T>.sampleStatus);
+    n += bufferSize0_(threadLocalData2_<T>.sampleStatus);
 
     return n;
 }
 
 template<typename T>
-size_t TreeTrainerImplBase::byteCount_(const T& t)
+size_t TreeTrainerImplBase::bufferSize0_(const vector<T>& t)
 {
-    return t.capacity() * sizeof(typename T::value_type);
+    return t.capacity() * sizeof(T);
+}
+
+template<typename T>
+size_t TreeTrainerImplBase::bufferSize0_(const vector<vector<T>>& t)
+{
+    size_t n = t.capacity() * sizeof(vector<T>);
+    for (const auto& u : t)
+        n += u.capacity() * sizeof(T);
+    return n;
+}
+
+//......................................................................................................................
+
+void TreeTrainerImplBase::freeBuffers()
+{
+#pragma omp parallel
+    {
+#if PACKED_DATA
+        deleteBuffer0_(&threadLocalData0_.wyPacks);
+#endif
+        deleteBuffer0_(&threadLocalData0_.usedVariables);
+        deleteBuffer0_(&threadLocalData0_.tree);
+
+        deleteBuffersImpl_<uint8_t>();
+        deleteBuffersImpl_<uint16_t>();
+        deleteBuffersImpl_<uint32_t>();
+        deleteBuffersImpl_<uint64_t>();
+    }
+}
+
+template<typename T>
+void TreeTrainerImplBase::deleteBuffersImpl_()
+{
+    deleteBuffer0_(&threadLocalData1_<T>.orderedSamplesByVariable);
+    deleteBuffer0_(&threadLocalData1_<T>.sampleBuffer);
+    deleteBuffer0_(&threadLocalData1_<T>.samplePointerBuffer);
+    deleteBuffer0_(&threadLocalData1_<T>.treeNodeTrainers);
+
+    deleteBuffer0_(&threadLocalData2_<T>.sampleStatus);
+}
+
+template<typename T>
+void TreeTrainerImplBase::deleteBuffer0_(vector<T>* t)
+{
+    t->clear();
+    t->shrink_to_fit();
 }

@@ -2,7 +2,7 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import math, os, random, time
+import itertools, math, os, random, time
 import numpy as np
 import pandas as pd
 import jrboost
@@ -13,7 +13,6 @@ PROFILE = jrboost.PROFILE
 
 param = {
     'threadCount': os.cpu_count() // 2,
-    'profile': True,
     'trainFraction': 1.0,
     'repCount': 1
 }
@@ -40,7 +39,6 @@ print()
 def main():
 
     threadCount = param['threadCount']
-    profile = param['profile']
     trainFraction = param.get('trainFraction', None)
 
     jrboost.setThreadCount(threadCount)
@@ -74,43 +72,47 @@ def main():
 
     # train predictor ..........................................................
 
-    t = -time.time()
-    if profile: PROFILE.START()
+    for i in itertools.count():
 
-    predictor, cutoff = train(
-        trainInData, trainOutData, trainWeights,
-       testInData, testOutData, testWeights)
+        print(f'----------------------- {i} ---------------------------\n')
 
-    t += time.time()
-    print(formatTime(t) + '\n')
-    if profile: print(PROFILE.STOP() + '\n')
+        t = -time.time()
+        PROFILE.START()
 
-    print(f'cutoff = {cutoff}\n')
+        predictor, cutoff = train(
+            trainInData, trainOutData, trainWeights,
+           testInData, testOutData, testWeights)
 
-    # score ...................................................................
+        t += time.time()
+        print(PROFILE.STOP())
+        print(formatTime(t) + '\n')
 
-    testPredData = predictor.predict(testInData)
-    score = amsScore(testOutData, testPredData >= cutoff, testWeights)
-    print(f'Test AMS = {score}')
+        print(f'cutoff = {cutoff}')
 
-    validationPredData = predictor.predict(validationInData)
-    score = amsScore(validationOutData, validationPredData >= cutoff, validationWeights)
-    print(f'Validation AMS = {score}\n')
+        # score ...................................................................
 
-    # create and save  .........................................................
+        testPredData = predictor.predict(testInData)
+        score = amsScore(testOutData, testPredData >= cutoff, testWeights)
+        print(f'test AMS = {score}')
 
-    testPredDataSeries = pd.Series(index = testOutDataSeries.index, data = testPredData)
-    validationPredDataSeries = pd.Series(index = validationOutDataSeries.index, data = validationPredData)
-    submissionPredDataSeries = pd.concat((testPredDataSeries, validationPredDataSeries)).sort_index()
-    submissionPredData = submissionPredDataSeries.to_numpy()
-    submissionPredRank = rank(submissionPredData) + 1
-    submissionPredClass = np.where(submissionPredData >= cutoff, 's', 'b')
+        validationPredData = predictor.predict(validationInData)
+        score = amsScore(validationOutData, validationPredData >= cutoff, validationWeights)
+        print(f'validation AMS = {score}\n')
 
-    submissionDataFrame = pd.DataFrame(
-        index = submissionPredDataSeries.index,
-        data = { 'RankOrder': submissionPredRank, 'Class': submissionPredClass, }
-    )
-    submissionDataFrame.to_csv('../../Higgs Submission.csv', sep = ',')
+        # create and save  .........................................................
+
+        testPredDataSeries = pd.Series(index = testOutDataSeries.index, data = testPredData)
+        validationPredDataSeries = pd.Series(index = validationOutDataSeries.index, data = validationPredData)
+        submissionPredDataSeries = pd.concat((testPredDataSeries, validationPredDataSeries)).sort_index()
+        submissionPredData = submissionPredDataSeries.to_numpy()
+        submissionPredRank = rank(submissionPredData) + 1
+        submissionPredClass = np.where(submissionPredData >= cutoff, 's', 'b')
+
+        submissionDataFrame = pd.DataFrame(
+            index = submissionPredDataSeries.index,
+            data = { 'RankOrder': submissionPredRank, 'Class': submissionPredClass, }
+        )
+        submissionDataFrame.to_csv('../../Higgs Submission.csv', sep = ',')
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -247,4 +249,5 @@ def optimalCutoff(outData, predData, weights):
 
 #-------------------------------------------
 
-main()
+while True:
+    main()

@@ -46,6 +46,8 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         // each inner thread count is approximately the total thread count divided by the outer thread count
@@ -57,14 +59,10 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
-    // since the profiling only tracks the master thread, we randomize
-    // the initial item given to each thread and the inner thread counts
-    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
-    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
-
     // An OpenMP parallel for loop with dynamic scheduling does not in general process the elements in any 
     // particular order. Therefore we implement our own scheduling to make sure they are processed in order.
 
+    PROFILE::PUSH(PROFILE::OUTER_THREAD_SYNCH);
     std::atomic<size_t> nextSortedOptIndex = 0;
     BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
@@ -74,12 +72,19 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
 
         while (true) {
             size_t sortedOptIndex = nextSortedOptIndex++;
+            // do a random shuffle of the work items
+            // since we only profile the main thread, this gives more stable profiling numbers
+            sortedOptIndex
+                = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                + (sortedOptIndex + threadShift) % outerThreadCount;
             if (sortedOptIndex >= optCount) break;
+
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             pred[optIndex] = trainer.train(opt[optIndex], innerThreadCount);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    PROFILE::POP();
 
     return pred;
 }
@@ -122,6 +127,8 @@ ArrayXXdc parallelTrainAndPredict(
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
@@ -131,9 +138,7 @@ ArrayXXdc parallelTrainAndPredict(
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
-    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
-    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
-
+    PROFILE::PUSH(PROFILE::OUTER_THREAD_SYNCH);
     std::atomic<size_t> nextSortedOptIndex = 0;
     BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
@@ -143,13 +148,20 @@ ArrayXXdc parallelTrainAndPredict(
 
         while (true) {
             size_t sortedOptIndex = nextSortedOptIndex++;
+            // do a random shuffle of the work items
+            // since we only profile the main thread, this gives more stable profiling numbers
+            sortedOptIndex
+                = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                + (sortedOptIndex + threadShift) % outerThreadCount;
             if (sortedOptIndex >= optCount) break;
+
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             predData.col(optIndex) = pred->predict(testInData);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    PROFILE::POP();
 
     return predData;
 }
@@ -189,6 +201,8 @@ ArrayXd parallelTrainAndEval(
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
@@ -198,10 +212,7 @@ ArrayXd parallelTrainAndEval(
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
-    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
-    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
-
-    //cout << "0";
+    PROFILE::PUSH(PROFILE::OUTER_THREAD_SYNCH);
     std::atomic<size_t> nextSortedOptIndex = 0;
     BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
@@ -209,22 +220,23 @@ ArrayXd parallelTrainAndEval(
         size_t outerThreadIndex = omp_get_thread_num();
         size_t innerThreadCount = innerThreadCounts[outerThreadIndex];
 
-        //stringstream ss;
-        //ss << outerThreadCount << " -> " << innerThreadCount << '\n';
-        //cout << ss.str();
-
         while (true) {
             size_t sortedOptIndex = nextSortedOptIndex++;
+            // do a random shuffle of the work items
+            // since we only profile the main thread, this gives more stable profiling numbers
+            sortedOptIndex
+                = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                + (sortedOptIndex + threadShift) % outerThreadCount;
             if (sortedOptIndex >= optCount) break;
+
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
             scores(optIndex) = lossFun(testOutData, predData);
         }
-        //cout << '.';
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
-    //cout << '\n';
+    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    PROFILE::POP();
 
     return scores;
 }
@@ -262,6 +274,8 @@ ArrayXd parallelTrainAndEvalWeighted(
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
@@ -271,9 +285,7 @@ ArrayXd parallelTrainAndEvalWeighted(
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
-    std::shuffle(begin(optIndicesSortedByCost), begin(optIndicesSortedByCost) + outerThreadCount, theRne);
-    std::shuffle(begin(innerThreadCounts), end(innerThreadCounts), theRne);
-
+    PROFILE::PUSH(PROFILE::OUTER_THREAD_SYNCH);
     std::atomic<size_t> nextSortedOptIndex = 0;
     BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
     {
@@ -283,14 +295,21 @@ ArrayXd parallelTrainAndEvalWeighted(
 
         while (true) {
             size_t sortedOptIndex = nextSortedOptIndex++;
+            // do a random shuffle of the work items
+            // since we only profile the main thread, this gives more stable profiling numbers
+            sortedOptIndex
+                = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                + (sortedOptIndex + threadShift) % outerThreadCount;
             if (sortedOptIndex >= optCount) break;
+
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
             scores(optIndex) = lossFun(testOutData, predData, testWeights);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL(PROFILE::OUTER_THREAD_SYNCH);
+    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    PROFILE::POP();
 
     return scores;
 }

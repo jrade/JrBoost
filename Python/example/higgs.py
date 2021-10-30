@@ -51,7 +51,7 @@ def main():
 
     logFilePath = f'../Log OptTree {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.txt'
     with open(logFilePath, 'w', 1) as logFile:
-        def log(msg = ''): print(msg); logFile.write(msg + '\n')
+        def log(msg = '', end = '\n'): print(msg, end = end); logFile.write(msg + end)
 
         log(f'Parameters: {param}\n')
         log(f'Training parameters:{trainParam}\n')
@@ -151,13 +151,13 @@ def train(inData, outData, weights):
     folds = jrboost.stratifiedRandomFolds(outData, foldCount)
     for trainSamples, testSamples in folds:
 
-        trainInData = jrboost.selectRows(inData, trainSamples)
+        trainInData = inData[trainSamples, :]
         trainOutData = outData[trainSamples]
         trainWeights = weights[trainSamples]
         trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
         predictor = jrboost.EnsemblePredictor(jrboost.parallelTrain(trainer, bestOptList))
 
-        testInData = jrboost.selectRows(inData, testSamples)
+        testInData = inData[testSamples, :]
         predOutData[testSamples] = predictor.predict(testInData)
 
     estCutoff, _ = optimalCutoff(outData, predOutData, weights)
@@ -181,12 +181,12 @@ def evaluateBoostParam(boostParamList, inData, outData, weights):
 
         print('.', end = '', flush = True)
 
-        trainInData = jrboost.selectRows(inData, trainSamples)
+        trainInData = inData[trainSamples, :]
         trainOutData = outData[trainSamples]
         trainWeights = weights[trainSamples]
         trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
 
-        testInData = jrboost.selectRows(inData, testSamples)
+        testInData = inData[testSamples, :]
         testOutData = outData[testSamples]
         testWeights = weights[testSamples]
 

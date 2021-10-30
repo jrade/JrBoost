@@ -114,7 +114,7 @@ inline double auc(CRefXs outData, CRefXd predData)
     vector<pair<size_t, double>> tmp(sampleCount);
     for (size_t i = 0; i < sampleCount; ++i)
         tmp[i] = { outData[i], predData[i] };
-    fastSort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
 
     size_t a = 0;
     size_t b = 0;
@@ -139,7 +139,7 @@ inline double aucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
     vector<tuple<size_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i < sampleCount; ++i)
         tmp[i] = { outData[i], predData[i], weights[i] };
-    fastSort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
 
     double a = 0.0;
     double b = 0.0;
@@ -167,7 +167,7 @@ inline double aoc(CRefXs outData, CRefXd predData)
     vector<pair<size_t, double>> tmp(sampleCount);
     for (size_t i = 0; i < sampleCount; ++i)
         tmp[i] = { outData[i], predData[i] };
-    fastSort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
 
     size_t a = 0;
     size_t b = 0;
@@ -192,7 +192,7 @@ inline double aocWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
     vector<tuple<size_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i < sampleCount; ++i)
         tmp[i] = { outData[i], predData[i], weights[i] };
-    fastSort(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
 
     double a = 0.0;
     double b = 0.0;

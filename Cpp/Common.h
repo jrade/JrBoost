@@ -74,10 +74,10 @@ using std::vector;
 #pragma warning( pop )
 #endif
 
-using ArrayXXdc = Eigen::ArrayXX<double>;      // column major
+using ArrayXXdc = Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
 using ArrayXXdr = Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using ArrayXXfc = Eigen::ArrayXX<float>;      // column major
-using ArrayXXfr = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using ArrayXXfc = Eigen::Array<float,  Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
+using ArrayXXfr = Eigen::Array<float,  Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using ArrayXd   = Eigen::ArrayX<double>;
 using ArrayXf   = Eigen::ArrayX<float>;
 using ArrayXs   = Eigen::ArrayX<size_t>;
@@ -156,16 +156,6 @@ public:
 inline thread_local InitializedRandomNumberEngine theRne;
 
 
-template<class Iter, class Compare>
-inline void fastSort(Iter begin, Iter end, Compare comp) {
-    size_t n = end - begin;
-    size_t ITEM_COUNT = static_cast<size_t>(std::round(n * std::log(n)));
-    PROFILE::PUSH(PROFILE::SORT);
-    pdqsort_branchless(begin, end, comp);
-    PROFILE::POP(ITEM_COUNT);
-}
-
-
 #ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable: 4324 )    // 'struct_name' : structure was padded due to __declspec(align())
@@ -177,3 +167,6 @@ class alignas(std::hardware_destructive_interference_size) CacheLineAligned: pub
 #ifdef _MSC_VER
 #pragma warning( pop )
 #endif
+
+
+#define PACKED_DATA 0
