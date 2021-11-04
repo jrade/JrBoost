@@ -4,12 +4,12 @@
 
 #pragma once
 
-class BoostTrainer;
 class BoostOptions;
-class BoostPredictor;
+class BoostTrainer;
+class Predictor;
 
 
-vector<shared_ptr<BoostPredictor>> parallelTrain(
+vector<shared_ptr<Predictor>> parallelTrain(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt);
 
 ArrayXXdc parallelTrainAndPredict(

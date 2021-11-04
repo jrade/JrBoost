@@ -23,14 +23,16 @@ void BoostOptions::setEta(double eta)
     if (!(eta > 0.0))       // carefully written to trap NaN
         throw std::invalid_argument("eta must be positive.");
     eta_ = eta;
-}
 
+}
 void BoostOptions::setFastExp(bool b)
 {
     fastExp_ = b;
 }
 
-double BoostOptions::cost() const
+//----------------------------------------------------------------------------------------------------------------------
+
+double cost(const BoostOptions& opt)
 {
-    return ForestOptions::cost() * iterationCount_;
+    return opt.iterationCount() * cost(static_cast<const BaseOptions&>(opt));
 }

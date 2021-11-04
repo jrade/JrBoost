@@ -14,6 +14,7 @@ public:
     enum CLOCK_ID {
         MAIN,
         T_RANK,
+        F_RANK,
         BOOST_TRAIN,
         BOOST_PREDICT,
         TREE_TRAIN,
@@ -28,6 +29,7 @@ public:
         INIT_ORDERED_SAMPLES,
         UPDATE_ORDERED_SAMPLES,
         FIND_BEST_SPLITS,
+        LOSS,
         INNER_THREAD_SYNCH,
         OUTER_THREAD_SYNCH,
         TEST1, TEST2, TEST3, TEST4, TEST5,
@@ -57,6 +59,7 @@ private:
 inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "main",
     "t-rank",
+    "F-rank",
     "  boost train",
     "  boost predict",
     "  tree train",
@@ -71,6 +74,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
     "    init ord. samples",
     "    update ord. samples",
     "    find best splits",
+    "  loss",
     "inner thread synch",
     "outer thread synch",
     "test-1",

@@ -5,8 +5,8 @@
 #pragma once
 
 class BoostOptions;
-class BoostPredictor;
 class ForestTrainer;
+class Predictor;
 
 
 class BoostTrainer
@@ -15,7 +15,7 @@ public:
     BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights);
     ~BoostTrainer();
 
-    shared_ptr<BoostPredictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
+    shared_ptr<Predictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
 
  // deleted:
     BoostTrainer(const BoostTrainer&) = delete;
@@ -25,9 +25,9 @@ private:
     static void validateData_(CRefXXfc inData, CRefXu8 outData, optional<CRefXd> weights);
     double getGlobalLogOddsRatio_() const;
 
-    shared_ptr<BoostPredictor> trainAda_(const BoostOptions& opt, size_t threadCount) const;
-    shared_ptr<BoostPredictor> trainLogit_(const BoostOptions& opt, size_t threadCount) const;
-    shared_ptr<BoostPredictor> trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const;
+    shared_ptr<Predictor> trainAda_(const BoostOptions& opt, size_t threadCount) const;
+    shared_ptr<Predictor> trainLogit_(const BoostOptions& opt, size_t threadCount) const;
+    shared_ptr<Predictor> trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const;
     static void overflow_ [[noreturn]] (const BoostOptions& opt);
 
 private:

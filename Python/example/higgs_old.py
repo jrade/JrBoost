@@ -31,7 +31,7 @@ trainParam = {
         'minNodeSize': [10, 20, 50, 100, 200, 500, 1000],                  # increase with train fraction 1.0?
         #'minRelSampleWeight': [0.000001],
         'minRelSampleWeight': [0.001],
-        'maxDepth': [1, 2, 3, 4]
+        'maxTreeDepth': [1, 2, 3, 4]
     },
 
     'minimizeParam': {
@@ -228,7 +228,7 @@ def formatOptions(opt):
     usr = opt['usedSampleRatio']
     uvr = opt['usedVariableRatio']
     mns = opt['minNodeSize']
-    md = opt['maxDepth']
+    md = opt['maxTreeDepth']
     return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}'
 
 def formatScore(score, precision = 4):

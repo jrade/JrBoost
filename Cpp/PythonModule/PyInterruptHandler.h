@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "../JrBoostLib/InterruptHandler.h"
 
 class PyInterruptHandler : public InterruptHandler
 {

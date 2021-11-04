@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "ForestOptions.h"
+#include "BaseOptions.h"
 
 
-class BoostOptions : public ForestOptions 
+class BoostOptions : public BaseOptions
 {
 public:
     BoostOptions() = default;
@@ -25,11 +25,11 @@ public:
     void setEta(double eta);
     void setFastExp(bool b);
 
-    double cost() const;
-
 private:
     double gamma_{ 1.0 };
     size_t iterationCount_{ 1000 };
     double eta_{ 0.1 };
     bool fastExp_{ true };
 };
+
+double cost(const BoostOptions& opt);

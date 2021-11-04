@@ -1,81 +1,63 @@
-do boosted forests increase accuracy?
-
-double check boost options cost function
-
-do the options objects need copy constructors and copy assignment operators
-
-fold small cpp files into the h files (TrivialPredictor.cpp etc.)
-
-outer thread synch in profiling currently includes loss functions? break out as a separate post?
-
-evaluate packed data
+packed data
 	why does inner thread synch take so much time with packed data?
 		do some more detailed profiling?
+		what happens if there are no inner threads?
+			push things to max with 128 threads, no inner threads on fast PC
 	test with Higgs cv on Laptop
 	if we keep it, don't pass around outData and weights
 
-better stratification when training multigroup classifiers
-
-write some simple documentation of the different boost methods
-	then test logit boost with   f' / (f'' + delta * f' * f')?
+release 0.1
+	reset the predictor file format version to 1 and ditch the backward compatibility code
 
 ------------------------------------------------------------------------------------------------------------------------
 
 major tasks:
-	simpler high level API that does cross-validation and applies preprocessing
-	release 0.1 (reset file format version?)
 	improved Higgs example (see "Higgs Notes.txt")
-	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
-	BART
+	simpler high level API that does cross-validation and applies preprocessing
+	documentation of the different boost methods, incuding regularized logit boost
 	improved Otto example (see "Otto Notes.txt")
+	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
+	histogram-based tree builder (would speed up Otto a lot, maybe Higgs too)
+	BART
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
-	histogram-based tree builder (would speed up Otto a lot, Higgs also)
 	multinomial predictors
-	documentation of regularized logit boost method
 
 features to add:
 	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
-	set seed to make the code deterministic (how to handle dynamic scheduling? doable, but a bit tricky)
+	logit boost with   f' / (f'' + delta * f' * f') ?
 	U-test (with correct handling of ties)
 	multiple indata and multiple variable counts (to handle feature engineering)
+	set seed to make the code deterministic (how to handle dynamic scheduling? doable, but a bit tricky)
 
 optimizations (accuracy):
-	test the new selectVariablesByLevel option (with Higgs for instance)
-	boosted forests
-		maybe train with forestSize = 1, then build with a larger forestSize
+	better stratification when training multigroup classifiers
+	better parallelTrainAndEval for non-additive loss function (such as AUC)
 	boost stop criteria
 	pruning
 	multi-label stratification when generating folds and selecting active samples
 	other ways of regularizing logit boost?
 	
 optimizations (speed):
-	targets for parallelization:
-		ForestTrainer
-		TreeTrainerImpl::updateSampleStatus_
+	parallelize:
+		ForestTrainer::train
+		TreeTrainer::updateSampleStatus_
+			easier if we do not use exact sums; can we do that?
 		predict functions
+	make branch free:
+		TreeTrainer::updateSampleStatus_:
+			introducing dummy nodes that contain the unused samples
+			maybe maintain sorted lists of active samples to speed this up further
 	t-test and F-test:
 		divide the variables into large blocks, one for each thread
 		then each blocks into vertical strips, each one __128 wide (to be converted to __m256d)
-	improved cost function when ordering options objects in parallel train
-	TreeTrainerImpl::updateSampleStatus_:
-		make branchfree by introducing dummy nodes that contain the unused samples
-			maybe maintain sorted lists of active samples to speed this up further
 		look into fast/precise sums; does it make any difference for speed and accuracy?
 	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
 	PGO
-	Test with other compilers:
-		can they autovectorize fast exp (then the manually vectorized code is not needed)
-		can they handle 128 threads?
-		does the Intel compiler produce code that runs fast on an AMD processor
 
 minor things:
-	replace size_t by uint64_t throghout the code (32-bit build not supported, nor 128-bit)
 	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
-	is there any need for the fudge term in the t- and F-test? (How large should the fudge term be?)
-	save and load:
-		check that dataset does not have more than 2G variables
-		get rid of uint32 nonsense?
+	why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 	compare performance (speed and accuracy) with xgboost
 	clang code formatting
 	how fast can a column major implementation of the t-statistic be?

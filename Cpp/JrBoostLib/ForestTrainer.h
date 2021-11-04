@@ -4,33 +4,25 @@
 
 #pragma once
 
-#include "ForestOptions.h"
-#include "ForestPredictor.h"
-#include "TreeTrainer.h"
+class BaseOptions;
+class BasePredictor;
+class TreeTrainerBase;
 
 
 class ForestTrainer
 {
 public:
-    ForestTrainer(CRefXXfc inData, CRefXu8 strata) : treeTrainer_(inData, strata) {}
-    ~ForestTrainer() = default;
+    ForestTrainer(CRefXXfc inData, CRefXu8 strata);
+    ~ForestTrainer();
 
-    unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const ForestOptions& options, size_t threadCount) const
-    {
-        size_t forestSize = options.forestSize();
-        if (forestSize == 1)
-            return treeTrainer_.train(outData, weights, options, threadCount);
-
-        vector<unique_ptr<BasePredictor>> basePredictors(forestSize);
-        for (size_t k = 0; k < forestSize; ++k)
-            basePredictors[k] = treeTrainer_.train(outData, weights, options, threadCount);
-        return std::make_unique<ForestPredictor>(move(basePredictors));
-    }
+    unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
 // deleted:
-    ForestTrainer(const TreeTrainer&) = delete;
-    ForestTrainer& operator=(const TreeTrainer&) = delete;
+    ForestTrainer(const ForestTrainer&) = delete;
+    ForestTrainer& operator=(const ForestTrainer&) = delete;
 
 private:
-    TreeTrainer treeTrainer_;
+    static unique_ptr<TreeTrainerBase> createTreeTrainer_(CRefXXfc inData, CRefXu8 strata);
+
+    const unique_ptr<const TreeTrainerBase> treeTrainer_;
 };

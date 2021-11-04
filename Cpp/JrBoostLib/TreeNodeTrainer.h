@@ -4,10 +4,11 @@
 
 #pragma once
 
-#include "TreeNode.h"
+#include "Tree.h"
 
-class TreeOptions;
+class BaseOptions;
 struct WyPack;
+
 
 struct TreeNodeExt : public TreeNode
 {
@@ -25,10 +26,9 @@ public:
     TreeNodeTrainer() = default;
     ~TreeNodeTrainer() = default;
 
-    void init(const TreeNodeExt& node, const TreeOptions& options);
+    void init(const TreeNodeExt& node, const BaseOptions& options);
     void fork(TreeNodeTrainer* other) const;
-    void update(
-        CRefXXfc inData,
+    void update(CRefXXfc inData,
 #if PACKED_DATA
         const WyPack* pWyPacks,
 #else

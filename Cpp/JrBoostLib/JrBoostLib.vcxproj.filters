@@ -1,22 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="TreeOptions.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="BoostOptions.h">
-      <Filter>Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="BoostTrainer.h">
-      <Filter>Trainer</Filter>
-    </ClInclude>
     <ClInclude Include="StaticStack.h">
       <Filter>Profiling</Filter>
     </ClInclude>
     <ClInclude Include="Profile.h">
-      <Filter>Profiling</Filter>
-    </ClInclude>
-    <ClInclude Include="ClockCycleCount.h">
       <Filter>Profiling</Filter>
     </ClInclude>
     <ClInclude Include="Clock.h">
@@ -26,28 +14,10 @@
       <Filter>Tools</Filter>
     </ClInclude>
     <ClInclude Include="pch.h" />
-    <ClInclude Include="SortedIndices.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="InterruptHandler.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
     <ClInclude Include="Predictor.h">
       <Filter>Predictor</Filter>
     </ClInclude>
-    <ClInclude Include="EnsemblePredictor.h">
-      <Filter>Predictor</Filter>
-    </ClInclude>
-    <ClInclude Include="BoostPredictor.h">
-      <Filter>Predictor</Filter>
-    </ClInclude>
     <ClInclude Include="BasePredictor.h">
-      <Filter>Base Predictor</Filter>
-    </ClInclude>
-    <ClInclude Include="StumpPredictor.h">
-      <Filter>Base Predictor</Filter>
-    </ClInclude>
-    <ClInclude Include="TrivialPredictor.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
     <ClInclude Include="Loss.h">
@@ -56,113 +26,93 @@
     <ClInclude Include="TTest.h">
       <Filter>Extra</Filter>
     </ClInclude>
-    <ClInclude Include="Assert.h">
-      <Filter>Tools</Filter>
-    </ClInclude>
-    <ClInclude Include="ParallelTrain.h">
-      <Filter>Trainer</Filter>
-    </ClInclude>
     <ClInclude Include="FTest.h">
       <Filter>Extra</Filter>
     </ClInclude>
-    <ClInclude Include="TreeTrainer.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="TreePredictor.h">
-      <Filter>Base Predictor</Filter>
-    </ClInclude>
-    <ClInclude Include="TreeTrainerImpl.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="TreeNode.h">
+    <ClInclude Include="Tree.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
     <ClInclude Include="ExceptionSafeOmp.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="TreeNodeTrainer.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
-    <ClInclude Include="Submatrix.h">
-      <Filter>Extra</Filter>
-    </ClInclude>
-    <ClInclude Include="TreeTrainerImplBase.h">
-      <Filter>Base Trainer</Filter>
-    </ClInclude>
     <ClInclude Include="FastExp.h">
       <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="ForestOptions.h">
-      <Filter>Base Trainer</Filter>
+    <ClInclude Include="Base128Encoding.h">
+      <Filter>Tools</Filter>
     </ClInclude>
-    <ClInclude Include="ForestPredictor.h">
+    <ClInclude Include="Tools.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeNodeTrainer.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
     <ClInclude Include="ForestTrainer.h">
-      <Filter>Base Trainer</Filter>
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainer.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerBase.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="BoostTrainer.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="ParallelTrain.h">
+      <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="Globals.h" />
+    <ClInclude Include="BaseOptions.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="BoostOptions.h">
+      <Filter>Predictor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TreeOptions.cpp">
-      <Filter>Base Trainer</Filter>
-    </ClCompile>
-    <ClCompile Include="BoostOptions.cpp">
-      <Filter>Trainer</Filter>
-    </ClCompile>
-    <ClCompile Include="BoostTrainer.cpp">
-      <Filter>Trainer</Filter>
-    </ClCompile>
     <ClCompile Include="Profile.cpp">
       <Filter>Profiling</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp" />
-    <ClCompile Include="BoostPredictor.cpp">
-      <Filter>Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="StumpPredictor.cpp">
-      <Filter>Base Predictor</Filter>
-    </ClCompile>
     <ClCompile Include="BasePredictor.cpp">
       <Filter>Base Predictor</Filter>
     </ClCompile>
     <ClCompile Include="Predictor.cpp">
       <Filter>Predictor</Filter>
     </ClCompile>
-    <ClCompile Include="EnsemblePredictor.cpp">
-      <Filter>Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="TrivialPredictor.cpp">
-      <Filter>Base Predictor</Filter>
-    </ClCompile>
     <ClCompile Include="TTest.cpp">
       <Filter>Extra</Filter>
-    </ClCompile>
-    <ClCompile Include="ParallelTrain.cpp">
-      <Filter>Trainer</Filter>
     </ClCompile>
     <ClCompile Include="FTest.cpp">
       <Filter>Extra</Filter>
     </ClCompile>
-    <ClCompile Include="TreeTrainer.cpp">
-      <Filter>Base Trainer</Filter>
-    </ClCompile>
-    <ClCompile Include="TreePredictor.cpp">
-      <Filter>Base Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="TreeTrainerImpl.cpp">
-      <Filter>Base Trainer</Filter>
-    </ClCompile>
-    <ClCompile Include="TreeNode.cpp">
+    <ClCompile Include="Tree.cpp">
       <Filter>Base Predictor</Filter>
     </ClCompile>
     <ClCompile Include="TreeNodeTrainer.cpp">
-      <Filter>Base Trainer</Filter>
+      <Filter>Base Predictor</Filter>
     </ClCompile>
-    <ClCompile Include="Submatrix.cpp">
-      <Filter>Extra</Filter>
+    <ClCompile Include="ForestTrainer.cpp">
+      <Filter>Base Predictor</Filter>
     </ClCompile>
-    <ClCompile Include="TreeTrainerImplBase.cpp">
-      <Filter>Base Trainer</Filter>
+    <ClCompile Include="TreeTrainer.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerBase.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="BoostTrainer.cpp">
+      <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="ParallelTrain.cpp">
+      <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseOptions.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="BoostOptions.cpp">
+      <Filter>Predictor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -177,12 +127,6 @@
     </Filter>
     <Filter Include="Base Predictor">
       <UniqueIdentifier>{536b7ec8-af35-494d-8758-3d38d0865ae1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Base Trainer">
-      <UniqueIdentifier>{c32966fa-f91e-4f96-b08b-d46ebf66f227}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Trainer">
-      <UniqueIdentifier>{218ce471-c2e9-439b-8a5e-6fad60ea77d1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Extra">
       <UniqueIdentifier>{97603f67-39e7-4923-a9e9-687d8efcbab7}</UniqueIdentifier>

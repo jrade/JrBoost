@@ -24,7 +24,7 @@ boostParam = {
     'eta': 0.03,
     'usedSampleRatio': 0.8,
     'usedVariableRatio': 0.3,
-    'maxDepth': 8,
+    'maxTreeDepth': 8,
     'minNodeSize': 300,
 }
 
@@ -177,7 +177,7 @@ def formatOptions(opt):
     usr = opt['usedSampleRatio']
     uvr = opt['usedVariableRatio']
     mns = opt['minNodeSize']
-    md = opt['maxDepth']
+    md = opt['maxTreeDepth']
     return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}'
 
 def formatScore(score, precision = 4):

@@ -6,15 +6,12 @@
 
 #include "PyBoostOptions.h"
 #include "PyInterruptHandler.h"
-#include "../JrBoostLib/BoostOptions.h"
-#include "../JrBoostLib/BoostPredictor.h"
 #include "../JrBoostLib/BoostTrainer.h"
-#include "../JrBoostLib/EnsemblePredictor.h"
 #include "../JrBoostLib/FTest.h"
 #include "../JrBoostLib/Loss.h"
 #include "../JrBoostLib/Paralleltrain.h"
-//#include "../JrBoostLib/Submatrix.h"
-#include "../JrBoostLib/TreeTrainerImplBase.h"
+#include "../JrBoostLib/Predictor.h"
+#include "../JrBoostLib/TreeTrainerBase.h"
 #include "../JrBoostLib/TTest.h"
 
 
@@ -51,7 +48,7 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def_static("load", py::overload_cast<const string&>(&Predictor::load));
 
     py::class_<EnsemblePredictor, shared_ptr<EnsemblePredictor>, Predictor>{ mod, "EnsemblePredictor" }
-        .def(py::init<const vector<shared_ptr<Predictor>>&>())
+        .def(py::init(&EnsemblePredictor::createInstance))
         .def(py::pickle(&predictorGetState, &predictorSetState<EnsemblePredictor>));
 
     py::class_<BoostPredictor, shared_ptr<BoostPredictor>, Predictor>{ mod, "BoostPredictor" }
@@ -137,62 +134,11 @@ PYBIND11_MODULE(_jrboostext, mod)
     mod.def("getOuterThreadCount", []() { return ::globOuterThreadCount; });
     mod.def("setOuterThreadCount", [](size_t n) { ::globOuterThreadCount = n; });
 
-    mod.def("bufferSize", &TreeTrainerImplBase::bufferSize);
-    mod.def("clearBuffers", &TreeTrainerImplBase::freeBuffers);
+    mod.def("bufferSize", &TreeTrainerBase::bufferSize);
+    mod.def("clearBuffers", &TreeTrainerBase::freeBuffers);
 
     mod.attr("eigenVersion") = py::str(theEigenVersion);
     mod.attr("pybind11Version") = py::str(thePybind11Version);
-
-    //mod.def(
-    //    "selectRows",
-    //    static_cast<ArrayXXfc(*)(CRefXXfc, const vector<size_t>&)>(&selectRows),
-    //    py::arg().noconvert(), py::arg());
-    //mod.def(
-    //    "selectRows",
-    //    static_cast<ArrayXXfr(*)(CRefXXfr, const vector<size_t>&)>(&selectRows),
-    //    py::arg().noconvert(), py::arg());
-    //mod.def(
-    //    "selectRows",
-    //    static_cast<ArrayXXdc(*)(CRefXXdc, const vector<size_t>&)>(&selectRows),
-    //    py::arg().noconvert(), py::arg());
-    //mod.def(
-    //    "selectRows",
-    //    static_cast<ArrayXXdr(*)(CRefXXdr, const vector<size_t>&)>(&selectRows),
-    //    py::arg().noconvert(), py::arg());
-
-    //mod.def(
-    //    "selectColumns",
-    //    static_cast<ArrayXXfc(*)(CRefXXfc, const vector<size_t>&)>(&selectColumns),
-    //    py::arg().noconvert(), py::arg());
-    //mod.def(
-    //    "selectColumns",
-    //    static_cast<ArrayXXfr(*)(CRefXXfr, const vector<size_t>&)>(&selectColumns),
-    //    py::arg().noconvert(), py::arg());
-    //mod.def(
-    //    "selectColumns",
-    //    static_cast<ArrayXXdc(*)(CRefXXdc, const vector<size_t>&)>(&selectColumns),
-    //    py::arg().noconvert(), py::arg());
-    //mod.def(
-    //    "selectColumns",
-    //    static_cast<ArrayXXdr(*)(CRefXXdr, const vector<size_t>&)>(&selectColumns),
-    //    py::arg().noconvert(), py::arg());
-
-    //mod.def(
-    //    "select",
-    //    static_cast<ArrayXXfc(*)(CRefXXfc, const vector<size_t>&, const vector<size_t>&)>(&select),
-    //    py::arg().noconvert(), py::arg(), py::arg());
-    //mod.def(
-    //    "select",
-    //    static_cast<ArrayXXfr(*)(CRefXXfr, const vector<size_t>&, const vector<size_t>&)>(&select),
-    //    py::arg().noconvert(), py::arg(), py::arg());
-    //mod.def(
-    //    "select",
-    //    static_cast<ArrayXXdc(*)(CRefXXdc, const vector<size_t>&, const vector<size_t>&)>(&select),
-    //    py::arg().noconvert(), py::arg(), py::arg());
-    //mod.def(
-    //    "select",
-    //    static_cast<ArrayXXdr(*)(CRefXXdr, const vector<size_t>&, const vector<size_t>&)>(&select),
-    //    py::arg().noconvert(), py::arg(), py::arg());
 
 
     // Profiling

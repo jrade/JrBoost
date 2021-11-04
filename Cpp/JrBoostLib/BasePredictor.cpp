@@ -5,40 +5,251 @@
 #include "pch.h"
 #include "BasePredictor.h"
 
-#include "ForestPredictor.h"
-#include "StumpPredictor.h"
-#include "TreePredictor.h"
-#include "TrivialPredictor.h"
+#include "Base128Encoding.h"
+#include "Tree.h"
 
 
-void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
-{
-    PROFILE::PUSH(PROFILE::TREE_PREDICT);
-    predict_(inData, c, outData);
-    PROFILE::POP();
-}
-
-unique_ptr<BasePredictor> BasePredictor::load_(istream& is, int version)
+unique_ptr<BasePredictor> BasePredictor::load(istream& is, int version)
 {
     int type = is.get();
-    if (type == Trivial)
-        return TrivialPredictor::load_(is, version);
-    if (type == Stump)
-        return StumpPredictor::load_(is, version);
-    if (version >= 2 && type == Tree)
-        return TreePredictor::load_(is, version);
-    if (version >= 4 && type == Forest)
-        return ForestPredictor::load_(is, version);
-    parseError_(is);
+    if (version < 6) {
+        if (type == 100)
+            return ConstantPredictor::load(is, version);
+        if (type == 101)
+            return StumpPredictor::load(is, version);
+        if (version >= 2 && type == 102)
+            return TreePredictor::load(is, version);
+        if (version >= 4 && type == 103)
+            return ForestPredictor::load(is, version);
+    }
+    else {
+        if (type == 'Z')
+            return ZeroPredictor::load(is, version);
+        if (type == 'C')
+            return ConstantPredictor::load(is, version);
+        if (type == 'S')
+            return StumpPredictor::load(is, version);
+        if (type == 'T')
+            return TreePredictor::load(is, version);
+        if (type == 'F')
+            return ForestPredictor::load(is, version);
+    }
+    parseError(is);
 }
 
-void BasePredictor::parseError_ [[noreturn]] (istream& is)
+//----------------------------------------------------------------------------------------------------------------------
+
+unique_ptr<ZeroPredictor> ZeroPredictor::createInstance()
 {
-    string msg = "Not a valid JrBoost predictor file.";
+    return makeUnique<ZeroPredictor>();
+}
 
-    int64_t pos = is.tellg();
-    if (pos != -1)
-        msg += "\n(Parsing error after " + std::to_string(pos) + " bytes)";
+void ZeroPredictor::predict(CRefXXfc /*inData*/, double /*c*/, RefXd /*outData*/) const
+{}
 
-    throw std::runtime_error(msg);
+void ZeroPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const
+{}
+
+void ZeroPredictor::save(ostream& os) const
+{
+    os.put('Z');
+}
+
+unique_ptr<ZeroPredictor> ZeroPredictor::load(istream& /*is*/, int /*version*/)
+{
+    return ZeroPredictor::createInstance();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+ConstantPredictor::ConstantPredictor(double y) :
+    y_(static_cast<float>(y))
+{
+    ASSERT(std::isfinite(y));
+}
+
+unique_ptr<ConstantPredictor> ConstantPredictor::createInstance(double y)
+{
+    return makeUnique<ConstantPredictor>(y);
+}
+
+void ConstantPredictor::predict(CRefXXfc /*inData*/, double c, RefXd outData) const
+{
+    outData += c * static_cast<double>(y_);
+}
+
+void ConstantPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const
+{
+}
+
+void ConstantPredictor::save(ostream& os) const
+{
+    os.put('C');
+    os.write(reinterpret_cast<const char*>(&y_), sizeof(y_));
+}
+
+unique_ptr<ConstantPredictor> ConstantPredictor::load(istream& is, int version)
+{
+    if (version < 2) is.get();
+    float y;
+    is.read(reinterpret_cast<char*>(&y), sizeof(y));
+    return createInstance(y);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+StumpPredictor::StumpPredictor(size_t j, float x, float leftY, float rightY, float gain) :
+    j_{ j },
+    x_{ x },
+    leftY_{ leftY },
+    rightY_{ rightY },
+    gain_{ gain }
+{
+    ASSERT(std::isfinite(x) && std::isfinite(leftY) && std::isfinite(rightY));
+}
+
+unique_ptr<StumpPredictor> StumpPredictor::createInstance(size_t j, float x, float leftY, float rightY, float gain)
+{
+    return makeUnique<StumpPredictor>(j, x, leftY, rightY, gain);
+}
+
+void StumpPredictor::predict(CRefXXfc inData, double c, RefXd outData) const
+{
+    const size_t sampleCount = inData.rows();
+    for (size_t i = 0; i != sampleCount; ++i) {
+        double y = (inData(i, j_) < x_) ? leftY_ : rightY_;
+        outData(i) += c * y;
+    }
+}
+
+void StumpPredictor::variableWeights(double c, RefXd weights) const
+{
+    weights(j_) += c * gain_;
+}
+
+void StumpPredictor::save(ostream& os) const
+{
+    os.put('S');
+    base128Save(os, j_);
+    os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
+    os.write(reinterpret_cast<const char*>(&leftY_), sizeof(leftY_));
+    os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));
+}
+
+unique_ptr<StumpPredictor> StumpPredictor::load(istream& is, int version)
+{
+    if (version < 2) is.get();
+
+    size_t j;
+    float x;
+    float leftY;
+    float rightY;
+    float gain;
+
+    if (version >= 5)
+        j = base128Load(is);
+    else {
+        uint32_t j32;
+        is.read(reinterpret_cast<char*>(&j32), sizeof(j32));
+        j = static_cast<uint64_t>(j32);
+    }
+
+    is.read(reinterpret_cast<char*>(&x), sizeof(x));
+    is.read(reinterpret_cast<char*>(&leftY), sizeof(leftY));
+    is.read(reinterpret_cast<char*>(&rightY), sizeof(rightY));
+
+    if (version >= 3 && version < 5)
+        is.read(reinterpret_cast<char*>(&gain), sizeof(gain));
+    else
+        gain = std::numeric_limits<float>::quiet_NaN();
+
+    return createInstance(j, x, leftY, rightY, gain);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+TreePredictor::TreePredictor(vector<TreeNode>&& nodes) :
+    nodes_(move(nodes))
+{}
+
+unique_ptr<TreePredictor> TreePredictor::createInstance(vector<TreeNode>&& nodes)
+{
+    return makeUnique<TreePredictor>(move(nodes));
+}
+
+void TreePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
+{
+    const TreeNode* root = data(nodes_);
+    TreeTools::predict(root, inData, c, outData);
+}
+
+void TreePredictor::variableWeights(double c, RefXd weights) const
+{
+    const TreeNode* root = data(nodes_);
+    TreeTools::variableWeights(root, c, weights);
+}
+
+void TreePredictor::save(ostream& os) const
+{
+    os.put('T');
+    const TreeNode* root = data(nodes_);
+    TreeTools::saveTree(root, os);
+}
+
+unique_ptr<TreePredictor> TreePredictor::load(istream& is, int version)
+{
+    vector<TreeNode> nodes = TreeTools::loadTree(is, version);
+    return makeUnique<TreePredictor>(move(nodes));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+ForestPredictor::ForestPredictor(vector<unique_ptr<BasePredictor>>&& basePredictors) :
+    basePredictors_(move(basePredictors))
+{}
+
+unique_ptr<ForestPredictor> ForestPredictor::createInstance(vector<unique_ptr<BasePredictor>>&& basePredictors)
+{
+    return makeUnique<ForestPredictor>(move(basePredictors));
+}
+
+
+void ForestPredictor::predict(CRefXXfc inData, double c, RefXd outData) const
+{
+    c /= size(basePredictors_);
+    for (const auto& basePredictor : basePredictors_)
+        basePredictor->predict(inData, c, outData);
+}
+
+void ForestPredictor::variableWeights(double c, RefXd weights) const
+{
+    c /= size(basePredictors_);
+    for (const auto& basePredictor : basePredictors_)
+        basePredictor->variableWeights(c, weights);
+}
+
+void ForestPredictor::save(ostream& os) const
+{
+    os.put('F');
+    base128Save(os, size(basePredictors_));
+    for (const auto& basePredictor : basePredictors_)
+        basePredictor->save(os);
+}
+
+unique_ptr<ForestPredictor> ForestPredictor::load(istream& is, int version)
+{
+    size_t n;
+    if (version < 5) {
+        uint32_t n32;
+        is.read(reinterpret_cast<char*>(&n32), sizeof(n32));
+        n = static_cast<uint64_t>(n32);
+    }
+    else
+        n = base128Load(is);
+    vector<unique_ptr<BasePredictor>> basePredictors(n);
+
+    for (size_t k = 0; k != n; ++k)
+        basePredictors[k] = BasePredictor::load(is, version);
+
+    return createInstance(move(basePredictors));
 }

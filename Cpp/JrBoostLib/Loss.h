@@ -5,21 +5,17 @@
 #pragma once
 
 
-inline void lossFunValidate_(CRefXs outData, CRefXd predData)
+inline double linLoss(CRefXs outData, CRefXd predData)
 {
     if (outData.rows() != predData.rows())
         throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
     if ((outData > 1).any())
         throw std::invalid_argument("True outdata has values that are not 0 or 1.");
-    if (!(predData >= 0.0f && predData <= 1.0f).all())      // carefully written to trap NaN
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
+    if (!(predData >= 0.0f && predData <= 1.0f).all())
         throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
-}
 
-//----------------------------------------------------------------------------------------------------------------------
-
-inline double linLoss(CRefXs outData, CRefXd predData)
-{
-    lossFunValidate_(outData, predData);
     const double falsePos = ((1 - outData).cast<double>() * predData).sum();
     const double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
     return falsePos + falseNeg;
@@ -27,7 +23,19 @@ inline double linLoss(CRefXs outData, CRefXd predData)
 
 inline double linLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
+    if(!(predData >= 0.0f && predData <= 1.0f).all())
+        throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
+    if (!weights.isFinite().all())
+        throw std::invalid_argument("Weights has values that are infinity or NaN.");
+    if (!(weights > 0.0).all())
+        throw std::invalid_argument("Weights has non-positive values.");
+
     const double falsePos = (weights * (1 - outData).cast<double>() * predData).sum();
     const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData)).sum();
     return falsePos + falseNeg;
@@ -37,9 +45,17 @@ inline double linLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 
 inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.001)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
+    if (!(predData >= 0.0f && predData <= 1.0f).all())
+        throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
     if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
+
     const double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     const double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
     return falsePos + falseNeg;
@@ -47,9 +63,21 @@ inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.001)
 
 inline double logLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights, double gamma = 0.001)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
+    if (!(predData >= 0.0f && predData <= 1.0f).all())
+        throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
+    if (!weights.isFinite().all())
+        throw std::invalid_argument("Weights has values that are infinity or NaN.");
+    if (!(weights > 0.0).all())
+        throw std::invalid_argument("Weights has non-positive values.");
     if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
+
     const double falsePos = (weights * (1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
     return falsePos + falseNeg;
@@ -107,12 +135,17 @@ private:
 
 inline double auc(CRefXs outData, CRefXd predData)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
 
     const size_t sampleCount = outData.rows();
 
     vector<pair<size_t, double>> tmp(sampleCount);
-    for (size_t i = 0; i < sampleCount; ++i)
+    for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = { outData[i], predData[i] };
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
 
@@ -132,12 +165,21 @@ inline double auc(CRefXs outData, CRefXd predData)
 
 inline double aucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
+    if (!weights.isFinite().all())
+        throw std::invalid_argument("Weights has values that are infinity or NaN.");
+    if (!(weights > 0.0).all())
+        throw std::invalid_argument("Weights has non-positive values.");
 
     const size_t sampleCount = outData.rows();
 
     vector<tuple<size_t, double, double>> tmp(sampleCount);
-    for (size_t i = 0; i < sampleCount; ++i)
+    for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = { outData[i], predData[i], weights[i] };
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
 
@@ -160,12 +202,17 @@ inline double aucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 
 inline double aoc(CRefXs outData, CRefXd predData)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
 
     const size_t sampleCount = outData.rows();
 
     vector<pair<size_t, double>> tmp(sampleCount);
-    for (size_t i = 0; i < sampleCount; ++i)
+    for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = { outData[i], predData[i] };
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
 
@@ -185,12 +232,21 @@ inline double aoc(CRefXs outData, CRefXd predData)
 
 inline double aocWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 {
-    lossFunValidate_(outData, predData);
+    if (outData.rows() != predData.rows())
+        throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
+    if ((outData > 1).any())
+        throw std::invalid_argument("True outdata has values that are not 0 or 1.");
+    if (!predData.isFinite().all())
+        throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
+    if (!weights.isFinite().all())
+        throw std::invalid_argument("Weights has values that are infinity or NaN.");
+    if (!(weights > 0.0).all())
+        throw std::invalid_argument("Weights has non-positive values.");
 
     const size_t sampleCount = outData.rows();
 
     vector<tuple<size_t, double, double>> tmp(sampleCount);
-    for (size_t i = 0; i < sampleCount; ++i)
+    for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = { outData[i], predData[i], weights[i] };
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
 

@@ -79,49 +79,37 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="EnsemblePredictor.h" />
+    <ClInclude Include="Base128Encoding.h" />
+    <ClInclude Include="BaseOptions.h" />
+    <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="FastExp.h" />
-    <ClInclude Include="ForestOptions.h" />
-    <ClInclude Include="ForestPredictor.h" />
-    <ClInclude Include="ForestTrainer.h" />
     <ClInclude Include="FTest.h" />
     <ClInclude Include="ExceptionSafeOmp.h" />
-    <ClInclude Include="InterruptHandler.h" />
-    <ClInclude Include="Submatrix.h" />
+    <ClInclude Include="Globals.h" />
+    <ClInclude Include="Tools.h" />
     <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />
     <ClInclude Include="BasePredictor.h" />
-    <ClInclude Include="Assert.h" />
     <ClInclude Include="BernoulliDistribution.h" />
-    <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="BoostTrainer.h" />
     <ClInclude Include="Clock.h" />
-    <ClInclude Include="ClockCycleCount.h" />
-    <ClInclude Include="BoostPredictor.h" />
     <ClInclude Include="Loss.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Predictor.h" />
     <ClInclude Include="Profile.h" />
-    <ClInclude Include="SortedIndices.h" />
     <ClInclude Include="StaticStack.h" />
-    <ClInclude Include="StumpPredictor.h" />
-    <ClInclude Include="TreeNode.h" />
-    <ClInclude Include="TreeOptions.h" />
-    <ClInclude Include="TreePredictor.h" />
+    <ClInclude Include="Tree.h" />
+    <ClInclude Include="ForestTrainer.h" />
     <ClInclude Include="TreeTrainer.h" />
-    <ClInclude Include="TreeTrainerImpl.h" />
-    <ClInclude Include="TreeTrainerImplBase.h" />
-    <ClInclude Include="TrivialPredictor.h" />
+    <ClInclude Include="TreeTrainerBase.h" />
     <ClInclude Include="TTest.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BaseOptions.cpp" />
     <ClCompile Include="BasePredictor.cpp" />
     <ClCompile Include="BoostOptions.cpp" />
     <ClCompile Include="BoostTrainer.cpp" />
-    <ClCompile Include="BoostPredictor.cpp" />
-    <ClCompile Include="EnsemblePredictor.cpp" />
     <ClCompile Include="FTest.cpp" />
-    <ClCompile Include="Submatrix.cpp" />
     <ClCompile Include="TreeNodeTrainer.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">
@@ -130,14 +118,10 @@
     </ClCompile>
     <ClCompile Include="Predictor.cpp" />
     <ClCompile Include="Profile.cpp" />
-    <ClCompile Include="StumpPredictor.cpp" />
-    <ClCompile Include="TreeNode.cpp" />
-    <ClCompile Include="TreeOptions.cpp" />
-    <ClCompile Include="TreePredictor.cpp" />
+    <ClCompile Include="Tree.cpp" />
+    <ClCompile Include="ForestTrainer.cpp" />
     <ClCompile Include="TreeTrainer.cpp" />
-    <ClCompile Include="TreeTrainerImpl.cpp" />
-    <ClCompile Include="TreeTrainerImplBase.cpp" />
-    <ClCompile Include="TrivialPredictor.cpp" />
+    <ClCompile Include="TreeTrainerBase.cpp" />
     <ClCompile Include="TTest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

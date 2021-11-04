@@ -6,13 +6,12 @@
 #include "ParallelTrain.h"
 
 #include "BoostOptions.h"
-#include "BoostPredictor.h"
 #include "BoostTrainer.h"
 #include "ExceptionSafeOmp.h"
-#include "SortedIndices.h"
+#include "Predictor.h"
 
 
-vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
+vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
 {
     const size_t optCount = size(opt);
 
@@ -24,10 +23,10 @@ vector<shared_ptr<BoostPredictor>> parallelTrain(const BoostTrainer& trainer, co
         cbegin(opt),
         cend(opt),
         begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -opt.cost(); }
+        [](const auto& opt) { return -cost(opt); }
     );
 
-    vector<shared_ptr<BoostPredictor>> pred(optCount);
+    vector<shared_ptr<Predictor>> pred(optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
 
@@ -106,7 +105,7 @@ ArrayXXdc parallelTrainAndPredict(
         cbegin(opt),
         cend(opt),
         begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -opt.cost(); }
+        [](const auto& opt) { return -cost(opt); }
     );
 
     ArrayXXdc predData(sampleCount, optCount);
@@ -156,7 +155,7 @@ ArrayXXdc parallelTrainAndPredict(
             if (sortedOptIndex >= optCount) break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
-            shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             predData.col(optIndex) = pred->predict(testInData);
         }
     }
@@ -180,7 +179,7 @@ ArrayXd parallelTrainAndEval(
         cbegin(opt),
         cend(opt),
         begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -opt.cost(); }
+        [](const auto& opt) { return -cost(opt); }
     );
 
     ArrayXd scores(optCount);
@@ -230,9 +229,11 @@ ArrayXd parallelTrainAndEval(
             if (sortedOptIndex >= optCount) break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
-            shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
+            PROFILE::SWITCH(0, PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData);
+            PROFILE::SWITCH(0, PROFILE::OUTER_THREAD_SYNCH);
         }
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL;
@@ -253,7 +254,7 @@ ArrayXd parallelTrainAndEvalWeighted(
         cbegin(opt),
         cend(opt),
         begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -opt.cost(); }
+        [](const auto& opt) { return -cost(opt); }
     );
 
     ArrayXd scores(optCount);
@@ -303,9 +304,11 @@ ArrayXd parallelTrainAndEvalWeighted(
             if (sortedOptIndex >= optCount) break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
-            shared_ptr<BoostPredictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
+            PROFILE::SWITCH(0, PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData, testWeights);
+            PROFILE::SWITCH(0, PROFILE::OUTER_THREAD_SYNCH);
         }
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL;

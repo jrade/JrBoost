@@ -6,33 +6,34 @@
 
 #include "TreeNodeTrainer.h"
 
-
 class BasePredictor;
-class TreeOptions;
+class BaseOptions;
 
 
+#if PACKED_DATA
 struct alignas(2 * sizeof(double)) WyPack
 {
     double w;
     double wy;
 };
+#endif
 
 
-class TreeTrainerImplBase
+class TreeTrainerBase
 {
+protected:
+    TreeTrainerBase() = default;
+
 public:
-    virtual ~TreeTrainerImplBase() = default;
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const TreeOptions& options, size_t threadCount) const = 0;
+    virtual ~TreeTrainerBase() = default;
+    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const = 0;
 
     static size_t bufferSize();
     static void freeBuffers();
 
-protected:
-    TreeTrainerImplBase() = default;
-
 // deleted:
-    TreeTrainerImplBase(const TreeTrainerImplBase&) = delete;
-    TreeTrainerImplBase& operator=(const TreeTrainerImplBase&) = delete;
+    TreeTrainerBase(const TreeTrainerBase&) = delete;
+    TreeTrainerBase& operator=(const TreeTrainerBase&) = delete;
 
 protected:
     struct ThreadLocalData0_
@@ -57,7 +58,7 @@ protected:
 
         vector<SampleIndex> sampleBuffer;
 
-        vector<SampleIndex*> samplePointerBuffer;       // tmp buffers
+        vector<SampleIndex*> samplePointerBuffer;
 
         vector<CacheLineAligned<TreeNodeTrainer<SampleIndex>>> treeNodeTrainers;
     };
@@ -73,15 +74,14 @@ protected:
         // status = k + 1 means the sample belongs to node number k in the layer; k = 0, 1, ..., node count - 1
     };
 
-protected:
     inline static thread_local ThreadLocalData0_ threadLocalData0_;
     template<typename SampleIndex> inline static thread_local ThreadLocalData1_<SampleIndex> threadLocalData1_;
     template<typename SampleStatus> inline static thread_local ThreadLocalData2_<SampleStatus> threadLocalData2_;
 
 private:
     template<typename T> static size_t bufferSizeImpl_();
-    template<typename T> static size_t bufferSize0_(const vector<T>& t);
-    template<typename T> static size_t bufferSize0_(const vector<vector<T>>& t);
-    template<typename T> static void deleteBuffersImpl_();
-    template<typename T> static void deleteBuffer0_(vector<T>* t);
+    template<typename T> static size_t bufferSizeImpl_(const vector<T>& t);
+    template<typename T> static size_t bufferSizeImpl_(const vector<vector<T>>& t);
+    template<typename T> static void freeBuffersImpl_();
+    template<typename T> static void freeBufferImpl_(vector<T>* t);
 };

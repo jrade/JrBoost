@@ -4,9 +4,8 @@
 
 #include "pch.h"
 #include "Profile.h"
-#include "TreeTrainerImplBase.h"
 
-#include "ClockCycleCount.h"
+#include "TreeTrainerBase.h"
 
 
 void PROFILE::START()
@@ -139,7 +138,7 @@ string PROFILE::result_()
     ss << "profiling overhead: "
         << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
     ss << "slow branch: " << (100.0 * slowBranchCount_) / splitIterationCount_ << "%" << '\n';
-    ss << "buffer size: " << formatByteCount_(TreeTrainerImplBase::bufferSize()) << '\n';
+    ss << "buffer size: " << formatByteCount_(TreeTrainerBase::bufferSize()) << '\n';
 
     for (int id = 0; id < CLOCK_COUNT; ++id)
         clocks_[id].reset();

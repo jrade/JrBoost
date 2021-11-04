@@ -27,11 +27,11 @@ trainParam = {
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'usedVariableRatio': [0.5],
         'minNodeSize': [1, 2, 3],
-        'maxDepth': [1, 2, 3, 4],
+        'maxTreeDepth': [1, 2, 3, 4],
         'minRelSampleWeight': [0.01],
 
         #'saveMemory': [True],
-        #'isStratified': [False],
+        #'stratifiedSamples': [False],
         'selectVariablesByLevel': [True],
     },
 
@@ -74,9 +74,7 @@ def validate():
     confusionFrame = pd.DataFrame(index = labels, columns = labels, data = 0)
 
     inData = inDataFrame.to_numpy(dtype = np.float32)
-    #for i in range(100):  
     for i in itertools.count():
-
 
         print(f'-------------------- {i} --------------------\n')
 
@@ -96,6 +94,9 @@ def validate():
                 trainInData = inData[trainSamples, :]
                 trainOutData = outData[trainSamples]
                 predictor = train(trainInData, trainOutData)
+
+                #predictor.save('foo.bin')
+                #predictor = predictor.load('foo.bin')
 
                 testInData = inData[testSamples, :]
                 predOutData[testSamples] = predictor.predict(testInData)
@@ -172,7 +173,7 @@ def evaluateBoostParam(boostParamList, inData, outData):
 
 def formatBoostParam(boostParam):
     eta  = boostParam['eta']
-    md = boostParam.get('maxDepth', 1)
+    md = boostParam.get('maxTreeDepth', 1)
     usr = boostParam['usedSampleRatio']
     uvr = boostParam['usedVariableRatio']
     mns = boostParam['minNodeSize']

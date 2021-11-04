@@ -5,8 +5,8 @@
 #include "pch.h"
 #include "Predictor.h"
 
-#include "BoostPredictor.h"
-#include "EnsemblePredictor.h"
+#include "Base128Encoding.h"
+#include "BasePredictor.h"
 
 
 ArrayXd Predictor::predict(CRefXXfc inData) const
@@ -15,10 +15,10 @@ ArrayXd Predictor::predict(CRefXXfc inData) const
 
     if (static_cast<size_t>(inData.cols()) != variableCount())
         throw std::invalid_argument("Train and test indata have different numbers of variables.");
-    if (!(inData.abs() < numeric_limits<float>::infinity()).all())      // carefully written to trap NaN
+    if (!inData.isFinite().all())
         throw std::invalid_argument("Test indata has values that are infinity or NaN.");
 
-    ArrayXd pred = predict_(inData);
+    ArrayXd pred = predictImpl(inData);
 
     PROFILE::POP();
 
@@ -27,12 +27,10 @@ ArrayXd Predictor::predict(CRefXXfc inData) const
 
 ArrayXd Predictor::variableWeights() const
 {
-    ArrayXd weights = ArrayXd::Constant(variableCount(), 0.0);
-    variableWeights_(1.0, weights);
+    ArrayXd weights = ArrayXd::Zero(variableCount());
+    variableWeightsImpl(1.0, weights);
     return weights;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
 
 void Predictor::save(const string& filePath) const
 {
@@ -44,9 +42,13 @@ void Predictor::save(const string& filePath) const
 
 void Predictor::save(ostream& os) const
 {
+    ASSERT(os.exceptions() == (std::ios::failbit | std::ios::badbit | std::ios::eofbit));
+
+    // save header
     os.write("JRBOOST", 7);
     os.put(static_cast<char>(currentVersion_));
-    save_(os);
+
+    saveBody(os);
     os.put('!');
 }
 
@@ -55,10 +57,30 @@ shared_ptr<Predictor> Predictor::load(const string& filePath)
     ifstream ifs;
     ifs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
     ifs.open(filePath, std::ios::binary);
-    return load(ifs);
+        return load(ifs);
 }
 
 shared_ptr<Predictor> Predictor::load(istream& is)
+{
+    ASSERT(is.exceptions() == (std::ios::failbit | std::ios::badbit | std::ios::eofbit));
+
+    int version = loadHeader_(is);
+
+    shared_ptr<Predictor> pred;
+    try {
+        pred = loadBody(is, version);
+    }
+    catch (const std::overflow_error&) {
+        parseError(is);
+    }
+
+    if (is.get() != '!')
+        parseError(is);
+
+    return pred;
+}
+
+int Predictor::loadHeader_(istream& is)
 {
     char sig[7];
     is.read(sig, 7);
@@ -67,35 +89,175 @@ shared_ptr<Predictor> Predictor::load(istream& is)
 
     int version = is.get();
     if (version < 1)
-        parseError_(is);
+        parseError(is);
     if (version > currentVersion_)
         throw std::runtime_error("Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
 
-    shared_ptr<Predictor> pred = load_(is, version);
+    return version;
+}
 
-    if (is.get() != '!')
-        parseError_(is);
+shared_ptr<Predictor> Predictor::loadBody(istream& is, int version)
+{
+    int type = is.get();
+    if (version < 6) {
+        if (type == 0)
+            return BoostPredictor::loadBody(is, version);
+        if (type == 1)
+            return EnsemblePredictor::loadBody(is, version);
+    }
+    else {
+        if (type == 'B')
+            return BoostPredictor::loadBody(is, version);
+        if (type == 'E')
+            return EnsemblePredictor::loadBody(is, version);
+    }
+    parseError(is);
+}
 
+//----------------------------------------------------------------------------------------------------------------------
+
+BoostPredictor::BoostPredictor(
+    size_t variableCount,
+    double c0,
+    double c1,
+    vector<unique_ptr<BasePredictor>> && basePredictors
+) :
+    Predictor(variableCount),
+    c0_{ static_cast<float>(c0) },
+    c1_{ static_cast<float>(c1) },
+    basePredictors_{ move(basePredictors) }
+{
+}
+
+BoostPredictor::~BoostPredictor() = default;
+
+shared_ptr<BoostPredictor> BoostPredictor::createInstance(
+    size_t variableCount,
+    double c0,
+    double c1,
+    vector<unique_ptr<BasePredictor>>&& basePredictors
+)
+{
+    return makeShared<BoostPredictor>(variableCount, c0, c1, move(basePredictors));
+}
+
+ArrayXd BoostPredictor::predictImpl(CRefXXfc inData) const
+{
+    size_t sampleCount = static_cast<size_t>(inData.rows());
+    ArrayXd pred = ArrayXd::Constant(sampleCount, static_cast<double>(c0_));
+    for (const auto& basePredictor : basePredictors_)
+        basePredictor->predict(inData, static_cast<double>(c1_), pred);
+    pred = 1.0 / (1.0 + (-pred).exp());
     return pred;
 }
 
-shared_ptr<Predictor> Predictor::load_(istream& is, int version)
+void BoostPredictor::variableWeightsImpl(double c, RefXd weights) const
 {
-    int type = is.get();
-    if (type == Boost)
-        return BoostPredictor::load_(is, version);
-    if (type == Ensemble)
-        return EnsemblePredictor::load_(is, version);
-    parseError_(is);
+    for (const auto& basePredictor : basePredictors_)
+        basePredictor->variableWeights(c * c1_, weights);
 }
 
-void Predictor::parseError_ [[noreturn]]  (istream& is)
+void BoostPredictor::saveBody(ostream& os) const
 {
-    string msg = "Not a valid JrBoost predictor file.";
+    os.put('B');
+    base128Save(os, variableCount());
+    os.write(reinterpret_cast<const char*>(&c0_), sizeof(c0_));
+    os.write(reinterpret_cast<const char*>(&c1_), sizeof(c1_));
+    base128Save(os, size(basePredictors_));
+    for (const auto& basePredictor : basePredictors_)
+        basePredictor->save(os);
+}
 
-    int64_t pos = is.tellg();
-    if (pos != -1)
-        msg += "\n(Parsing error after " + std::to_string(pos) + " bytes)";
+shared_ptr<Predictor> BoostPredictor::loadBody(istream& is, int version)
+{
+    if (version < 2) is.get();
 
-    throw std::runtime_error(msg);
+    size_t variableCount;
+    if (version < 5) {
+        uint32_t vc32;
+        is.read(reinterpret_cast<char*>(&vc32), sizeof(vc32));
+        variableCount = static_cast<uint64_t>(vc32);
+    }
+    else
+        variableCount = base128Load(is);
+
+    float c0;
+    float c1;
+    is.read(reinterpret_cast<char*>(&c0), sizeof(c0));
+    is.read(reinterpret_cast<char*>(&c1), sizeof(c1));
+
+    size_t n;
+    if (version < 5) {
+        uint32_t n32;
+        is.read(reinterpret_cast<char*>(&n32), sizeof(n32));
+        n = static_cast<uint64_t>(n32);
+    }
+    else
+        n = base128Load(is);
+
+    vector<unique_ptr<BasePredictor>> basePredictors(n);
+    for (size_t k = 0; k != n; ++k)
+        basePredictors[k] = BasePredictor::load(is, version);
+
+    return BoostPredictor::createInstance(variableCount, c0, c1, move(basePredictors));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors) :
+    Predictor(predictors.front()->variableCount()),
+    predictors_(predictors)
+{
+    ASSERT(!predictors_.empty());
+    for (const auto& pred : predictors_)
+        ASSERT(pred->variableCount() == variableCount());
+}
+
+shared_ptr<EnsemblePredictor> EnsemblePredictor::createInstance(const vector<shared_ptr<Predictor>>& predictors)
+{
+    return makeShared<EnsemblePredictor>(predictors);
+}
+
+ArrayXd EnsemblePredictor::predictImpl(CRefXXfc inData) const
+{
+    size_t sampleCount = static_cast<size_t>(inData.rows());
+    ArrayXd pred = ArrayXd::Zero(sampleCount);
+    for (const auto& predictor : predictors_)
+        pred += predictor->predictImpl(inData);
+    pred /= static_cast<double>(size(predictors_));
+    return pred;
+}
+
+void EnsemblePredictor::variableWeightsImpl(double c, RefXd weights) const
+{
+    for (const auto& predictor : predictors_)
+        predictor->variableWeightsImpl(c / size(predictors_), weights);
+}
+
+void EnsemblePredictor::saveBody(ostream& os) const
+{
+    os.put('E');
+    base128Save(os, size(predictors_));
+    for (const auto& predictor : predictors_)
+        predictor->saveBody(os);
+}
+
+shared_ptr<Predictor> EnsemblePredictor::loadBody(istream& is, int version)
+{
+    if (version < 2) is.get();
+
+    size_t n;
+    if (version < 5) {
+        uint32_t n32;
+        is.read(reinterpret_cast<char*>(&n32), sizeof(n32));
+        n = static_cast<uint64_t>(n32);
+    }
+    else
+        n = base128Load(is);
+
+    vector<shared_ptr<Predictor>> predictors(n);
+    for (size_t k = 0; k != n; ++k)
+        predictors[k] = Predictor::loadBody(is, version);
+
+    return EnsemblePredictor::createInstance(predictors);
 }

@@ -5,15 +5,16 @@
 #include "pch.h"
 #include "BoostTrainer.h"
 
+#include "BasePredictor.h"
 #include "BoostOptions.h"
-#include "BoostPredictor.h"
 #include "FastExp.h"
 #include "ForestTrainer.h"
+#include "Predictor.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights) :
     sampleCount_{(
-        validateData_(inData, outData, weights),        // do validation before everything else
+        validateData_(inData, outData, weights),        // do validation before anything else
         static_cast<size_t>(inData.rows())
     )},
     variableCount_{ static_cast<size_t>(inData.cols()) },
@@ -38,7 +39,7 @@ void BoostTrainer::validateData_(CRefXXfc inData, CRefXu8 outData, optional<CRef
         throw std::invalid_argument("Train indata has 0 samples.");
     if (variableCount == 0)
         throw std::invalid_argument("Train indata has 0 variables.");
-    if (!(inData.abs() < numeric_limits<float>::infinity()).all())          // carefully written to trap NaN
+    if (!inData.isFinite().all())
         throw std::invalid_argument("Train indata has values that are infinity or NaN.");
 
     if (static_cast<size_t>(outData.rows()) != sampleCount)
@@ -49,7 +50,7 @@ void BoostTrainer::validateData_(CRefXXfc inData, CRefXu8 outData, optional<CRef
     if (weights) {
         if (static_cast<size_t>(weights->rows()) != sampleCount)
             throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-        if (!(weights->abs() < numeric_limits<double>::infinity()).all())   // carefully written to trap NaN
+        if (!weights->isFinite().all())
             throw std::invalid_argument("Train weights have values that are infinity or NaN.");
         if ((*weights <= 0.0).any())
             throw std::invalid_argument("Train weights have non-positive values.");
@@ -80,12 +81,12 @@ double BoostTrainer::getGlobalLogOddsRatio_() const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
     const size_t ITEM_COUNT = sampleCount_ * opt.iterationCount();
 
-    shared_ptr<BoostPredictor> pred;
+    shared_ptr<Predictor> pred;
 
     double gamma = opt.gamma();
     if (gamma == 1.0)
@@ -102,7 +103,7 @@ shared_ptr<BoostPredictor> BoostTrainer::train(const BoostOptions& opt, size_t t
 
 //......................................................................................................................
 
-shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
@@ -131,14 +132,14 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
             // Visual C++ does autovectorize the following two loops
 
             if (pWeights == nullptr) {
-                for (size_t i = 0; i < sampleCount; ++i) {
-                    double x = std::exp(-pF[i] * pOutData[i]);
+                for (size_t i = 0; i != sampleCount; ++i) {
+                    const double x = std::exp(-pF[i] * pOutData[i]);
                     pAdjWeights[i] = x;
                     adjWeightSum += x;
                 }
             }
             else {
-                for (size_t i = 0; i < sampleCount; ++i) {
+                for (size_t i = 0; i != sampleCount; ++i) {
                     double x = std::exp(-pF[i] * pOutData[i]);
                     x *= pWeights[i];
                     pAdjWeights[i] = x;
@@ -160,7 +161,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
             __m512d adjWeightSum8 = _mm512_setzero_pd();
 
             if (pWeights == nullptr) {
-                while (i + 8 <= sampleCount) {
+                for (; i + 8 <= sampleCount; i += 8) {
                     const __m512d F8 = _mm512_load_pd(pF + i);
                     const __m512d y8 = _mm512_load_pd(pOutData + i);
                     __m512d x8 = _mm512_mul_pd(F8, y8);
@@ -168,11 +169,10 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
                     x8 = fastExp(x8);
                     _mm512_store_pd(pAdjWeights + i, x8);
                     adjWeightSum8 = _mm512_add_pd(adjWeightSum8, x8);
-                    i += 8;
                 }
             }
             else {
-                while (i + 8 <= sampleCount) {
+                for (; i + 8 <= sampleCount; i += 8) {
                     const __m512d F8 = _mm512_load_pd(pF + i);
                     const __m512d y8 = _mm512_load_pd(pOutData + i);
                     const __m512d w8 = _mm512_loadu_pd(pWeights + i);   // allocated by client, alignment unknown
@@ -182,27 +182,24 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
                     x8 = _mm512_mul_pd(x8, w8);
                     _mm512_store_pd(pAdjWeights + i, x8);
                     adjWeightSum8 = _mm512_add_pd(adjWeightSum8, x8);
-                    i += 8;
                 }
             }
 
             adjWeightSum = std::accumulate(std::begin(adjWeightSum8.m512d_f64), std::end(adjWeightSum8.m512d_f64), 0.0);
 
             if (pWeights == nullptr) {
-                while (i < sampleCount) {
-                    double x = fastExp(-pF[i] * pOutData[i]);
+                for (; i != sampleCount; ++i) {
+                    const double x = fastExp(-pF[i] * pOutData[i]);
                     pAdjWeights[i] = x;
                     adjWeightSum += x;
-                    ++i;
                 }
             }
             else {
-                while (i < sampleCount) {
-                    const double x = fastExp(-pF[i] * pOutData[i]);
+                for (; i != sampleCount; ++i) {
+                    double x = fastExp(-pF[i] * pOutData[i]);
                     x *= pWeights[i];
                     pAdjWeights[i] = x;
                     adjWeightSum += x;
-                    ++i;
                 }
             }
 
@@ -212,7 +209,7 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
             __m256d adjWeightSum4 = _mm256_setzero_pd();
 
             if (pWeights == nullptr) {
-                while (i + 4 <= sampleCount) {
+                for (; i + 4 <= sampleCount; i += 4) {
                     const  __m256d F4 = _mm256_load_pd(pF + i);
                     const __m256d y4 = _mm256_load_pd(pOutData + i);
                     __m256d x4 = _mm256_mul_pd(F4, y4);
@@ -220,11 +217,10 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
                     x4 = fastExp(x4);
                     _mm256_store_pd(pAdjWeights + i, x4);
                     adjWeightSum4 = _mm256_add_pd(adjWeightSum4, x4);
-                    i += 4;
                 }
             }
             else {
-                while (i + 4 <= sampleCount) {
+                for (; i + 4 <= sampleCount; i += 4) {
                     const __m256d F4 = _mm256_load_pd(pF + i);
                     const __m256d y4 = _mm256_load_pd(pOutData + i);
                     const __m256d w4 = _mm256_loadu_pd(pWeights + i);   // allocated by client, alignment unknown
@@ -234,40 +230,37 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
                     x4 = _mm256_mul_pd(x4, w4);
                     _mm256_store_pd(pAdjWeights + i, x4);
                     adjWeightSum4 = _mm256_add_pd(adjWeightSum4, x4);
-                    i += 4;
                 }
             }
 
             adjWeightSum = std::accumulate(std::begin(adjWeightSum4.m256d_f64), std::end(adjWeightSum4.m256d_f64), 0.0);
 
             if (pWeights == nullptr) {
-                while (i < sampleCount) {
-                    double x = fastExp(-pF[i] * pOutData[i]);
+                for (; i != sampleCount; ++i) {
+                    const double x = fastExp(-pF[i] * pOutData[i]);
                     pAdjWeights[i] = x;
                     adjWeightSum += x;
-                    ++i;
                 }
             }
             else {
-                while (i < sampleCount) {
+                for (; i != sampleCount; ++i) {
                     double x = fastExp(-pF[i] * pOutData[i]);
                     x *= pWeights[i];
                     pAdjWeights[i] = x;
                     adjWeightSum += x;
-                    ++i;
                 }
             }
 
 #else
             if (pWeights == nullptr) {
-                for (size_t i = 0; i < sampleCount; ++i) {
-                    double x = fastExp(-pF[i] * pOutData[i]);
+                for (size_t i = 0; i != sampleCount; ++i) {
+                    const double x = fastExp(-pF[i] * pOutData[i]);
                     pAdjWeights[i] = x;
                     adjWeightSum += x;
                 }
             }
             else {
-                for (size_t i = 0; i < sampleCount; ++i) {
+                for (size_t i = 0; i != sampleCount; ++i) {
                     double x = fastExp(-pF[i] * pOutData[i]);
                     x *= pWeights[i];
                     pAdjWeights[i] = x;
@@ -277,20 +270,22 @@ shared_ptr<BoostPredictor> BoostTrainer::trainAda_(const BoostOptions& opt, size
 #endif
         }  // end if (!opt.fastExp())
 
-        if (!(adjWeightSum < numeric_limits<double>::infinity()))   // carefully written to trap NaN
+        if (!std::isfinite(adjWeightSum))
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt, threadCount);
+        PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
+        PROFILE::POP();
         basePredictors[k] = move(basePred);
     }
 
-    return std::make_shared<BoostPredictor>(variableCount_, globaLogOddsRatio_, 2 * eta, move(basePredictors));
+    return BoostPredictor::createInstance(variableCount_, globaLogOddsRatio_, 2 * eta, move(basePredictors));
 }
 
 //......................................................................................................................
 
-shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
@@ -315,19 +310,19 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, si
         // Visual C++ does autovectorize the following two loops
 
         if (pWeights == nullptr) {
-            for (size_t i = 0; i < sampleCount; ++i) {
-                double x = std::exp(-pF[i] * pOutData[i]);
-                double z = pOutData[i] * (x + 1.0);
+            for (size_t i = 0; i != sampleCount; ++i) {
+                const double x = std::exp(-pF[i] * pOutData[i]);
+                const double z = pOutData[i] * (x + 1.0);
                 pAdjOutData[i] = z;
                 absAdjOutDataSum += std::abs(z);
-                double u = x / square(x + 1.0);
+                const double u = x / square(x + 1.0);
                 pAdjWeights[i] = u;
             }
         }
         else {
-            for (size_t i = 0; i < sampleCount; ++i) {
-                double x = std::exp(-pF[i] * pOutData[i]);
-                double z = pOutData[i] * (x + 1.0);
+            for (size_t i = 0; i != sampleCount; ++i) {
+                const double x = std::exp(-pF[i] * pOutData[i]);
+                const double z = pOutData[i] * (x + 1.0);
                 pAdjOutData[i] = z;
                 absAdjOutDataSum += std::abs(z);
                 double u = x / square(x + 1.0);
@@ -336,20 +331,22 @@ shared_ptr<BoostPredictor> BoostTrainer::trainLogit_(const BoostOptions& opt, si
             }
         }
 
-        if (!(absAdjOutDataSum == numeric_limits<double>::infinity()))      // carefully written to trap NaN
+        if (!std::isfinite(absAdjOutDataSum))
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
+        PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
+        PROFILE::POP();
         basePredictors[k] = move(basePred);
     }
 
-    return std::make_shared<BoostPredictor>(variableCount_, globaLogOddsRatio_, eta, move(basePredictors));
+    return BoostPredictor::createInstance(variableCount_, globaLogOddsRatio_, eta, move(basePredictors));
 }
 
 //......................................................................................................................
 
-shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
@@ -375,19 +372,19 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
         // Visual C++ does autovectorize the following two loops
 
         if (pWeights == nullptr) {
-            for (size_t i = 0; i < sampleCount; ++i) {
-                double x = std::exp(-pF[i] * pOutData[i]);
-                double z = pOutData[i] * (x + 1.0) / (gamma * x + 1.0);
+            for (size_t i = 0; i != sampleCount; ++i) {
+                const double x = std::exp(-pF[i] * pOutData[i]);
+                const double z = pOutData[i] * (x + 1.0) / (gamma * x + 1.0);
                 pAdjOutData[i] = z;
-                double u = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
+                const double u = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
                 pAdjWeights[i] = u;
                 adjWeightSum += u;
             }
         }
         else {
-            for (size_t i = 0; i < sampleCount; ++i) {
-                double x = std::exp(-pF[i] * pOutData[i]);
-                double z = pOutData[i] * (x + 1.0) / (gamma * x + 1.0);
+            for (size_t i = 0; i != sampleCount; ++i) {
+                const double x = std::exp(-pF[i] * pOutData[i]);
+                const double z = pOutData[i] * (x + 1.0) / (gamma * x + 1.0);
                 pAdjOutData[i] = z;
                 double u = x * (gamma * x + 1.0) * std::pow(x + 1.0, gamma - 2.0);
                 u *= pWeights[i];
@@ -396,15 +393,17 @@ shared_ptr<BoostPredictor> BoostTrainer::trainRegularizedLogit_(const BoostOptio
             }
         }
 
-        if (!(adjWeightSum < numeric_limits<double>::infinity()))   // carefully written to trap NaN
+        if (!std::isfinite(adjWeightSum))
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
+        PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
+        PROFILE::POP();
         basePredictors[k] = move(basePred);
     }
 
-    return std::make_shared<BoostPredictor>(variableCount_, globaLogOddsRatio_, (1.0 + gamma) * eta, move(basePredictors));
+    return BoostPredictor::createInstance(variableCount_, globaLogOddsRatio_, (1.0 + gamma) * eta, move(basePredictors));
 }
 
 //......................................................................................................................

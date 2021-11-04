@@ -53,28 +53,28 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setFastExp(std::get<bool>(value));
             else if (key == "forestSize")
                 opt.setForestSize(std::get<size_t>(value));
-            else if (key == "maxDepth")
-                opt.setMaxDepth(std::get<size_t>(value));
-            else if (key == "usedSampleRatio")
-                opt.setUsedSampleRatio(std::get<double>(value));
-            else if (key == "usedVariableRatio")
-                opt.setUsedVariableRatio(std::get<double>(value));
-            else if (key == "selectVariablesByLevel")
-                opt.setSelectVariablesByLevel(std::get<bool>(value));
-            else if (key == "topVariableCount")
-                opt.setTopVariableCount(std::get<size_t>(value));
+            else if (key == "maxTreeDepth")
+                opt.setMaxTreeDepth(std::get<size_t>(value));
             else if (key == "minAbsSampleWeight")
                 opt.setMinAbsSampleWeight(std::get<double>(value));
             else if (key == "minRelSampleWeight")
                 opt.setMinRelSampleWeight(std::get<double>(value));
+            else if (key == "usedSampleRatio")
+                opt.setUsedSampleRatio(std::get<double>(value));
+            else if (key == "stratifiedSamples")
+                opt.setStratifiedSamples(std::get<bool>(value));
+            else if (key == "topVariableCount")
+                opt.setTopVariableCount(std::get<size_t>(value));
+            else if (key == "usedVariableRatio")
+                opt.setUsedVariableRatio(std::get<double>(value));
+            else if (key == "selectVariablesByLevel")
+                opt.setSelectVariablesByLevel(std::get<bool>(value));
             else if (key == "minNodeSize")
                 opt.setMinNodeSize(std::get<size_t>(value));
             else if (key == "minNodeWeight")
                 opt.setMinNodeWeight(std::get<double>(value));
-            else if (key == "minGain")
-                opt.setMinGain(std::get<double>(value));
-            else if (key == "isStratified")
-                opt.setIsStratified(std::get<bool>(value));
+            else if (key == "minNodeGain")
+                opt.setMinNodeGain(std::get<double>(value));
             else if (key == "pruneFactor")
                 opt.setPruneFactor(std::get<double>(value));
             else if (key == "saveMemory")
@@ -118,17 +118,17 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["eta"] = opt.eta();
     pyOpt["fastExp"] = opt.fastExp();
     pyOpt["forestSize"] = opt.forestSize();
-    pyOpt["maxDepth"] = opt.maxDepth();
-    pyOpt["usedSampleRatio"] = opt.usedSampleRatio();
-    pyOpt["usedVariableRatio"] = opt.usedVariableRatio();
-    pyOpt["selectVariablesByLevel"] = opt.selectVariablesByLevel();
-    pyOpt["topVariableCount"] = opt.topVariableCount();
+    pyOpt["maxTreeDepth"] = opt.maxTreeDepth();
     pyOpt["minAbsSampleWeight"] = opt.minAbsSampleWeight();
     pyOpt["minRelSampleWeight"] = opt.minRelSampleWeight();
+    pyOpt["usedSampleRatio"] = opt.usedSampleRatio();
+    pyOpt["stratifiedSamples"] = opt.stratifiedSamples();
+    pyOpt["topVariableCount"] = opt.topVariableCount();
+    pyOpt["usedVariableRatio"] = opt.usedVariableRatio();
+    pyOpt["selectVariablesByLevel"] = opt.selectVariablesByLevel();
     pyOpt["minNodeSize"] = opt.minNodeSize();
     pyOpt["minNodeWeight"] = opt.minNodeWeight();
-    pyOpt["minGain"] = opt.minGain();
-    pyOpt["isStratified"] = opt.isStratified();
+    pyOpt["minNodeGain"] = opt.minNodeGain();
     pyOpt["pruneFactor"] = opt.pruneFactor();
     pyOpt["saveMemory"] = opt.saveMemory();
     pyOpt["test"] = opt.test();

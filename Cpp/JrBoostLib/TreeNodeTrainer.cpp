@@ -6,14 +6,14 @@
 #include "TreeNodeTrainer.h"
 
 #if PACKED_DATA
-#include "TreeTrainerImplBase.h"
+#include "TreeTrainerBase.h"
 #endif
 
-#include "TreeOptions.h"
+#include "BaseOptions.h"
 
 
 template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptions& options)
+void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const BaseOptions& options)
 {
     sampleCount_ = node.sampleCount;
     sumW_ = node.sumW;
@@ -22,7 +22,7 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const TreeOptio
     minNodeSize_ = options.minNodeSize();
 
     splitFound_ = false;
-    score_ = square(sumWY_) / sumW_ + options.minGain();
+    score_ = square(sumWY_) / sumW_ + options.minNodeGain();
 
     iterationCount_ = 0;
     slowBranchCount_ = 0;

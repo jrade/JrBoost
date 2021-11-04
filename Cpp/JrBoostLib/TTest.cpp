@@ -5,24 +5,9 @@
 #include "pch.h"
 #include "TTest.h"
 
-#include "SortedIndices.h"
-
-
-using AccType = double;
-using StatArray = Eigen::Array<AccType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
-// AccType = double will give more accuracy
-// With AccType = float the compiler ought to be able to SIMD vectorize the code, but MSVC 2019 does not
-
-
-inline size_t divideRoundUp(size_t a, size_t b)
-{
-    return (a + b - 1) / b;
-}
-
 
 ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
-{        
+{
     PROFILE::PUSH(PROFILE::T_RANK);
 
     const size_t variableCount = inData.cols();
@@ -40,13 +25,12 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     else {
         sampleCount = inData.rows();
         samples.resize(sampleCount);
-        for (size_t i = 0; i < sampleCount; ++i)
+        for (size_t i = 0; i != sampleCount; ++i)
             samples[i] = i;
     }
 
     if (sampleCount < 3)
         throw std::invalid_argument("Unable to do t-test: There must be at least three samples.");
-
 
     ArrayXs n = { {0, 0} };
     for (size_t i : samples) {
@@ -62,13 +46,11 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
     ArrayXf t(variableCount);
 
-    const AccType a = std::sqrt(
-        (sampleCount - AccType(2))
+    const double a = std::sqrt(
+        (sampleCount - 2.0)
         /
-        (AccType(1) / n(0) + AccType(1) / n(1))
+        (1.0 / n(0) + 1.0 / n(1))
     );
-
-    const AccType c = sampleCount * numeric_limits<AccType>::epsilon();
 
     // one block per thread...
     size_t blockCount = omp_get_max_threads();
@@ -82,34 +64,30 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     {
         ASSERT(static_cast<size_t>(omp_get_num_threads()) == blockCount);
 
-        StatArray mean(2, blockWidth);
-        StatArray totalMean(1, blockWidth);
-        StatArray ss(2, blockWidth);
+        Array2Xdr mean(2, blockWidth);
+        Array2Xdr ss(2, blockWidth);
 
         const size_t k = omp_get_thread_num();      // block index
         const size_t j0 = k * blockWidth;
         const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
         CRefXXfr inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
-        Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, 2, j1 - j0));
-        Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
-        Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, 2, j1 - j0));
+        Ref2Xdr meanBlock(mean.block(0, 0, 2, j1 - j0));
+        Ref2Xdr ssBlock(ss.block(0, 0, 2, j1 - j0));
         RefXf tBlock(t.segment(j0, j1 - j0));
 
-        meanBlock = AccType(0);
+        meanBlock = 0.0;
         for (size_t i: samples) {
             size_t s = outData(i);
-            meanBlock.row(s) += inDataBlock.row(i).cast<AccType>();
+            meanBlock.row(s) += inDataBlock.row(i).cast<double>();
         }
-        meanBlock.colwise() /= n.cast<AccType>();
+        meanBlock.colwise() /= n.cast<double>();
 
-        ssBlock = AccType(0);
+        ssBlock = 0.0;
         for (size_t i : samples) {
             size_t s = outData(i);
-            ssBlock.row(s) += (inDataBlock.row(i).cast<AccType>() - meanBlock.row(s)).square();
+            ssBlock.row(s) += (inDataBlock.row(i).cast<double>() - meanBlock.row(s)).square();
         }
-
-        totalMeanBlock = (n(0) * meanBlock.row(0) + n(1) * meanBlock.row(1)) / sampleCount;
 
         tBlock = (
             a
@@ -119,13 +97,13 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
             (
                 ssBlock.row(0) + ssBlock.row(1)
                 +
-                c * totalMeanBlock.square()             // fudge term
+                std::numeric_limits<double>::min()
             ).sqrt()
         ).cast<float>();
     }
 
-    if (!(t.abs() < numeric_limits<float>::infinity()).all()) {     // carefully written to trap NaN
-        if (!(inData.abs() < numeric_limits<float>::infinity()).all())
+    if (!t.isFinite().all()) {
+        if (!inData.isFinite().all())
             throw std::invalid_argument("Indata has values that are infinity or NaN.");
         else
             // The fudge term should usually prevent this from happening
@@ -160,6 +138,7 @@ ArrayXs tTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optS
     }
 
     ArrayXs ind(variableCount);
+
     sortedIndices(
         std::data(t),
         std::data(t) + variableCount,

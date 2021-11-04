@@ -32,7 +32,7 @@ trainParam = {
         'eta':  [0.005, 0.007, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1],
         'usedSampleRatio': [0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
-        'maxDepth': [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        'maxTreeDepth': [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         'minNodeSize': [100, 150, 200, 300, 500, 700, 1000],
         #'pruneFactor': [0.0, 0.1, 0.2, 0.5],
     },
@@ -244,7 +244,7 @@ def formatOptions(opt):
     usr = opt.get('usedSampleRatio', 1.0)
     uvr = opt.get('usedVariableRatio', 1.0)
     mns = opt.get('minNodeSize', 1)
-    md = opt.get('maxDepth', 1)
+    md = opt.get('maxTreeDepth', 1)
     pf = opt.get('pruneFactor', 0.0)
     return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}  pf = {pf}'
 
@@ -322,4 +322,5 @@ def optimalCutoff(outData, predData, weights):
 
 while True:
     main()
+    print()
 

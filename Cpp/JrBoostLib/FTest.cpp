@@ -5,24 +5,11 @@
 #include "pch.h"
 #include "FTest.h"
 
-#include "SortedIndices.h"
-
-
-using AccType = double;
-using StatArray = Eigen::Array<AccType, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
-// AccType = double will give more accuracy
-// With AccType = float the compiler ought to be able to SIMD vectorize the code, but MSVC 2019 does not
-
-
-inline size_t divideRoundUp(size_t a, size_t b)
-{
-    return (a + b - 1) / b;
-}
-
 
 ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
 {        
+    PROFILE::PUSH(PROFILE::F_RANK);
+
     const size_t variableCount = inData.cols();
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
@@ -36,7 +23,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     else {
         sampleCount = inData.rows();
         samples.resize(sampleCount);
-        for (size_t i = 0; i < sampleCount; ++i)
+        for (size_t i = 0; i != sampleCount; ++i)
             samples[i] = i;
     }
 
@@ -58,7 +45,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     // n.sum() == sampleCount
 
     if (n.minCoeff() == 0)
-        for (size_t i = 0; i < groupCount; ++i)
+        for (size_t i = 0; i != groupCount; ++i)
             if (n(i) == 0)
                 throw std::invalid_argument(
                     "Unable to do F-test: The group with index " + std::to_string(i) + " is empty."
@@ -66,8 +53,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
   
     ArrayXf f(variableCount);
-    const AccType a = static_cast<AccType>(sampleCount - groupCount) / static_cast<AccType>(groupCount - 1);
-    const AccType c = static_cast<AccType>(sampleCount) * numeric_limits<AccType>::epsilon();
+    const double a = (sampleCount - groupCount) / (groupCount - 1.0);
 
     // one block per thread...
     size_t blockCount = omp_get_max_threads();
@@ -81,34 +67,34 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     {
         ASSERT(static_cast<size_t>(omp_get_num_threads()) == blockCount);
 
-        StatArray mean(groupCount, blockWidth);
-        StatArray totalMean(1, blockWidth);
-        StatArray ss(groupCount, blockWidth);
+        ArrayXXdr mean(groupCount, blockWidth);
+        ArrayXXdr totalMean(1, blockWidth);
+        ArrayXXdr ss(groupCount, blockWidth);
 
         const size_t k = omp_get_thread_num();      // block index
         const size_t j0 = k * blockWidth;
         const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
         CRefXXfr inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
-        Eigen::Ref<StatArray> meanBlock(mean.block(0, 0, groupCount, j1 - j0));
-        Eigen::Ref<StatArray> totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
-        Eigen::Ref<StatArray> ssBlock(ss.block(0, 0, groupCount, j1 - j0));
+        RefXXdr meanBlock(mean.block(0, 0, groupCount, j1 - j0));
+        RefXXdr totalMeanBlock(totalMean.block(0, 0, 1, j1 - j0));
+        RefXXdr ssBlock(ss.block(0, 0, groupCount, j1 - j0));
         RefXf fBlock(f.segment(j0, j1 - j0));
 
-        meanBlock = AccType(0);
+        meanBlock = 0.0;
         for (size_t i: samples) {
             size_t s = outData(i);
-            meanBlock.row(s) += inDataBlock.row(i).cast<AccType>();
+            meanBlock.row(s) += inDataBlock.row(i).cast<double>();
         }
-        meanBlock.colwise() /= n.cast<AccType>();
+        meanBlock.colwise() /= n.cast<double>();
 
-        ssBlock = AccType(0);
+        ssBlock = 0.0;
         for (size_t i : samples) {
             size_t s = outData(i);
-            ssBlock.row(s) += (inDataBlock.row(i).cast<AccType>() - meanBlock.row(s)).square();
+            ssBlock.row(s) += (inDataBlock.row(i).cast<double>() - meanBlock.row(s)).square();
         }
 
-        totalMeanBlock = (meanBlock.colwise() * n.cast<AccType>()).colwise().sum() / sampleCount;
+        totalMeanBlock = (meanBlock.colwise() * n.cast<double>()).colwise().sum() / sampleCount;
 
         fBlock = (
             a
@@ -116,24 +102,27 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
             (
                 (meanBlock.rowwise() - totalMeanBlock.row(0)).square().colwise()
                 *
-                n.cast<AccType>()
+                n.cast<double>()
             ).colwise().sum()
             /
             (
                 ssBlock.colwise().sum()
                 +
-                c * totalMeanBlock.square()     // fudge term
+                std::numeric_limits<double>::min()
             )
         ).cast<float>();
     }
 
-    if (!(f.abs() < numeric_limits<float>::infinity()).all()) {     // carefully written to trap NaN
-        if (!(inData.abs() < numeric_limits<float>::infinity()).all())
+    if (!f.isFinite().all()) {
+        if (!inData.isFinite().all())
             throw std::invalid_argument("Indata has values that are infinity or NaN.");
         else
             // The fudge term should usually prevent this from happening
             throw std::overflow_error("Numerical overflow when calculating the F-statistic.");
     }
+
+    const size_t ITEM_COUNT = sampleCount * blockWidth;
+    PROFILE::POP(ITEM_COUNT);
 
     return f;
 }
