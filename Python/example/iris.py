@@ -32,7 +32,7 @@ trainParam = {
 
         #'saveMemory': [True],
         #'isStratified': [False],
-        #'selectVariablesByLevel': [True],
+        'selectVariablesByLevel': [True],
     },
 
     'minimizeParam' : {

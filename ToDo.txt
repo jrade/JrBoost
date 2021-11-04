@@ -1,4 +1,12 @@
-do some more profiling with Higgs and try to improve the sore, see Higgs Notes
+do boosted forests increase accuracy?
+
+double check boost options cost function
+
+do the options objects need copy constructors and copy assignment operators
+
+fold small cpp files into the h files (TrivialPredictor.cpp etc.)
+
+outer thread synch in profiling currently includes loss functions? break out as a separate post?
 
 evaluate packed data
 	why does inner thread synch take so much time with packed data?
@@ -42,15 +50,17 @@ optimizations (accuracy):
 	other ways of regularizing logit boost?
 	
 optimizations (speed):
+	targets for parallelization:
+		ForestTrainer
+		TreeTrainerImpl::updateSampleStatus_
+		predict functions
 	t-test and F-test:
 		divide the variables into large blocks, one for each thread
 		then each blocks into vertical strips, each one __128 wide (to be converted to __m256d)
 	improved cost function when ordering options objects in parallel train
-	parallelize predict function?? (omp parallellize ensemble and boost predictors, but only in nonparallel regions)
 	TreeTrainerImpl::updateSampleStatus_:
 		make branchfree by introducing dummy nodes that contain the unused samples
 			maybe maintain sorted lists of active samples to speed this up further
-		parallelize
 		look into fast/precise sums; does it make any difference for speed and accuracy?
 	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
 	PGO

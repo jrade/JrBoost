@@ -32,5 +32,5 @@ void BoostOptions::setFastExp(bool b)
 
 double BoostOptions::cost() const
 {
-    return TreeOptions::cost() * iterationCount_ / eta_;
+    return ForestOptions::cost() * iterationCount_;
 }

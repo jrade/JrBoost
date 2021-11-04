@@ -6,7 +6,7 @@
 
 class BoostOptions;
 class BoostPredictor;
-class TreeTrainer;
+class ForestTrainer;
 
 
 class BoostTrainer
@@ -38,5 +38,5 @@ private:
     const optional<ArrayXd> weights_;
     const ArrayXu8 strata_;
     const double globaLogOddsRatio_;
-    const unique_ptr<TreeTrainer> baseTrainer_;
+    const unique_ptr<ForestTrainer> baseTrainer_;
 };

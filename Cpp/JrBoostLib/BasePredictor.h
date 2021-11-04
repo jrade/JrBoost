@@ -13,7 +13,7 @@ public:
     void predict(CRefXXfc inData, double c, RefXd outData) const;
 
 protected:
-    enum { Trivial = 100, Stump = 101, Tree = 102 };
+    enum { Trivial = 100, Stump = 101, Tree = 102, Forest = 103 };
 
     BasePredictor() = default;
 
@@ -21,6 +21,8 @@ protected:
 
 private:
     friend class BoostPredictor;
+    friend class ForestPredictor;
+
     virtual void predict_(CRefXXfc inData, double c, RefXd outData) const = 0;
     virtual void variableWeights_(double c, RefXd weights) const = 0;
     virtual void save_(ostream& os) const = 0;

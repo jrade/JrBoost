@@ -81,6 +81,9 @@
   <ItemGroup>
     <ClInclude Include="EnsemblePredictor.h" />
     <ClInclude Include="FastExp.h" />
+    <ClInclude Include="ForestOptions.h" />
+    <ClInclude Include="ForestPredictor.h" />
+    <ClInclude Include="ForestTrainer.h" />
     <ClInclude Include="FTest.h" />
     <ClInclude Include="ExceptionSafeOmp.h" />
     <ClInclude Include="InterruptHandler.h" />

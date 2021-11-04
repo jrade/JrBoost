@@ -92,6 +92,15 @@
     <ClInclude Include="FastExp.h">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="ForestOptions.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
+    <ClInclude Include="ForestPredictor.h">
+      <Filter>Base Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="ForestTrainer.h">
+      <Filter>Base Trainer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TreeOptions.cpp">

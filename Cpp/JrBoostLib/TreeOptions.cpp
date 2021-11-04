@@ -8,8 +8,6 @@
 
 void TreeOptions::setMaxDepth(size_t d)
 {
-    if (d < 0)
-        throw std::invalid_argument("maxDepth must be non-negative.");
     maxDepth_ = d;
 }
 
@@ -34,14 +32,14 @@ void TreeOptions::setSelectVariablesByLevel(bool b)
 
 void TreeOptions::setTopVariableCount(size_t n)
 {
-    if (n <= 0)
+    if (n == 0)
         throw std::invalid_argument("topVariableCount must be positive.");
     topVariableCount_ = n;
 }
 
 void TreeOptions::setMinAbsSampleWeight(double w)
 {
-    if (!(w >= 0.0))        // carefully written to trap NaN
+    if (!(w >= 0.0))                    // carefully written to trap NaN
         throw std::invalid_argument("minAbsSampleWeight must be non-negative.");
     minAbsSampleWeight_ = w;
 }
@@ -55,21 +53,21 @@ void TreeOptions::setMinRelSampleWeight(double w)
 
 void TreeOptions::setMinNodeSize(size_t n)
 {
-    if (n <= 0)
+    if (n == 0)
         throw std::invalid_argument("minNodeSize must be positive.");
     minNodeSize_ = n;
 }
 
 void TreeOptions::setMinNodeWeight(double w)
 {
-    if (!(w >= 0))      // carefully written to trap NaN
+    if (!(w >= 0))                      // carefully written to trap NaN
         throw std::invalid_argument("minNodeWeight must be nonnegative.");
     minNodeWeight_ = w;
 }
 
 void TreeOptions::setMinGain(double g)
 {
-    if (!(g >= 0))      // carefully written to trap NaN
+    if (!(g >= 0))                      // carefully written to trap NaN
         throw std::invalid_argument("minGain must be nonnegative.");
     minGain_ = g;
 }

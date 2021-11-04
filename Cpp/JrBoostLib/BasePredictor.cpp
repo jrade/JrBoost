@@ -5,9 +5,10 @@
 #include "pch.h"
 #include "BasePredictor.h"
 
+#include "ForestPredictor.h"
+#include "StumpPredictor.h"
 #include "TreePredictor.h"
 #include "TrivialPredictor.h"
-#include "StumpPredictor.h"
 
 
 void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
@@ -25,7 +26,9 @@ unique_ptr<BasePredictor> BasePredictor::load_(istream& is, int version)
     if (type == Stump)
         return StumpPredictor::load_(is, version);
     if (version >= 2 && type == Tree)
-        return TreePredictor::load_(is,version);
+        return TreePredictor::load_(is, version);
+    if (version >= 4 && type == Forest)
+        return ForestPredictor::load_(is, version);
     parseError_(is);
 }
 

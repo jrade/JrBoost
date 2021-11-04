@@ -51,6 +51,8 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setEta(std::get<double>(value));
             else if (key == "fastExp")
                 opt.setFastExp(std::get<bool>(value));
+            else if (key == "forestSize")
+                opt.setForestSize(std::get<size_t>(value));
             else if (key == "maxDepth")
                 opt.setMaxDepth(std::get<size_t>(value));
             else if (key == "usedSampleRatio")
@@ -115,6 +117,7 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["iterationCount"] = opt.iterationCount();
     pyOpt["eta"] = opt.eta();
     pyOpt["fastExp"] = opt.fastExp();
+    pyOpt["forestSize"] = opt.forestSize();
     pyOpt["maxDepth"] = opt.maxDepth();
     pyOpt["usedSampleRatio"] = opt.usedSampleRatio();
     pyOpt["usedVariableRatio"] = opt.usedVariableRatio();

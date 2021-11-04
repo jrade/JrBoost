@@ -5,11 +5,10 @@
 #include "pch.h"
 #include "BoostTrainer.h"
 
-#include "BasePredictor.h"
 #include "BoostOptions.h"
 #include "BoostPredictor.h"
 #include "FastExp.h"
-#include "TreeTrainer.h"
+#include "ForestTrainer.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights) :
@@ -23,7 +22,7 @@ BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd>
     weights_{ std::move(weights) },
     strata_{ std::move(outData) },
     globaLogOddsRatio_{ getGlobalLogOddsRatio_() },
-    baseTrainer_{ std::make_unique<TreeTrainer>(inData_, strata_) }
+    baseTrainer_{ std::make_unique<ForestTrainer>(inData_, strata_) }
 {
 }
 

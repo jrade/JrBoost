@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "TreeOptions.h"
+#include "ForestOptions.h"
 
 
-class BoostOptions : public TreeOptions 
+class BoostOptions : public ForestOptions 
 {
 public:
     BoostOptions() = default;
