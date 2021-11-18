@@ -2,7 +2,7 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import itertools,  os, time
+import itertools, pickle, os, time
 import numpy as np
 import pandas as pd
 import jrboost
@@ -98,6 +98,9 @@ def validate():
                 #predictor.save('foo.bin')
                 #predictor = predictor.load('foo.bin')
 
+                #pickle.dump(predictor, open('foo.pickle', 'wb'))
+                #predictor = pickle.load(open('foo.pickle', 'rb'))
+
                 testInData = inData[testSamples, :]
                 predOutData[testSamples] = predictor.predict(testInData)
            
@@ -145,7 +148,7 @@ def train(inData, outData):
 
     trainer = jrboost.BoostTrainer(inData, outData)
     predictorList = [trainer.train(boostParam) for boostParam in bestBoostParamList]
-    predictor = jrboost.EnsemblePredictor(predictorList)
+    predictor = jrboost.Predictor.createEnsemble(predictorList)
     return predictor
 
 

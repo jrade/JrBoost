@@ -49,10 +49,30 @@ namespace TreeTools
 
     vector<TreeNode> cloneTree(const TreeNode* sourceRoot)
     {
-        size_t n = nodeCount(sourceRoot);
+        const size_t n = nodeCount(sourceRoot);
         vector<TreeNode> targetNodes(n);
         TreeNode* targetRoot = data(targetNodes);
         cloneTreeImpl_(sourceRoot, targetRoot);
+        return targetNodes;
+    }
+
+
+    TreeNode* reindexTreeImpl_(const TreeNode* sourceNode, TreeNode* targetNode, const vector<size_t>& newIndices)
+    {
+        *targetNode = *sourceNode;
+        if (targetNode->isLeaf) return targetNode + 1;
+        targetNode->j = newIndices[targetNode->j];
+        targetNode->leftChild = targetNode + 1;
+        targetNode->rightChild = reindexTreeImpl_(sourceNode->leftChild, targetNode->leftChild, newIndices);
+        return reindexTreeImpl_(sourceNode->rightChild, targetNode->rightChild, newIndices);
+    }
+
+    vector<TreeNode> reindexTree(const TreeNode* sourceRoot, const vector<size_t>& newIndices)
+    {
+        const size_t n = nodeCount(sourceRoot);
+        vector<TreeNode> targetNodes(n);
+        TreeNode* targetRoot = data(targetNodes);
+        reindexTreeImpl_(sourceRoot, targetRoot, newIndices);
         return targetNodes;
     }
 
@@ -92,7 +112,7 @@ namespace TreeTools
 
     void saveTree(const TreeNode* root, ostream& os)
     {
-        size_t nodeCount = TreeTools::nodeCount(root);
+        const size_t nodeCount = TreeTools::nodeCount(root);
         base128Save(os, nodeCount);
         saveTreeImpl_(root, os);
     }
@@ -100,7 +120,7 @@ namespace TreeTools
 
     TreeNode* loadTreeImpl_(TreeNode* node, istream& is, int version)
     {
-        int isLeaf = is.get();
+        const int isLeaf = is.get();
         if (isLeaf != 0 && isLeaf != 1)
             parseError(is);
         node->isLeaf = static_cast<bool>(isLeaf);
@@ -110,6 +130,7 @@ namespace TreeTools
             return node + 1;
         }
         else {
+            node->y = numeric_limits<float>::quiet_NaN();
             if (version >= 5)
                 node->j = base128Load(is);
             else {
@@ -123,7 +144,7 @@ namespace TreeTools
             if (version >= 3 && version < 5)
                 is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));
             else
-                node->gain = std::numeric_limits<float>::quiet_NaN();
+                node->gain = numeric_limits<float>::quiet_NaN();
 
             node->leftChild = node + 1;
             node->rightChild = loadTreeImpl_(node->leftChild, is, version);

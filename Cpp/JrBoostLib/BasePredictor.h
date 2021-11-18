@@ -19,6 +19,8 @@ public:
     // add the variable importance weights, multiplied by c, to weights
     virtual void variableWeights(double c, RefXd weights) const = 0;
 
+    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const = 0;
+
     virtual void save(ostream& os) const = 0;
 
     static unique_ptr<BasePredictor> load(istream& is, int version);
@@ -39,6 +41,7 @@ public:
     virtual ~ZeroPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
     virtual void variableWeights(double c, RefXd weights) const;
+    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
     static unique_ptr<ZeroPredictor> createInstance();
@@ -58,6 +61,7 @@ public:
     virtual ~ConstantPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
     virtual void variableWeights(double c, RefXd weights) const;
+    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
     static unique_ptr<ConstantPredictor> createInstance(double y);
@@ -79,6 +83,7 @@ public:
     virtual ~StumpPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
     virtual void variableWeights(double c, RefXd weights) const;
+    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
     static unique_ptr<StumpPredictor> createInstance(size_t j, float x, float leftY, float rightY, float gain);
@@ -104,12 +109,15 @@ public:
     virtual ~TreePredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
     virtual void variableWeights(double c, RefXd weights) const;
+    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
+    static unique_ptr<TreePredictor> createInstance(const TreeNode* root);
     static unique_ptr<TreePredictor> createInstance(vector<TreeNode>&& nodes);
     static unique_ptr<TreePredictor> load(istream& is, int version);
 
 private:
+    TreePredictor(const TreeNode* root);
     TreePredictor(vector<TreeNode>&& nodes);
 
     const vector<TreeNode> nodes_;
@@ -125,6 +133,7 @@ public:
     virtual ~ForestPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
     virtual void variableWeights(double c, RefXd weights) const;
+    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
     static unique_ptr<ForestPredictor> createInstance(vector<unique_ptr<BasePredictor>>&& basePredictors);

@@ -1,15 +1,20 @@
-packed data
-	why does inner thread synch take so much time with packed data?
-		do some more detailed profiling?
-		what happens if there are no inner threads?
-			push things to max with 128 threads, no inner threads on fast PC
-	test with Higgs cv on Laptop
-	if we keep it, don't pass around outData and weights
+prioritized:
 
-release 0.1
-	reset the predictor file format version to 1 and ditch the backward compatibility code
+	better stratification when training multigroup classifiers (folds and active samples)
 
-------------------------------------------------------------------------------------------------------------------------
+	multiple indata and multiple variable counts (to handle feature engineering)
+		applications: PCA, separate counts for up- and down-regulated variables, chromosomes
+
+	packed data
+		why does inner thread synch take so much time with packed data?
+			do some more detailed profiling?
+			what happens if there are no inner threads?
+				push things to max with 128 threads, no inner threads on fast PC
+		test with Higgs cv on Laptop
+		if we keep it, don't pass around outData and weights
+
+	release 0.1
+		reset the predictor file format version to 1 and ditch the backward compatibility code
 
 major tasks:
 	improved Higgs example (see "Higgs Notes.txt")
@@ -24,19 +29,18 @@ major tasks:
 	multinomial predictors
 
 features to add:
-	classifier compactification (remove unused variables, renumber (and reorder) the remaining variables)
-	logit boost with   f' / (f'' + delta * f' * f') ?
 	U-test (with correct handling of ties)
-	multiple indata and multiple variable counts (to handle feature engineering)
-	set seed to make the code deterministic (how to handle dynamic scheduling? doable, but a bit tricky)
+	include variable importance weights in predictor files
+		possible implementations
+			1. store in nodes (very simple, makes files about % larger)
+			2. table in header (simple, efficient, but not very flexible)
+			3. don't, recalculate with a dataset (think more about this approach)
 
 optimizations (accuracy):
-	better stratification when training multigroup classifiers
 	better parallelTrainAndEval for non-additive loss function (such as AUC)
 	boost stop criteria
 	pruning
-	multi-label stratification when generating folds and selecting active samples
-	other ways of regularizing logit boost?
+	other ways of regularizing logit boost (e.g. f' / (f'' + delta * f' * f'))
 	
 optimizations (speed):
 	parallelize:
@@ -51,20 +55,19 @@ optimizations (speed):
 	t-test and F-test:
 		divide the variables into large blocks, one for each thread
 		then each blocks into vertical strips, each one __128 wide (to be converted to __m256d)
-		look into fast/precise sums; does it make any difference for speed and accuracy?
+		also: possible to do fast column major implementation?
+	look into fast/precise sums; does it make any difference for speed and accuracy?
 	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
 	PGO
 
 minor things:
 	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
-	why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 	compare performance (speed and accuracy) with xgboost
 	clang code formatting
-	how fast can a column major implementation of the t-statistic be?
 	seems pybind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
 		that would be useful for passing sample lists to t-test and F-test
-	runtime checks for AVX2 and AVX512?
 	Eigen:
+		why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);

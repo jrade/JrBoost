@@ -40,10 +40,7 @@ def stratifiedRandomFolds(outData, foldCount, samples = None):
         for foldIndex in range(foldCount):
             folds[foldIndex][foldIndex == (j % foldCount)].append(i)
 
-    folds = [(
-        np.array(sorted(trainSamples)),
-        np.array(sorted(testSamples))
-    ) for trainSamples, testSamples in folds]
+    folds = [(sorted(trainSamples), sorted(testSamples)) for trainSamples, testSamples in folds]
     
     return folds
 

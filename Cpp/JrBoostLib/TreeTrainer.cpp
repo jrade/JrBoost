@@ -404,8 +404,8 @@ void TreeTrainer<SampleIndex>::initTree_() const
         t0.tree.front().resize(1);
     }
 
-    TreeNodeExt& root = t0.tree.front().front();
-    root.isLeaf = true;
+    TreeNodeExt* root = data(t0.tree.front());
+    root->isLeaf = true;
 }
 
 //......................................................................................................................
@@ -591,11 +591,11 @@ size_t TreeTrainer<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weight
 #endif
     }
 
-    TreeNodeExt& root = t0.tree.front().front();
-    root.sampleCount = usedSampleCount;
-    root.sumW = sumW;
-    root.sumWY = sumWY;
-    root.y = (sumW == 0.0) ? 0.0f : static_cast<float>(sumWY / sumW);
+    TreeNodeExt* root = data(t0.tree.front());
+    root->sampleCount = usedSampleCount;
+    root->sumW = sumW;
+    root->sumWY = sumWY;
+    root->y = (sumW == 0.0) ? 0.0f : static_cast<float>(sumWY / sumW);
 
     return usedSampleCount;
 }
@@ -942,24 +942,22 @@ unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::createPredictor_() const
     ThreadLocalData0_& t0 = threadLocalData0_;
 
     unique_ptr<BasePredictor> pred;
-    const TreeNodeExt& root = t0.tree.front().front();
-    size_t treeDepth = TreeTools::treeDepth(&root);
+    const TreeNodeExt* root = data(t0.tree.front());
+    const size_t treeDepth = TreeTools::treeDepth(root);
 
     if (treeDepth == 0) {
         // one memory allocation
-        if (root.y == 0.0f)
+        if (root->y == 0.0f)
             pred = ZeroPredictor::createInstance();
         else
-            pred = ConstantPredictor::createInstance(root.y);
+            pred = ConstantPredictor::createInstance(root->y);
     }
     else if (treeDepth == 1)
         // one memory allocation
-        pred = StumpPredictor::createInstance(root.j, root.x, root.leftChild->y, root.rightChild->y, root.gain);
-    else {
+        pred = StumpPredictor::createInstance(root->j, root->x, root->leftChild->y, root->rightChild->y, root->gain);
+    else
         // two memory allocations
-        vector<TreeNode> clonedNodes = TreeTools::cloneTree(&root);
-        pred = TreePredictor::createInstance(move(clonedNodes));
-    }
+        pred = TreePredictor::createInstance(root);
 
     return pred;
 }

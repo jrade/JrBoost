@@ -115,7 +115,14 @@ private:
     }
 };
 
-#define ASSERT(A) if (!(A)) throw AssertionError(#A, __FILE__, __LINE__)
+template<typename T>
+inline void assert_(const T& ok, const char* condition, const char* file, int line)
+{
+    if (!ok)
+        throw AssertionError(condition, file, line);
+}
+
+#define ASSERT(A) assert_((A), #A, __FILE__, __LINE__)
 
 //----------------------------------------------------------------------------------------------------------------------
 

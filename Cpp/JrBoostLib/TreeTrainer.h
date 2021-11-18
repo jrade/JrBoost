@@ -20,6 +20,7 @@ public:
 
     virtual unique_ptr<BasePredictor> train(
         CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
+
 private:
     vector<vector<SampleIndex>> getSortedSamples_() const;
 
@@ -34,8 +35,10 @@ private:
     size_t initUsedVariables_(const BaseOptions& options) const;
     void initTree_() const;
 
-    template<typename SampleStatus> size_t initSampleStatus_(CRefXd outData, CRefXd weights, const BaseOptions& options) const;
-    template<typename SampleStatus> void updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
+    template<typename SampleStatus> size_t initSampleStatus_(
+        CRefXd outData, CRefXd weights, const BaseOptions& options) const;
+    template<typename SampleStatus> void updateSampleStatus_(
+        CRefXd outData, CRefXd weights, size_t d) const;
 
     template<typename SampleStatus> const SampleIndex* initOrderedSamples_(
         size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& opions, size_t d) const;
@@ -65,10 +68,9 @@ private:
     const size_t stratum1Count_;
 
 private:
-    using BernoulliDistribution_ = typename std::conditional<
+    using BernoulliDistribution_ = typename std::conditional_t<     // much faster than std::bernoulli_distribution
         sizeof(SampleIndex) == 8,
         FastBernoulliDistribution,
         VeryFastBernoulliDistribution
-    >::type;
-    // much faster than std::bernoulli_distribution
+    >; 
 };

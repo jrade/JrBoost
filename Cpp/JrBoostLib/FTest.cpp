@@ -108,17 +108,14 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
             (
                 ssBlock.colwise().sum()
                 +
-                std::numeric_limits<double>::min()
+                numeric_limits<double>::min()
             )
         ).cast<float>();
     }
 
-    if (!f.isFinite().all()) {
-        if (!inData.isFinite().all())
-            throw std::invalid_argument("Indata has values that are infinity or NaN.");
-        else
-            // The fudge term should usually prevent this from happening
-            throw std::overflow_error("Numerical overflow when calculating the F-statistic.");
+    if (f.isNaN().any()) {
+        ASSERT(!inData.isFinite().all());
+        throw std::invalid_argument("Indata has values that are infinity or NaN.");
     }
 
     const size_t ITEM_COUNT = sampleCount * blockWidth;

@@ -50,6 +50,11 @@ void ZeroPredictor::predict(CRefXXfc /*inData*/, double /*c*/, RefXd /*outData*/
 void ZeroPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const
 {}
 
+unique_ptr<BasePredictor> ZeroPredictor::reindexVariables(const vector<size_t>& /*newIndices*/) const
+{
+    return createInstance();
+}
+
 void ZeroPredictor::save(ostream& os) const
 {
     os.put('Z');
@@ -57,7 +62,7 @@ void ZeroPredictor::save(ostream& os) const
 
 unique_ptr<ZeroPredictor> ZeroPredictor::load(istream& /*is*/, int /*version*/)
 {
-    return ZeroPredictor::createInstance();
+    return createInstance();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -80,6 +85,11 @@ void ConstantPredictor::predict(CRefXXfc /*inData*/, double c, RefXd outData) co
 
 void ConstantPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const
 {
+}
+
+unique_ptr<BasePredictor> ConstantPredictor::reindexVariables(const vector<size_t>& /*newIndices*/) const
+{
+    return createInstance(y_);
 }
 
 void ConstantPredictor::save(ostream& os) const
@@ -127,6 +137,11 @@ void StumpPredictor::variableWeights(double c, RefXd weights) const
     weights(j_) += c * gain_;
 }
 
+unique_ptr<BasePredictor> StumpPredictor::reindexVariables(const vector<size_t>& newIndices) const
+{
+    return createInstance(newIndices[j_], x_, leftY_, rightY_, gain_);
+}
+
 void StumpPredictor::save(ostream& os) const
 {
     os.put('S');
@@ -161,16 +176,25 @@ unique_ptr<StumpPredictor> StumpPredictor::load(istream& is, int version)
     if (version >= 3 && version < 5)
         is.read(reinterpret_cast<char*>(&gain), sizeof(gain));
     else
-        gain = std::numeric_limits<float>::quiet_NaN();
+        gain = numeric_limits<float>::quiet_NaN();
 
     return createInstance(j, x, leftY, rightY, gain);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
+TreePredictor::TreePredictor(const TreeNode* root) :
+    nodes_(TreeTools::cloneTree(root))
+{}
+
 TreePredictor::TreePredictor(vector<TreeNode>&& nodes) :
     nodes_(move(nodes))
 {}
+
+unique_ptr<TreePredictor> TreePredictor::createInstance(const TreeNode* root)
+{
+    return makeUnique<TreePredictor>(root);
+}
 
 unique_ptr<TreePredictor> TreePredictor::createInstance(vector<TreeNode>&& nodes)
 {
@@ -187,6 +211,13 @@ void TreePredictor::variableWeights(double c, RefXd weights) const
 {
     const TreeNode* root = data(nodes_);
     TreeTools::variableWeights(root, c, weights);
+}
+
+unique_ptr<BasePredictor> TreePredictor::reindexVariables(const vector<size_t>& newIndices) const
+{
+    const TreeNode* root = data(nodes_);
+    vector<TreeNode> nodes = TreeTools::reindexTree(root, newIndices);
+    return createInstance(move(nodes));
 }
 
 void TreePredictor::save(ostream& os) const
@@ -213,7 +244,6 @@ unique_ptr<ForestPredictor> ForestPredictor::createInstance(vector<unique_ptr<Ba
     return makeUnique<ForestPredictor>(move(basePredictors));
 }
 
-
 void ForestPredictor::predict(CRefXXfc inData, double c, RefXd outData) const
 {
     c /= size(basePredictors_);
@@ -226,6 +256,15 @@ void ForestPredictor::variableWeights(double c, RefXd weights) const
     c /= size(basePredictors_);
     for (const auto& basePredictor : basePredictors_)
         basePredictor->variableWeights(c, weights);
+}
+
+unique_ptr<BasePredictor> ForestPredictor::reindexVariables(const vector<size_t>& newIndices) const
+{
+    vector<unique_ptr<BasePredictor>> basePredictors;
+    basePredictors.reserve(size(basePredictors_));
+    for (const auto& basePredictor: basePredictors_)
+        basePredictors.push_back(basePredictor->reindexVariables(newIndices));
+    return createInstance(move(basePredictors));
 }
 
 void ForestPredictor::save(ostream& os) const
@@ -246,10 +285,11 @@ unique_ptr<ForestPredictor> ForestPredictor::load(istream& is, int version)
     }
     else
         n = base128Load(is);
-    vector<unique_ptr<BasePredictor>> basePredictors(n);
 
-    for (size_t k = 0; k != n; ++k)
-        basePredictors[k] = BasePredictor::load(is, version);
+    vector<unique_ptr<BasePredictor>> basePredictors;
+    basePredictors.reserve(n);
+    for (; n != 0; --n)
+        basePredictors.push_back(BasePredictor::load(is, version));
 
     return createInstance(move(basePredictors));
 }

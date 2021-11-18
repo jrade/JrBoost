@@ -31,6 +31,7 @@ namespace TreeTools
 
     void pruneTree(TreeNode* node, float minNodeGain);
     vector<TreeNode> cloneTree(const TreeNode* node);       // first node in the returned vector is the root
+    vector<TreeNode> reindexTree(const TreeNode* node, const vector<size_t>& newIndices);
 
     void predict(const TreeNode* node, CRefXXfc inData, double c, RefXd outData);
     void variableWeights(const TreeNode* node, double c, RefXd weights);

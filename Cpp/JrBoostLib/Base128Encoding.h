@@ -31,12 +31,12 @@ inline size_t base128Load(istream& is)
     size_t n = 0;
 
     for (size_t shift = 0; shift != 63; shift += 7) {
-        size_t m = is.get();
+        const size_t m = is.get();
         n |= (m & 0x7f) << shift;
         if (m < 0x80) return n;
     }
 
-    size_t m = is.get();
+    const size_t m = is.get();
     if (m > 0x01)
         throw std::overflow_error("Overflow when decoding Base128 data.");
     n |= m << 63;
@@ -48,7 +48,7 @@ inline size_t base128Load(istream& is)
 inline void base128Test()
 {
     bool pass = true;
-    size_t n = 1000000;
+    const int n = 1000000;
     stringstream ss;
     {
         size_t a = 1;

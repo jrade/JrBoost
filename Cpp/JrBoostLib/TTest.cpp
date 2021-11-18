@@ -97,17 +97,14 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
             (
                 ssBlock.row(0) + ssBlock.row(1)
                 +
-                std::numeric_limits<double>::min()
+                numeric_limits<double>::min()
             ).sqrt()
         ).cast<float>();
     }
 
-    if (!t.isFinite().all()) {
-        if (!inData.isFinite().all())
-            throw std::invalid_argument("Indata has values that are infinity or NaN.");
-        else
-            // The fudge term should usually prevent this from happening
-            throw std::overflow_error("Numerical overflow when calculating the t-statistic.");
+    if (t.isNaN().any()) {
+        ASSERT(!inData.isFinite().all());
+        throw std::invalid_argument("Indata has values that are infinity or NaN.");
     }
 
     const size_t ITEM_COUNT = sampleCount * blockWidth;
