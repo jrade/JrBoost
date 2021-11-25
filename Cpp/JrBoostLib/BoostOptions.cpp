@@ -29,10 +29,3 @@ void BoostOptions::setFastExp(bool b)
 {
     fastExp_ = b;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-
-double cost(const BoostOptions& opt)
-{
-    return opt.iterationCount() * cost(static_cast<const BaseOptions&>(opt));
-}

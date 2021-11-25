@@ -1,9 +1,24 @@
 prioritized:
 
-	better stratification when training multigroup classifiers (folds and active samples)
+	Clang format
+		don't enable it yet, except when testing
+		is there way of applying format file to all source files
+		things to fix:
+			spaces in brace initializer lists
+			trailing ) on separate line
+			freedom to place arguments on same or separate lines
+		compare with other format file
+		review all the settings we have changed
 
-	multiple indata and multiple variable counts (to handle feature engineering)
-		applications: PCA, separate counts for up- and down-regulated variables, chromosomes
+	check file size with and w/o gain again
+		resurrect the Leukemia train script and train with that
+
+	remove support for old file format versions
+		throw exception of they are detected
+			but first decide how to handle gain
+
+	review new stratification code
+		test with leukemia
 
 	packed data
 		why does inner thread synch take so much time with packed data?
@@ -13,8 +28,14 @@ prioritized:
 		test with Higgs cv on Laptop
 		if we keep it, don't pass around outData and weights
 
+	drop py::arg().noconvert() in t-test and F-test python wrappers?
+		profile
+
 	release 0.1
-		reset the predictor file format version to 1 and ditch the backward compatibility code
+
+	do everything under minor things
+
+..............................................................
 
 major tasks:
 	improved Higgs example (see "Higgs Notes.txt")
@@ -30,17 +51,16 @@ major tasks:
 
 features to add:
 	U-test (with correct handling of ties)
-	include variable importance weights in predictor files
-		possible implementations
-			1. store in nodes (very simple, makes files about % larger)
-			2. table in header (simple, efficient, but not very flexible)
-			3. don't, recalculate with a dataset (think more about this approach)
+	multiple indata and multiple variable counts (to handle feature engineering)
+		applications: PCA, separate counts for up- and down-regulated variables, chromosomes, NCC
+	new way of calculating variable importance weights: when predicting (instead of when training)
 
 optimizations (accuracy):
+	iterate from both ends and meet in the middle when finding best split
 	better parallelTrainAndEval for non-additive loss function (such as AUC)
 	boost stop criteria
 	pruning
-	other ways of regularizing logit boost (e.g. f' / (f'' + delta * f' * f'))
+	other ways of regularizing logit boost (e.g. f' / (f'' + delta * f' * f') which is scale-invariant)
 	
 optimizations (speed):
 	parallelize:
@@ -52,20 +72,24 @@ optimizations (speed):
 		TreeTrainer::updateSampleStatus_:
 			introducing dummy nodes that contain the unused samples
 			maybe maintain sorted lists of active samples to speed this up further
-	t-test and F-test:
-		divide the variables into large blocks, one for each thread
-		then each blocks into vertical strips, each one __128 wide (to be converted to __m256d)
-		also: possible to do fast column major implementation?
+	t-test and F-test: are they SIMD optimized? do we load eacg cache line twice for large data sets?
 	look into fast/precise sums; does it make any difference for speed and accuracy?
 	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
 	PGO
 
 minor things:
-	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
 	compare performance (speed and accuracy) with xgboost
+		construct Python classes with same interface as jrboost python classes
+	UML diagrams
+	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
 	clang code formatting
-	seems pybind11 does not support arguments of types such as optional<reference_wrapper<vector<int>>>
-		that would be useful for passing sample lists to t-test and F-test
+	pybind11:
+		seems arguments of types such as optional<reference_wrapper<vector<int>>> are not supported
+			that would be useful for passing sample lists to t-test and F-test
+		not supported:
+			py::class_<Predictor, shared_ptr<const Predictor>>{ mod, "Predictor" }
+			py::class_<const Predictor, shared_ptr<const Predictor>>{ mod, "Predictor" }
+			also, unique_ptr to const T
 	Eigen:
 		why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 		why does std::data() not work here? (see Select.cpp)

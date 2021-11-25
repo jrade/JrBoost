@@ -14,39 +14,40 @@ class BasePredictor;
 // 5 - Base128 encoded integers, removed gain from stump and tree predictors
 // 6 - changed predictor and base predictor tags
 // 7 - added union predictors
+// 8 - added variable weights, simplified handling of variable count
 
-class Predictor
+class Predictor : public std::enable_shared_from_this<Predictor>
 {
 public:
-    virtual ~Predictor() = default;
+    virtual ~Predictor();
+
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXfc inData) const;
-    ArrayXd variableWeights() const;
-    shared_ptr<Predictor> reindexVariables(const vector<size_t>& newIndices) const;
+    ArrayXf variableWeights() const;
+    shared_ptr<const Predictor> reindexVariables(const vector<size_t>& newIndices) const;
+
     void save(const string& filePath) const;
     void save(ostream& os) const;
-    static shared_ptr<Predictor> load(const string& filePath);
-    static shared_ptr<Predictor> load(istream& is);
+    static shared_ptr<const Predictor> load(const string& filePath);
+    static shared_ptr<const Predictor> load(istream& is);
 
 protected:
-    Predictor(size_t variableCount) : variableCount_(variableCount) {}
-    static size_t maxVariableCount_(const vector<shared_ptr<Predictor>>& predictors);
-    
+    Predictor(size_t variableCount);
+
 // deleted:
     Predictor(const Predictor&) = delete;
     Predictor& operator=(const Predictor&) = delete;
 
 private:
     virtual ArrayXd predictImpl_(CRefXXfc inData) const = 0;
-    // add the variable importance weights, multiplied by c, to weights
-    virtual void variableWeightsImpl_(double c, RefXd weights) const = 0;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices, size_t variableCount) const = 0;
-    virtual void saveBody_(ostream& os) const = 0;
-    static int loadHeader_(istream& is);
-    static shared_ptr<Predictor> loadBody_(istream& is, int version);
+    virtual ArrayXf variableWeightsImpl_() const = 0;
+    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const = 0;
+    virtual void saveImpl_(ostream& os) const = 0;
+    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
 
     const size_t variableCount_;
-    static const int currentFileFormatVersion_ = 7;
+
+    static const int currentFileFormatVersion_ = 8;
 
     friend class EnsemblePredictor;
     friend class UnionPredictor;
@@ -57,30 +58,31 @@ private:
 class BoostPredictor : public Predictor
 {
 public:
-    virtual ~BoostPredictor();
-    static shared_ptr<BoostPredictor> createInstance(
-        size_t variableCount,
+    static shared_ptr<const Predictor> createInstance(
         double c0,
         double c1,
-        vector<unique_ptr<BasePredictor>>&& basePredictors
+        vector<unique_ptr<const BasePredictor>>&& basePredictors
     );
+
+    virtual ~BoostPredictor();
 
 private:
     BoostPredictor(
-        size_t variableCount,
         double c0,
         double c1,
-        vector<unique_ptr<BasePredictor>>&& basePredictors
+        vector<unique_ptr<const BasePredictor>>&& basePredictors
     );
+    static size_t initVariableCount_(const vector<unique_ptr<const BasePredictor>>& basePredictors);
+
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
-    virtual void variableWeightsImpl_(double c, RefXd weights) const;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices, size_t variableCount) const;
-    virtual void saveBody_(ostream& os) const;
-    static shared_ptr<BoostPredictor> loadBody_(istream& is, int version);
+    virtual ArrayXf variableWeightsImpl_() const;
+    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual void saveImpl_(ostream& os) const;
+    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
 
     float c0_;
     float c1_;
-    vector<unique_ptr<BasePredictor>> basePredictors_;
+    vector<unique_ptr<const BasePredictor>> basePredictors_;
 
     friend class Predictor;
     friend class MakeSharedHelper<BoostPredictor>;
@@ -91,18 +93,20 @@ private:
 class EnsemblePredictor : public Predictor
 {
 public:
-    virtual ~EnsemblePredictor() = default;
-    static shared_ptr<EnsemblePredictor> createInstance(const vector<shared_ptr<Predictor>>& predictors);
+    static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
+    virtual ~EnsemblePredictor();
 
 private:
-    EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors);
-    virtual ArrayXd predictImpl_(CRefXXfc inData) const;
-    virtual void variableWeightsImpl_(double c, RefXd weights) const;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices, size_t variableCount) const;
-    virtual void saveBody_(ostream& os) const;
-    static shared_ptr<EnsemblePredictor> loadBody_(istream& is, int version);
+    EnsemblePredictor(const vector<shared_ptr<const Predictor>>& predictors);
+    static size_t initVariableCount_(const vector<shared_ptr<const Predictor>>& predictors);
 
-    vector<shared_ptr<Predictor>> predictors_;
+    virtual ArrayXd predictImpl_(CRefXXfc inData) const;
+    virtual ArrayXf variableWeightsImpl_() const;
+    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual void saveImpl_(ostream& os) const;
+    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
+
+    vector<shared_ptr<const Predictor>> predictors_;
 
     friend class Predictor;
     friend class MakeSharedHelper<EnsemblePredictor>;
@@ -113,18 +117,20 @@ private:
 class UnionPredictor : public Predictor
 {
 public:
-    virtual ~UnionPredictor() = default;
-    static shared_ptr<UnionPredictor> createInstance(const vector<shared_ptr<Predictor>>& predictors);
+    static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
+    virtual ~UnionPredictor();
 
 private:
-    UnionPredictor(const vector<shared_ptr<Predictor>>& predictors);
-    virtual ArrayXd predictImpl_(CRefXXfc inData) const;
-    virtual void variableWeightsImpl_(double c, RefXd weights) const;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices, size_t variableCount) const;
-    virtual void saveBody_(ostream& os) const;
-    static shared_ptr<UnionPredictor> loadBody_(istream& is, int version);
+    UnionPredictor(const vector<shared_ptr<const Predictor>>& predictors);
+    static size_t initVariableCount_(const vector<shared_ptr<const Predictor>>& predictors);
 
-    vector<shared_ptr<Predictor>> predictors_;
+    virtual ArrayXd predictImpl_(CRefXXfc inData) const;
+    virtual ArrayXf variableWeightsImpl_() const;
+    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual void saveImpl_(ostream& os) const;
+    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
+    
+    vector<shared_ptr<const Predictor>> predictors_;
 
     friend class Predictor;
     friend class MakeSharedHelper<UnionPredictor>;

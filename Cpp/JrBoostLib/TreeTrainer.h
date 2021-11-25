@@ -18,13 +18,14 @@ public:
     TreeTrainer(CRefXXfc inData, CRefXu8 strata);
     virtual ~TreeTrainer() = default;
 
-    virtual unique_ptr<BasePredictor> train(
+    virtual unique_ptr<const BasePredictor> train(
         CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
 private:
-    vector<vector<SampleIndex>> getSortedSamples_() const;
+    vector<size_t> initSampleCountByStratum_() const;
+    vector<vector<SampleIndex>> initSortedSamples_() const;
 
-    template<typename SampleStatus> unique_ptr<BasePredictor> trainImpl_(
+    template<typename SampleStatus> unique_ptr<const BasePredictor> trainImpl_(
         CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
     //void validateData_(CRefXd outData, CRefXd weights) const;
@@ -55,7 +56,7 @@ private:
         const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
     size_t finalizeNodeTrainers_(size_t d, size_t threadCount) const;
 
-    unique_ptr<BasePredictor> createPredictor_() const;
+    unique_ptr<const BasePredictor> createPredictor_() const;
 
 private:
     const CRefXXfc inData_;
@@ -64,8 +65,8 @@ private:
     const vector<vector<SampleIndex>> sortedSamples_;
 
     const CRefXu8 strata_;
-    const size_t stratum0Count_;
-    const size_t stratum1Count_;
+    const size_t stratumCount_;
+    const vector<size_t> sampleCountByStratum_;
 
 private:
     using BernoulliDistribution_ = typename std::conditional_t<     // much faster than std::bernoulli_distribution

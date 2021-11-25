@@ -43,17 +43,17 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("save", py::overload_cast<const string&>(&Predictor::save, py::const_))
         .def_static("load", py::overload_cast<const string&>(&Predictor::load))
         .def_static("createEnsemble",
-            [] (const vector<shared_ptr<Predictor>> predictors) {
-                return static_cast<shared_ptr<Predictor>>(EnsemblePredictor::createInstance(predictors));
+            [] (const vector<shared_ptr<const Predictor>> predictors) {
+                return std::const_pointer_cast<Predictor>(EnsemblePredictor::createInstance(predictors));
             }
         )
         .def_static("createUnion",
-            [] (const vector<shared_ptr<Predictor>> predictors) {
-                return static_cast<shared_ptr<Predictor>>(UnionPredictor::createInstance(predictors));
+            [] (const vector<shared_ptr<const Predictor>> predictors) {
+                return std::const_pointer_cast<Predictor>(UnionPredictor::createInstance(predictors));
             }
         )
         .def("__repr__",
-            [] (const BoostPredictor&) {
+            [] (const Predictor&) {
                 return "<jrboost.Predictor>";
             }
         )
@@ -67,7 +67,7 @@ PYBIND11_MODULE(_jrboostext, mod)
             [] (const py::bytes& b) {
                 stringstream ss(static_cast<string>(b));
                 ss.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-                return Predictor::load(ss);
+                return std::const_pointer_cast<Predictor>(Predictor::load(ss));
             }
         ));
 
@@ -79,7 +79,10 @@ PYBIND11_MODULE(_jrboostext, mod)
             py::init<ArrayXXfc, ArrayXu8, optional<ArrayXd>>(),
             py::arg(), py::arg(), py::arg("weights") = optional<ArrayXd>()
         )
-        .def("train", [] (const BoostTrainer& trainer, const BoostOptions& opt) { return trainer.train(opt); })
+        .def("train",
+            [] (const BoostTrainer& trainer, const BoostOptions& opt) {
+            return std::const_pointer_cast<Predictor>(trainer.train(opt));
+        })
         .def("__repr__", [] (const BoostTrainer&) { return "<jrboost.BoostTrainer>"; });
 
     mod.def("getDefaultBoostParam", [] () { return BoostOptions(); });

@@ -1,3 +1,5 @@
+// clang-format off
+
 // Bug fix by Johan Rade: added inline to the free functions operator==() and operator!=()
 
 /* Copyright (c) 2018 Arvid Gerstmann. */

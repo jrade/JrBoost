@@ -26,7 +26,7 @@ protected:
 
 public:
     virtual ~TreeTrainerBase() = default;
-    virtual unique_ptr<BasePredictor> train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const = 0;
+    virtual unique_ptr<const BasePredictor> train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const = 0;
 
     static size_t bufferSize();
     static void freeBuffers();

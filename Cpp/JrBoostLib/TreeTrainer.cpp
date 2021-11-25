@@ -71,10 +71,10 @@ TreeTrainer<SampleIndex>::TreeTrainer(CRefXXfc inData, CRefXu8 strata) :
     inData_{ inData },
     sampleCount_{ static_cast<size_t>(inData.rows()) },
     variableCount_{ static_cast<size_t>(inData.cols()) },
-    sortedSamples_{ getSortedSamples_() },
+    sortedSamples_{ initSortedSamples_() },
     strata_{ strata },
-    stratum0Count_{ (strata == 0).cast<size_t>().sum() },
-    stratum1Count_{ (strata == 1).cast<size_t>().sum() }
+    stratumCount_{ strata_.rows() == 0 ? static_cast<size_t>(0) : static_cast<size_t>(strata_.maxCoeff()) + 1 },
+    sampleCountByStratum_(initSampleCountByStratum_())
 {
 }
 
@@ -82,7 +82,7 @@ TreeTrainer<SampleIndex>::TreeTrainer(CRefXXfc inData, CRefXu8 strata) :
 // These lists are then used by initSortedSamplesFast_() and initSortedSamples_().
 
 template<typename SampleIndex>
-vector<vector<SampleIndex>> TreeTrainer<SampleIndex>::getSortedSamples_() const
+vector<vector<SampleIndex>> TreeTrainer<SampleIndex>::initSortedSamples_() const
 {
     vector<vector<SampleIndex>> sortedSamples(variableCount_);
 
@@ -116,10 +116,21 @@ vector<vector<SampleIndex>> TreeTrainer<SampleIndex>::getSortedSamples_() const
     return sortedSamples;
 }
 
+
+template<typename SampleIndex>
+vector<size_t> TreeTrainer<SampleIndex>::initSampleCountByStratum_() const
+{
+    ASSERT(static_cast<size_t>(strata_.rows()) == sampleCount_);
+    vector<size_t> n(stratumCount_, 0);
+    for (size_t z : strata_)
+        ++n[z];
+    return n;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::train(
+unique_ptr<const BasePredictor> TreeTrainer<SampleIndex>::train(
     CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::TREE_TRAIN);
@@ -140,7 +151,7 @@ unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::train(
 
     size_t maxStatusCount = std::min(sampleCount_, maxNodeCount + 1);
 
-    unique_ptr<BasePredictor> pred;
+    unique_ptr<const BasePredictor> pred;
 
     if (maxStatusCount <= (1 << 8))
         pred = trainImpl_<uint8_t>(outData, weights, options, threadCount);
@@ -159,7 +170,7 @@ unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::train(
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::trainImpl_(
+unique_ptr<const BasePredictor> TreeTrainer<SampleIndex>::trainImpl_(
     CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
 {
     if (currentInterruptHandler != nullptr)
@@ -297,7 +308,7 @@ unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::trainImpl_(
 
     // TO DO: PRUNE TREE
 
-    unique_ptr<BasePredictor> predictor = createPredictor_();       // very fast, no need to profile
+    unique_ptr<const BasePredictor> predictor = createPredictor_();       // very fast, no need to profile
 
     return predictor;
 };
@@ -463,13 +474,13 @@ size_t TreeTrainer<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weight
             const uint8_t* pStrata = std::data(strata_);
 
             // n[z] number of samples in stratum z
-            array<size_t, 2> n{ stratum0Count_, stratum1Count_ };
-
             // m[z] number of used samples in stratum z
-            array<size_t, 2> m{
-                static_cast<size_t>(std::round(options.usedSampleRatio() * n[0])),
-                static_cast<size_t>(std::round(options.usedSampleRatio() * n[1]))
-            };
+            array<size_t, 256> n;
+            array<size_t, 256> m;
+            for (size_t z = 0; z != stratumCount_; ++z) {
+                n[z] = sampleCountByStratum_[z];
+                m[z] = static_cast<size_t>(std::round(options.usedSampleRatio() * n[z]));
+            }
 
             // for each z, randomly select m[z] of n[z] samples in stratum z
             for (size_t i = 0; i != sampleCount; ++i) {
@@ -479,7 +490,7 @@ size_t TreeTrainer<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weight
                 m[z] -= s;
                 --n[z];
             }
-            ASSERT(m[0] == 0 && m[1] == 0);
+            ASSERT(accumulate(begin(m), begin(m) + stratumCount_, static_cast<size_t>(0)) == 0);
         }
     }
 
@@ -529,7 +540,9 @@ size_t TreeTrainer<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weight
 
             // store all samples with weight >= min sample weight in sample buffer
             // n[z] = number of samples in stratum z with weight >= min sample weight
-            array<size_t, 2> n = { 0, 0 };
+            array<size_t, 256> n;
+            for (size_t z = 0; z != stratumCount_; ++z)
+                n[z] = 0;
             t1.sampleBuffer.resize(sampleCount);
             SampleIndex* p = data(t1.sampleBuffer);
             for (size_t i = 0; i != sampleCount; ++i) {
@@ -542,10 +555,9 @@ size_t TreeTrainer<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weight
             t1.sampleBuffer.resize(p - data(t1.sampleBuffer));
 
             // m[z] = number of used samples in stratum z
-            array<size_t, 2> m{
-                static_cast<size_t>(std::round(options.usedSampleRatio() * n[0])),
-                static_cast<size_t>(std::round(options.usedSampleRatio() * n[1]))
-            };
+            array<size_t, 256> m;
+            for (size_t z = 0; z != stratumCount_; ++z)
+                m[z] = static_cast<size_t>(std::round(options.usedSampleRatio() * n[z]));
 
             // for each z, randomly select m[z] of n[z] samples with weight >= min sample weight in stratum z
             std::fill(pSampleStatus, pSampleStatus + sampleCount, static_cast<SampleStatus>(0));
@@ -556,7 +568,7 @@ size_t TreeTrainer<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weight
                 m[z] -= s;
                 --n[z];
             }
-            ASSERT(m[0] == 0 && m[1] == 0);
+            ASSERT(accumulate(begin(m), begin(m) + stratumCount_, static_cast<size_t>(0)) == 0);
         }
 
     } // end minSampleWeight == 0.0
@@ -937,11 +949,11 @@ size_t TreeTrainer<SampleIndex>::finalizeNodeTrainers_(size_t d, size_t threadCo
 //......................................................................................................................
 
 template<typename SampleIndex>
-unique_ptr<BasePredictor> TreeTrainer<SampleIndex>::createPredictor_() const
+unique_ptr<const BasePredictor> TreeTrainer<SampleIndex>::createPredictor_() const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
 
-    unique_ptr<BasePredictor> pred;
+    unique_ptr<const BasePredictor> pred;
     const TreeNodeExt* root = data(t0.tree.front());
     const size_t treeDepth = TreeTools::treeDepth(root);
 

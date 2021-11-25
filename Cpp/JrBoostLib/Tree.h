@@ -34,6 +34,7 @@ namespace TreeTools
     vector<TreeNode> reindexTree(const TreeNode* node, const vector<size_t>& newIndices);
 
     void predict(const TreeNode* node, CRefXXfc inData, double c, RefXd outData);
+    size_t variableCount(const TreeNode* node);
     void variableWeights(const TreeNode* node, double c, RefXd weights);
 
     void saveTree(const TreeNode* node, ostream& os);

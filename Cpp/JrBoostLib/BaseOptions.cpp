@@ -100,11 +100,3 @@ void BaseOptions::setTest(size_t n)
 {
     test_ = n;
 }
-
-//----------------------------------------------------------------------------------------------------------------------
-
-double cost(const BaseOptions& opt)
-{
-    return opt.forestSize() * opt.maxTreeDepth() * opt.usedSampleRatio()
-        * opt.topVariableCount() * opt.usedVariableRatio();
-}

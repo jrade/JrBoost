@@ -88,6 +88,14 @@ namespace TreeTools
         }
     }
 
+    size_t variableCount(const TreeNode* node)
+    {
+        if (node->isLeaf) return 0;
+        return std::max({
+            node->j + 1, variableCount(node->leftChild), variableCount(node->rightChild)
+        });
+    }
+
     void variableWeights(const TreeNode* node, double c, RefXd weights)
     {
         if (node->isLeaf) return;
@@ -105,6 +113,9 @@ namespace TreeTools
         else {
             base128Save(os, node->j);
             os.write(reinterpret_cast<const char*>(&node->x), sizeof(node->x));
+#if SAVE_GAIN
+            os.write(reinterpret_cast<const char*>(&node->gain), sizeof(node->gain));
+#endif
             saveTreeImpl_(node->leftChild, os);
             saveTreeImpl_(node->rightChild, os);
         }
@@ -143,8 +154,15 @@ namespace TreeTools
 
             if (version >= 3 && version < 5)
                 is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));
-            else
+            else if (version < 8)
                 node->gain = numeric_limits<float>::quiet_NaN();
+            else {
+#if SAVE_GAIN
+                is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));
+#else
+                node->gain = numeric_limits<float>::quiet_NaN();
+#endif
+            }
 
             node->leftChild = node + 1;
             node->rightChild = loadTreeImpl_(node->leftChild, is, version);

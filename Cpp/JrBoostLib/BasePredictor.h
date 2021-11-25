@@ -16,14 +16,14 @@ public:
     // add the prediction, multiplied by c, to outData
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const = 0;
 
+    virtual size_t variableCount() const = 0;
     // add the variable importance weights, multiplied by c, to weights
     virtual void variableWeights(double c, RefXd weights) const = 0;
-
-    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const = 0;
+    virtual unique_ptr<const BasePredictor> reindexVariables(const vector<size_t>& newIndices) const = 0;
 
     virtual void save(ostream& os) const = 0;
 
-    static unique_ptr<BasePredictor> load(istream& is, int version);
+    static unique_ptr<const BasePredictor> load(istream& is, int version);
 
 protected:
     BasePredictor() = default;
@@ -40,12 +40,13 @@ class ZeroPredictor : public BasePredictor
 public:
     virtual ~ZeroPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<const BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
-    static unique_ptr<ZeroPredictor> createInstance();
-    static unique_ptr<ZeroPredictor> load(istream& is, int version);
+    static unique_ptr<const BasePredictor> createInstance();
+    static unique_ptr<const BasePredictor> load(istream& is, int version);
 
 private:
     ZeroPredictor() = default;
@@ -60,12 +61,13 @@ class ConstantPredictor : public BasePredictor
 public:
     virtual ~ConstantPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<const BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
-    static unique_ptr<ConstantPredictor> createInstance(double y);
-    static unique_ptr<ConstantPredictor> load(istream& is, int version);
+    static unique_ptr<const BasePredictor> createInstance(double y);
+    static unique_ptr<const BasePredictor> load(istream& is, int version);
 
 private:
     ConstantPredictor(double y);
@@ -82,12 +84,13 @@ class StumpPredictor : public BasePredictor
 public:
     virtual ~StumpPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<const BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
-    static unique_ptr<StumpPredictor> createInstance(size_t j, float x, float leftY, float rightY, float gain);
-    static unique_ptr<StumpPredictor> load(istream& is, int version);
+    static unique_ptr<const BasePredictor> createInstance(size_t j, float x, float leftY, float rightY, float gain);
+    static unique_ptr<const BasePredictor> load(istream& is, int version);
 
 private:
     StumpPredictor(size_t j, float x, float leftY, float rightY, float gain);
@@ -108,13 +111,14 @@ class TreePredictor : public BasePredictor
 public:
     virtual ~TreePredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<const BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
-    static unique_ptr<TreePredictor> createInstance(const TreeNode* root);
-    static unique_ptr<TreePredictor> createInstance(vector<TreeNode>&& nodes);
-    static unique_ptr<TreePredictor> load(istream& is, int version);
+    static unique_ptr<const BasePredictor> createInstance(const TreeNode* root);
+    static unique_ptr<const BasePredictor> createInstance(vector<TreeNode>&& nodes);
+    static unique_ptr<const BasePredictor> load(istream& is, int version);
 
 private:
     TreePredictor(const TreeNode* root);
@@ -132,17 +136,18 @@ class ForestPredictor : public BasePredictor
 public:
     virtual ~ForestPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<const BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
     virtual void save(ostream& os) const;
 
-    static unique_ptr<ForestPredictor> createInstance(vector<unique_ptr<BasePredictor>>&& basePredictors);
-    static unique_ptr<ForestPredictor> load(istream& is, int version);
+    static unique_ptr<const BasePredictor> createInstance(vector<unique_ptr<const BasePredictor>>&& basePredictors);
+    static unique_ptr<const BasePredictor> load(istream& is, int version);
 
 private:
-    ForestPredictor(vector<unique_ptr<BasePredictor>>&& basePredictors);
+    ForestPredictor(vector<unique_ptr<const BasePredictor>>&& basePredictors);
 
-    const vector<unique_ptr<BasePredictor>> basePredictors_;
+    const vector<unique_ptr<const BasePredictor>> basePredictors_;
 
     friend class MakeUniqueHelper<ForestPredictor>;
 };

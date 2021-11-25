@@ -73,5 +73,3 @@ private:
     bool saveMemory_{ false };
     bool test_{ 0 };
 };
-
-double cost(const BaseOptions& opt);

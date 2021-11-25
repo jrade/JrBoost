@@ -1,3 +1,5 @@
+// clang-format off
+
 /*
     pdqsort.h - Pattern-defeating quicksort.
 

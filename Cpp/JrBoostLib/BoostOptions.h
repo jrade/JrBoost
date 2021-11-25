@@ -31,5 +31,3 @@ private:
     double eta_{ 0.1 };
     bool fastExp_{ true };
 };
-
-double cost(const BoostOptions& opt);
