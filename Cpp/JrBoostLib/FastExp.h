@@ -1,6 +1,6 @@
 //  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
-//  (See accompanying file License.txt 
+//  (See accompanying file License.txt
 //  or copy at https://opensource.org/licenses/MIT)
 
 // Very fast approximate implementation of the exponential function (exp) with
@@ -16,7 +16,7 @@
 // available at https://www.schraudolph.org/pubs/Schraudolph99.pdf
 // The method is based on clever manipulation of the bits in the IEEE754
 // binary representation of floating point numbers.
-//  
+//
 // I have added some features that are not in the paper, such as
 // underflow and overflow checks, single precision versions and SIMD versions.
 // The underflow and  overflow checks use the bit manipulation techniques
@@ -70,7 +70,7 @@ inline double fastExp(double x)
     return x;
 }
 
-inline __m512d fastExp(__m512d x8)          // requires AVX512F + AVX512DQ
+inline __m512d fastExp(__m512d x8)   // requires AVX512F + AVX512DQ
 {
     const double a = (1LL << 52) / 0.6931471805599453;
     const double b = (1LL << 52) * (1023 - 0.0436774489036);
@@ -90,7 +90,7 @@ inline __m512d fastExp(__m512d x8)          // requires AVX512F + AVX512DQ
     return x8;
 }
 
-inline __m256d fastExp(__m256d x4)          // requires AVX2
+inline __m256d fastExp(__m256d x4)   // requires AVX2
 {
     // AVX2 does not support conversion from double to int64_t.
     // This implementation avoids that conversion.
@@ -114,17 +114,17 @@ inline __m256d fastExp(__m256d x4)          // requires AVX2
 
     return x4;
 
-/*
-    A scalar version of this code would be:
-        x = a * x + b;
-        x = std::max(0.0, x);
-        x = std::min(x, c);
-        int32_t m = static_cast<int32_t>(x);
-        int64_t n = static_cast<int64_t>(m);
-        n <<= 32;
-        std::memcpy(&x, &n, 8);
-        return x;
-*/
+    /*
+        A scalar version of this code would be:
+            x = a * x + b;
+            x = std::max(0.0, x);
+            x = std::min(x, c);
+            int32_t m = static_cast<int32_t>(x);
+            int64_t n = static_cast<int64_t>(m);
+            n <<= 32;
+            std::memcpy(&x, &n, 8);
+            return x;
+    */
 }
 
 //------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ inline float fastExp(float x)
     return x;
 }
 
-inline __m512 fastExp(__m512 x16)           // requires AVX512F + AVX512DQ
+inline __m512 fastExp(__m512 x16)   // requires AVX512F + AVX512DQ
 {
     constexpr float a = (1 << 23) / 0.6931472f;
     constexpr float b = (1 << 23) * (127 - 0.04368f) + 0.5f;
@@ -182,7 +182,7 @@ inline __m512 fastExp(__m512 x16)           // requires AVX512F + AVX512DQ
     return x16;
 }
 
-inline __m256 fastExp(__m256 x8)            // requires AVX2
+inline __m256 fastExp(__m256 x8)   // requires AVX2
 {
     constexpr float a = (1 << 23) / 0.6931472f;
     constexpr float b = (1 << 23) * (127 - 0.04368f) + 0.5f;

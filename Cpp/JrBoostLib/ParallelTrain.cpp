@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "ParallelTrain.h"
 
 #include "BoostOptions.h"
@@ -13,8 +14,8 @@
 
 static double cost_(const BoostOptions& opt)
 {
-    return opt.iterationCount() * opt.forestSize() * opt.maxTreeDepth()
-        * opt.usedSampleRatio() * opt.topVariableCount() * opt.usedVariableRatio();
+    return opt.iterationCount() * opt.forestSize() * opt.maxTreeDepth() * opt.usedSampleRatio() * opt.topVariableCount()
+           * opt.usedVariableRatio();
 }
 
 
@@ -26,12 +27,7 @@ vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, c
     // from the most computaionally expensive to the least computationally expensive
 
     vector<size_t> optIndicesSortedByCost(optCount);
-    sortedIndices(
-        cbegin(opt),
-        cend(opt),
-        begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -cost_(opt); }
-    );
+    sortedIndices(cbegin(opt), cend(opt), begin(optIndicesSortedByCost), [](const auto& opt) { return -cost_(opt); });
 
     vector<shared_ptr<const Predictor>> pred(optCount);
 
@@ -59,13 +55,12 @@ vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, c
         // each inner thread count is approximately the total thread count divided by the outer thread count
         // and the sum of the inner thread counts is exactly the total thread count
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
-            innerThreadCounts[outerThreadIndex]
-            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
-            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+            innerThreadCounts[outerThreadIndex] = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+                                                  - (totalThreadCount * outerThreadIndex / outerThreadCount);
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
-    // An OpenMP parallel for loop with dynamic scheduling does not in general process the elements in any 
+    // An OpenMP parallel for loop with dynamic scheduling does not in general process the elements in any
     // particular order. Therefore we implement our own scheduling to make sure they are processed in order.
 
     PROFILE::PUSH(PROFILE::OUTER_THREAD_SYNCH);
@@ -80,10 +75,10 @@ vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, c
             size_t sortedOptIndex = nextSortedOptIndex++;
             // do a random shuffle of the work items
             // since we only profile the main thread, this gives more stable profiling numbers
-            sortedOptIndex
-                = (sortedOptIndex / outerThreadCount) * outerThreadCount
-                + (sortedOptIndex + threadShift) % outerThreadCount;
-            if (sortedOptIndex >= optCount) break;
+            sortedOptIndex = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                             + (sortedOptIndex + threadShift) % outerThreadCount;
+            if (sortedOptIndex >= optCount)
+                break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             pred[optIndex] = trainer.train(opt[optIndex], innerThreadCount);
@@ -97,9 +92,7 @@ vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, c
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXXdc parallelTrainAndPredict(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXfc testInData)
+ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData)
 {
     if (testInData.rows() == 0)
         throw std::invalid_argument("Test indata has 0 samples.");
@@ -108,12 +101,7 @@ ArrayXXdc parallelTrainAndPredict(
     const size_t optCount = size(opt);
 
     vector<size_t> optIndicesSortedByCost(optCount);
-    sortedIndices(
-        cbegin(opt),
-        cend(opt),
-        begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -cost_(opt); }
-    );
+    sortedIndices(cbegin(opt), cend(opt), begin(optIndicesSortedByCost), [](const auto& opt) { return -cost_(opt); });
 
     ArrayXXdc predData(sampleCount, optCount);
 
@@ -138,9 +126,8 @@ ArrayXXdc parallelTrainAndPredict(
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
-            innerThreadCounts[outerThreadIndex]
-            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
-            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+            innerThreadCounts[outerThreadIndex] = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+                                                  - (totalThreadCount * outerThreadIndex / outerThreadCount);
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
@@ -156,10 +143,10 @@ ArrayXXdc parallelTrainAndPredict(
             size_t sortedOptIndex = nextSortedOptIndex++;
             // do a random shuffle of the work items
             // since we only profile the main thread, this gives more stable profiling numbers
-            sortedOptIndex
-                = (sortedOptIndex / outerThreadCount) * outerThreadCount
-                + (sortedOptIndex + threadShift) % outerThreadCount;
-            if (sortedOptIndex >= optCount) break;
+            sortedOptIndex = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                             + (sortedOptIndex + threadShift) % outerThreadCount;
+            if (sortedOptIndex >= optCount)
+                break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<const Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
@@ -175,19 +162,13 @@ ArrayXXdc parallelTrainAndPredict(
 //----------------------------------------------------------------------------------------------------------------------
 
 ArrayXd parallelTrainAndEval(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXfc testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
-)
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
+    function<double(CRefXs, CRefXd)> lossFun)
 {
     size_t optCount = size(opt);
 
     vector<size_t> optIndicesSortedByCost(optCount);
-    sortedIndices(
-        cbegin(opt),
-        cend(opt),
-        begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -cost_(opt); }
-    );
+    sortedIndices(cbegin(opt), cend(opt), begin(optIndicesSortedByCost), [](const auto& opt) { return -cost_(opt); });
 
     ArrayXd scores(optCount);
 
@@ -212,9 +193,8 @@ ArrayXd parallelTrainAndEval(
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
-            innerThreadCounts[outerThreadIndex]
-            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
-            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+            innerThreadCounts[outerThreadIndex] = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+                                                  - (totalThreadCount * outerThreadIndex / outerThreadCount);
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
@@ -230,10 +210,10 @@ ArrayXd parallelTrainAndEval(
             size_t sortedOptIndex = nextSortedOptIndex++;
             // do a random shuffle of the work items
             // since we only profile the main thread, this gives more stable profiling numbers
-            sortedOptIndex
-                = (sortedOptIndex / outerThreadCount) * outerThreadCount
-                + (sortedOptIndex + threadShift) % outerThreadCount;
-            if (sortedOptIndex >= optCount) break;
+            sortedOptIndex = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                             + (sortedOptIndex + threadShift) % outerThreadCount;
+            if (sortedOptIndex >= optCount)
+                break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<const Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
@@ -250,19 +230,13 @@ ArrayXd parallelTrainAndEval(
 }
 
 ArrayXd parallelTrainAndEvalWeighted(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXfc testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
-)
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
+    CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun)
 {
     size_t optCount = size(opt);
 
     vector<size_t> optIndicesSortedByCost(optCount);
-    sortedIndices(
-        cbegin(opt),
-        cend(opt),
-        begin(optIndicesSortedByCost),
-        [](const auto& opt) { return -cost_(opt); }
-    );
+    sortedIndices(cbegin(opt), cend(opt), begin(optIndicesSortedByCost), [](const auto& opt) { return -cost_(opt); });
 
     ArrayXd scores(optCount);
 
@@ -287,9 +261,8 @@ ArrayXd parallelTrainAndEvalWeighted(
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
         for (size_t outerThreadIndex = 0; outerThreadIndex < outerThreadCount; ++outerThreadIndex)
-            innerThreadCounts[outerThreadIndex]
-            = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
-            - (totalThreadCount * outerThreadIndex / outerThreadCount);
+            innerThreadCounts[outerThreadIndex] = (totalThreadCount * (outerThreadIndex + 1) / outerThreadCount)
+                                                  - (totalThreadCount * outerThreadIndex / outerThreadCount);
     else
         std::fill(begin(innerThreadCounts), end(innerThreadCounts), 1);
 
@@ -305,10 +278,10 @@ ArrayXd parallelTrainAndEvalWeighted(
             size_t sortedOptIndex = nextSortedOptIndex++;
             // do a random shuffle of the work items
             // since we only profile the main thread, this gives more stable profiling numbers
-            sortedOptIndex
-                = (sortedOptIndex / outerThreadCount) * outerThreadCount
-                + (sortedOptIndex + threadShift) % outerThreadCount;
-            if (sortedOptIndex >= optCount) break;
+            sortedOptIndex = (sortedOptIndex / outerThreadCount) * outerThreadCount
+                             + (sortedOptIndex + threadShift) % outerThreadCount;
+            if (sortedOptIndex >= optCount)
+                break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<const Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);

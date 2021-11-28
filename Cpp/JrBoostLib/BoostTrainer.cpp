@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "BoostTrainer.h"
 
 #include "BasePredictor.h"
@@ -13,17 +14,13 @@
 
 
 BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights, optional<ArrayXu8> strata) :
-    sampleCount_{(
-        validateData_(inData, outData, weights, strata),        // do validation before anything else
-        static_cast<size_t>(inData.rows())
-    )},
-    variableCount_{ static_cast<size_t>(inData.cols()) },
-    inData_{ std::move(inData)},
-    outData_{ 2.0 * outData.cast<double>() - 1.0 },
-    weights_{ std::move(weights) },
-    strata_{ strata ? std::move(*strata) : std::move(outData) },
-    globaLogOddsRatio_{ getGlobalLogOddsRatio_() },
-    baseTrainer_{ std::make_unique<ForestTrainer>(inData_, strata_) }
+    sampleCount_{
+        (validateData_(inData, outData, weights, strata),   // do validation before anything else
+         static_cast<size_t>(inData.rows()))},
+    variableCount_{static_cast<size_t>(inData.cols())}, inData_{std::move(inData)},
+    outData_{2.0 * outData.cast<double>() - 1.0}, weights_{std::move(weights)},
+    strata_{strata ? std::move(*strata) : std::move(outData)}, globaLogOddsRatio_{getGlobalLogOddsRatio_()},
+    baseTrainer_{std::make_unique<ForestTrainer>(inData_, strata_)}
 {
 }
 
@@ -100,7 +97,7 @@ shared_ptr<const Predictor> BoostTrainer::train(const BoostOptions& opt, size_t 
         pred = trainLogit_(opt, threadCount);
     else
         pred = trainRegularizedLogit_(opt, threadCount);
-    
+
     PROFILE::POP(ITEM_COUNT);
 
     return pred;
@@ -170,7 +167,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
                     const __m512d F8 = _mm512_load_pd(pF + i);
                     const __m512d y8 = _mm512_load_pd(pOutData + i);
                     __m512d x8 = _mm512_mul_pd(F8, y8);
-                    x8 = _mm512_xor_pd(x8, _mm512_set1_pd(-0.0));       // x8 = -x8
+                    x8 = _mm512_xor_pd(x8, _mm512_set1_pd(-0.0));   // x8 = -x8
                     x8 = fastExp(x8);
                     _mm512_store_pd(pAdjWeights + i, x8);
                     adjWeightSum8 = _mm512_add_pd(adjWeightSum8, x8);
@@ -182,7 +179,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
                     const __m512d y8 = _mm512_load_pd(pOutData + i);
                     const __m512d w8 = _mm512_loadu_pd(pWeights + i);   // allocated by client, alignment unknown
                     __m512d x8 = _mm512_mul_pd(F8, y8);
-                    x8 = _mm512_xor_pd(x8, _mm512_set1_pd(-0.0));       // x8 = -x8
+                    x8 = _mm512_xor_pd(x8, _mm512_set1_pd(-0.0));   // x8 = -x8
                     x8 = fastExp(x8);
                     x8 = _mm512_mul_pd(x8, w8);
                     _mm512_store_pd(pAdjWeights + i, x8);
@@ -215,10 +212,10 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
 
             if (pWeights == nullptr) {
                 for (; i + 4 <= sampleCount; i += 4) {
-                    const  __m256d F4 = _mm256_load_pd(pF + i);
+                    const __m256d F4 = _mm256_load_pd(pF + i);
                     const __m256d y4 = _mm256_load_pd(pOutData + i);
                     __m256d x4 = _mm256_mul_pd(F4, y4);
-                    x4 = _mm256_xor_pd(x4, _mm256_set1_pd(-0.0));       // x4 = -x4
+                    x4 = _mm256_xor_pd(x4, _mm256_set1_pd(-0.0));   // x4 = -x4
                     x4 = fastExp(x4);
                     _mm256_store_pd(pAdjWeights + i, x4);
                     adjWeightSum4 = _mm256_add_pd(adjWeightSum4, x4);
@@ -230,7 +227,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
                     const __m256d y4 = _mm256_load_pd(pOutData + i);
                     const __m256d w4 = _mm256_loadu_pd(pWeights + i);   // allocated by client, alignment unknown
                     __m256d x4 = _mm256_mul_pd(F4, y4);
-                    x4 = _mm256_xor_pd(x4, _mm256_set1_pd(-0.0));       // x4 = -x4
+                    x4 = _mm256_xor_pd(x4, _mm256_set1_pd(-0.0));   // x4 = -x4
                     x4 = fastExp(x4);
                     x4 = _mm256_mul_pd(x4, w4);
                     _mm256_store_pd(pAdjWeights + i, x4);
@@ -273,7 +270,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
                 }
             }
 #endif
-        }  // end if (!opt.fastExp())
+        }   // end if (!opt.fastExp())
 
         if (!std::isfinite(adjWeightSum))
             overflow_(opt);
@@ -373,7 +370,7 @@ shared_ptr<const Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOpti
     for (size_t k = 0; k != iterationCount; ++k) {
 
         double adjWeightSum = 0.0;
- 
+
         // Visual C++ does autovectorize the following two loops
 
         if (pWeights == nullptr) {
@@ -416,8 +413,7 @@ shared_ptr<const Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOpti
 void BoostTrainer::overflow_ [[noreturn]] (const BoostOptions& opt)
 {
     double gamma = opt.gamma();
-    string msg = (gamma == 1.0)
-        ? "Numerical overflow in the boost algorithm.\nTry decreasing eta."
-        : "Numerical overflow in the boost algorithm.\nTry decreasing eta or increasing gamma.";
+    string msg = (gamma == 1.0) ? "Numerical overflow in the boost algorithm.\nTry decreasing eta."
+                                : "Numerical overflow in the boost algorithm.\nTry decreasing eta or increasing gamma.";
     throw std::overflow_error(msg);
 }

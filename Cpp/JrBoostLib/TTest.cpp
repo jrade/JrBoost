@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "TTest.h"
 
 
@@ -32,7 +33,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     if (sampleCount < 3)
         throw std::invalid_argument("Unable to do t-test: There must be at least three samples.");
 
-    ArrayXs n = { {0, 0} };
+    ArrayXs n = {{0, 0}};
     for (size_t i : samples) {
         size_t s = outData(i);
         ++n(s);
@@ -46,11 +47,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
     ArrayXf t(variableCount);
 
-    const double a = std::sqrt(
-        (sampleCount - 2.0)
-        /
-        (1.0 / n(0) + 1.0 / n(1))
-    );
+    const double a = std::sqrt((sampleCount - 2.0) / (1.0 / n(0) + 1.0 / n(1)));
 
     // one block per thread...
     size_t blockCount = omp_get_max_threads();
@@ -60,14 +57,14 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     blockWidth = minBlockWidth * divideRoundUp(blockWidth, minBlockWidth);
     blockCount = divideRoundUp(variableCount, blockWidth);
 
-#pragma omp parallel num_threads(static_cast<int>(blockCount))
+#pragma omp parallel num_threads(static_cast <int>(blockCount))
     {
         ASSERT(static_cast<size_t>(omp_get_num_threads()) == blockCount);
 
         Array2Xdr mean(2, blockWidth);
         Array2Xdr ss(2, blockWidth);
 
-        const size_t k = omp_get_thread_num();      // block index
+        const size_t k = omp_get_thread_num();   // block index
         const size_t j0 = k * blockWidth;
         const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
@@ -77,7 +74,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
         RefXf tBlock(t.segment(j0, j1 - j0));
 
         meanBlock = 0.0;
-        for (size_t i: samples) {
+        for (size_t i : samples) {
             size_t s = outData(i);
             meanBlock.row(s) += inDataBlock.row(i).cast<double>();
         }
@@ -89,17 +86,9 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
             ssBlock.row(s) += (inDataBlock.row(i).cast<double>() - meanBlock.row(s)).square();
         }
 
-        tBlock = (
-            a
-            *
-            (meanBlock.row(1) - meanBlock.row(0))
-            /
-            (
-                ssBlock.row(0) + ssBlock.row(1)
-                +
-                numeric_limits<double>::min()
-            ).sqrt()
-        ).cast<float>();
+        tBlock = (a * (meanBlock.row(1) - meanBlock.row(0))
+                  / (ssBlock.row(0) + ssBlock.row(1) + numeric_limits<double>::min()).sqrt())
+                     .cast<float>();
     }
 
     if (t.isNaN().any()) {
@@ -136,12 +125,7 @@ ArrayXs tTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optS
 
     ArrayXs ind(variableCount);
 
-    sortedIndices(
-        std::data(t),
-        std::data(t) + variableCount,
-        std::data(ind),
-        [](auto x) { return -x; }
-    );
+    sortedIndices(std::data(t), std::data(t) + variableCount, std::data(ind), [](auto x) { return -x; });
 
     return ind;
 }

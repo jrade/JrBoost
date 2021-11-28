@@ -16,10 +16,10 @@ inline size_t globOuterThreadCount = 0;
 
 using RandomNumberEngine = splitmix;
 
-class InitializedRandomNumberEngine : public RandomNumberEngine
-{
+class InitializedRandomNumberEngine : public RandomNumberEngine {
 public:
-    InitializedRandomNumberEngine() {
+    InitializedRandomNumberEngine()
+    {
         std::random_device rd;
         seed(rd);
     }
@@ -29,8 +29,7 @@ inline thread_local InitializedRandomNumberEngine theRne;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class InterruptHandler
-{
+class InterruptHandler {
 public:
     virtual void check() = 0;
 };

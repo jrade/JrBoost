@@ -7,25 +7,22 @@
 
 class FastBernoulliDistribution {
 public:
-	FastBernoulliDistribution(uint64_t m, uint64_t n) : 
-		m_(static_cast<double>(m)), 
-		n_(static_cast<double>(n))
-	{
-		assert(0 <= m && m <= n);
-	}
+    FastBernoulliDistribution(uint64_t m, uint64_t n) : m_(static_cast<double>(m)), n_(static_cast<double>(n))
+    {
+        assert(0 <= m && m <= n);
+    }
 
-	template<typename R>
-	bool operator()(R& r)
-	{
-		double a = static_cast<double>(r() - R::min());
-		constexpr double b = static_cast<double>(R::max() - R::min()) 
-			* (1.0 + 2.0 * numeric_limits<double>::epsilon());
-		return  a * n_ < b * m_;
-	}
+    template<typename R>
+    bool operator()(R& r)
+    {
+        double a = static_cast<double>(r() - R::min());
+        constexpr double b = static_cast<double>(R::max() - R::min()) * (1.0 + 2.0 * numeric_limits<double>::epsilon());
+        return a * n_ < b * m_;
+    }
 
 private:
-	double m_;
-	double n_;
+    double m_;
+    double n_;
 };
 
 // The following three statements are true
@@ -44,7 +41,7 @@ private:
 // Since (2^m * a) * b = 2^m * (a * b) we may assume that 1 <= a < 2 and 1 <= b < 2.
 // Then
 //    a * (b * (1 + 2e)) >= a * (b + 2e) >= a * b + 2e
-// Now 
+// Now
 //    a * b <= (2 - e) * (2 - e) = 4 - 4 * e < 4
 // so
 //    a * b + 2 * e > a * b
@@ -56,22 +53,17 @@ private:
 
 class VeryFastBernoulliDistribution {
 public:
-	VeryFastBernoulliDistribution(uint64_t m, uint64_t n) :
-		m_(m),
-		n_(n)
-	{
-		assert(0 <= m && m <= n);
-	}
+    VeryFastBernoulliDistribution(uint64_t m, uint64_t n) : m_(m), n_(n) { assert(0 <= m && m <= n); }
 
-	template<typename R>
-	bool operator()(R& r)
-	{
-		uint64_t a = r() - R::min();
-		constexpr uint64_t b = static_cast<uint64_t>(R::max() - R::min()) + 1;
-		return  a * n_ < b* m_;
-	}
+    template<typename R>
+    bool operator()(R& r)
+    {
+        uint64_t a = r() - R::min();
+        constexpr uint64_t b = static_cast<uint64_t>(R::max() - R::min()) + 1;
+        return a * n_ < b * m_;
+    }
 
 private:
-	uint64_t m_;
-	uint64_t n_;
+    uint64_t m_;
+    uint64_t n_;
 };

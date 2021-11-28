@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include "Tools.h"
+
+
 template<typename Value, size_t N>
-class StaticStack
-{
+class StaticStack {
 public:
     StaticStack() = default;
     ~StaticStack() = default;
@@ -16,8 +18,16 @@ public:
     bool empty() const { return pos_ == 0; }
     size_t size() const { return pos_; }
 
-    Value& top() { ASSERT(pos_ > 0);  return values_[pos_ - 1]; }
-    const Value& top() const { ASSERT(pos_ > 0);  return values_[pos_ - 1]; }
+    Value& top()
+    {
+        ASSERT(pos_ > 0);
+        return values_[pos_ - 1];
+    }
+    const Value& top() const
+    {
+        ASSERT(pos_ > 0);
+        return values_[pos_ - 1];
+    }
 
     void push(const Value value)
     {

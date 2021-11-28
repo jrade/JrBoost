@@ -10,8 +10,7 @@ class BaseOptions;
 struct WyPack;
 
 
-struct TreeNodeExt : public TreeNode
-{
+struct TreeNodeExt : public TreeNode {
     size_t sampleCount;
     double sumW;
     double sumWY;
@@ -20,15 +19,15 @@ struct TreeNodeExt : public TreeNode
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-class TreeNodeTrainer
-{
+class TreeNodeTrainer {
 public:
     TreeNodeTrainer() = default;
     ~TreeNodeTrainer() = default;
 
     void init(const TreeNodeExt& node, const BaseOptions& options);
     void fork(TreeNodeTrainer* other) const;
-    void update(CRefXXfc inData,
+    void update(
+        CRefXXfc inData,
 #if PACKED_DATA
         const WyPack* pWyPacks,
 #else
@@ -39,7 +38,7 @@ public:
     size_t finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;
 
     // not really used, but required by vector<TreeNodeTrainer>
-    TreeNodeTrainer(const TreeNodeTrainer&) {};
+    TreeNodeTrainer(const TreeNodeTrainer&){};
     TreeNodeTrainer& operator=(const TreeNodeTrainer&) { return *this; };
 
 private:

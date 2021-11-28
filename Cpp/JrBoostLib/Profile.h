@@ -8,8 +8,7 @@
 #include "StaticStack.h"
 
 
-class PROFILE
-{
+class PROFILE {
 public:
     enum CLOCK_ID {
         MAIN,
@@ -19,7 +18,7 @@ public:
         BOOST_PREDICT,
         TREE_TRAIN,
         TREE_PREDICT,
-        //VALIDATE_DATA,
+        // VALIDATE_DATA,
         PACK_DATA,
         USED_VARIABLES,
         INIT_TREE,
@@ -32,10 +31,15 @@ public:
         LOSS,
         INNER_THREAD_SYNCH,
         OUTER_THREAD_SYNCH,
-        TEST1, TEST2, TEST3, TEST4, TEST5,
-        ZERO, CLOCK_COUNT
+        TEST1,
+        TEST2,
+        TEST3,
+        TEST4,
+        TEST5,
+        ZERO,
+        CLOCK_COUNT
     };
-    
+
     static void START();
     static string STOP();
     static void PUSH(CLOCK_ID id);
@@ -56,31 +60,9 @@ private:
 };
 
 
-inline const string PROFILE::names_[PROFILE::CLOCK_COUNT] = {
-    "main",
-    "t-rank",
-    "F-rank",
-    "  boost train",
-    "  boost predict",
-    "  tree train",
-    "  tree predict",
-    //"  validate data",
-    "  pack data",
-    "  used variables",
-    "  init tree",
-    "  update tree",
-    "  init sample status",
-    "  update sample status",
-    "    init ord. samples",
-    "    update ord. samples",
-    "    find best splits",
-    "  loss",
-    "inner thread synch",
-    "outer thread synch",
-    "test-1",
-    "test-2",
-    "test-3",
-    "test-4",
-    "test-5",
-    "zero"
-};
+inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
+    = {"main", "t-rank", "F-rank", "  boost train", "  boost predict", "  tree train", "  tree predict",
+       //"  validate data",
+       "  pack data", "  used variables", "  init tree", "  update tree", "  init sample status",
+       "  update sample status", "    init ord. samples", "    update ord. samples", "    find best splits", "  loss",
+       "inner thread synch", "outer thread synch", "test-1", "test-2", "test-3", "test-4", "test-5", "zero"};

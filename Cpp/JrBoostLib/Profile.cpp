@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "Profile.h"
 
 #include "TreeTrainerBase.h"
@@ -27,8 +28,10 @@ string PROFILE::STOP()
 
 void PROFILE::PUSH(CLOCK_ID id)
 {
-    if (!enabled_) return;
-    if (std::this_thread::get_id() != theMainThreadId) return;
+    if (!enabled_)
+        return;
+    if (std::this_thread::get_id() != theMainThreadId)
+        return;
 
     uint64_t t = clockCycleCount();
 
@@ -43,8 +46,10 @@ void PROFILE::PUSH(CLOCK_ID id)
 
 void PROFILE::POP(size_t itemCount)
 {
-    if (!enabled_) return;
-    if (std::this_thread::get_id() != theMainThreadId) return;
+    if (!enabled_)
+        return;
+    if (std::this_thread::get_id() != theMainThreadId)
+        return;
 
     uint64_t t = clockCycleCount();
 
@@ -61,8 +66,10 @@ void PROFILE::POP(size_t itemCount)
 
 void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 {
-    if (!enabled_) return;
-    if (std::this_thread::get_id() != theMainThreadId) return;
+    if (!enabled_)
+        return;
+    if (std::this_thread::get_id() != theMainThreadId)
+        return;
 
     uint64_t t = clockCycleCount();
 
@@ -76,8 +83,10 @@ void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
 
 void PROFILE::UPDATE_BRANCH_STATISTICS(size_t iterationCount, size_t slowBranchCount)
 {
-    if (!enabled_) return;
-    if (std::this_thread::get_id() != theMainThreadId) return;
+    if (!enabled_)
+        return;
+    if (std::this_thread::get_id() != theMainThreadId)
+        return;
 
     splitIterationCount_ += iterationCount;
     slowBranchCount_ += slowBranchCount;
@@ -104,7 +113,8 @@ string PROFILE::result_()
 
     for (int id = 0; id < CLOCK_COUNT; ++id) {
 
-        if (id == ZERO) continue;
+        if (id == ZERO)
+            continue;
 
         const Clock& clock = clocks_[id];
         const string& name = names_[id];
@@ -131,12 +141,12 @@ string PROFILE::result_()
         }
     }
     ss << std::setw(39) << "100.0%";
-    ss << std::setw(35) << std::setprecision(0) << 1e-6 * totalAdjustedClockCycleCount << '\n';;
+    ss << std::setw(35) << std::setprecision(0) << 1e-6 * totalAdjustedClockCycleCount << '\n';
+    ;
 
     ss << '\n';
     ss << "zero calibration: " << adjustment << '\n';
-    ss << "profiling overhead: "
-        << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
+    ss << "profiling overhead: " << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
     ss << "slow branch: " << (100.0 * slowBranchCount_) / splitIterationCount_ << "%" << '\n';
     ss << "buffer size: " << formatByteCount_(TreeTrainerBase::bufferSize()) << '\n';
 

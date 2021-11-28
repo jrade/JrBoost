@@ -14,8 +14,7 @@
 // other: saveMemory, test
 
 
-class BaseOptions
-{
+class BaseOptions {
 public:
     BaseOptions() = default;
     ~BaseOptions() = default;
@@ -57,19 +56,19 @@ protected:
     BaseOptions& operator=(const BaseOptions&) = default;
 
 private:
-    size_t forestSize_{ 1 };
-    size_t maxTreeDepth_{ 1 };
-    double minAbsSampleWeight_{ 0.0 };
-    double minRelSampleWeight_{ 0.0 };
-    double usedSampleRatio_{ 1.0 };
-    bool stratifiedSamples_{ true };
-    size_t topVariableCount_{ numeric_limits<size_t>::max() };
-    double usedVariableRatio_{ 1.0 };
-    bool selectVariablesByLevel_{ false };
-    size_t minNodeSize_{ 1 };
-    double minNodeWeight_{ 0.0 };
-    double minNodeGain_{ 0.0 };
-    double pruneFactor_{ 0.0 };
-    bool saveMemory_{ false };
-    bool test_{ 0 };
+    size_t forestSize_{1};
+    size_t maxTreeDepth_{1};
+    double minAbsSampleWeight_{0.0};
+    double minRelSampleWeight_{0.0};
+    double usedSampleRatio_{1.0};
+    bool stratifiedSamples_{true};
+    size_t topVariableCount_{numeric_limits<size_t>::max()};
+    double usedVariableRatio_{1.0};
+    bool selectVariablesByLevel_{false};
+    size_t minNodeSize_{1};
+    double minNodeWeight_{0.0};
+    double minNodeGain_{0.0};
+    double pruneFactor_{0.0};
+    bool saveMemory_{false};
+    bool test_{0};
 };

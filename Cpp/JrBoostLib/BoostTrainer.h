@@ -9,16 +9,16 @@ class ForestTrainer;
 class Predictor;
 
 
-class BoostTrainer
-{
+class BoostTrainer {
 public:
-    BoostTrainer(ArrayXXfc inData, ArrayXu8 outData,
-        optional<ArrayXd> weights = std::nullopt, optional<ArrayXu8> strata = std::nullopt);
+    BoostTrainer(
+        ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights = std::nullopt,
+        optional<ArrayXu8> strata = std::nullopt);
     ~BoostTrainer();
 
     shared_ptr<const Predictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
 
- // deleted:
+    // deleted:
     BoostTrainer(const BoostTrainer&) = delete;
     BoostTrainer& operator=(const BoostTrainer&) = delete;
 

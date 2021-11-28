@@ -16,10 +16,7 @@ public:
     uint64_t itemCount() const { return itemCount_; }
     uint64_t callCount() const { return callCount_; }
 
-    void start(uint64_t clockCycleCount)
-    {
-        clockCycleCount_ -= clockCycleCount;
-    }
+    void start(uint64_t clockCycleCount) { clockCycleCount_ -= clockCycleCount; }
 
     void stop(uint64_t clockCycleCount, uint64_t itemCount = 0)
     {

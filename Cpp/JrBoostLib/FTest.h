@@ -5,15 +5,6 @@
 #pragma once
 
 
-ArrayXf fStatistic(
-    CRefXXfr inData,
-    CRefXs outData,
-    optional<vector<size_t>> optSamples = {}
-);
+ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples = {});
 
-
-ArrayXs fTestRank(
-    CRefXXfr inData,
-    CRefXs outData,
-    optional<vector<size_t>> optSamples = {}
-);
+ArrayXs fTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples = {});

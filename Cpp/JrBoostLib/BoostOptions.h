@@ -7,8 +7,7 @@
 #include "BaseOptions.h"
 
 
-class BoostOptions : public BaseOptions
-{
+class BoostOptions : public BaseOptions {
 public:
     BoostOptions() = default;
     BoostOptions(const BoostOptions&) = default;
@@ -26,8 +25,8 @@ public:
     void setFastExp(bool b);
 
 private:
-    double gamma_{ 1.0 };
-    size_t iterationCount_{ 1000 };
-    double eta_{ 0.1 };
-    bool fastExp_{ true };
+    double gamma_{1.0};
+    size_t iterationCount_{1000};
+    double eta_{0.1};
+    bool fastExp_{true};
 };

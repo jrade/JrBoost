@@ -1,0 +1,22 @@
+# Format Style Options - Created with Clang Power Tools
+---
+AccessModifierOffset: -4
+AlignAfterOpenBracket: AlwaysBreak
+AllowAllArgumentsOnNextLine: false
+AllowShortBlocksOnASingleLine: Always
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBinaryOperators: All
+BreakBeforeBraces: Stroustrup
+BreakConstructorInitializers: AfterColon
+ColumnLimit: 120
+ContinuationIndentWidth: 4
+ExperimentalAutoDetectBinPacking: true
+IndentWidth: 4
+MaxEmptyLinesToKeep: 2
+PointerAlignment: Left
+SpaceAfterTemplateKeyword: false
+SpaceInEmptyBlock: false
+SpacesBeforeTrailingComments: 3
+Standard: c++17
+TabWidth: 4
+...

@@ -3,11 +3,12 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "FTest.h"
 
 
 ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
-{        
+{
     PROFILE::PUSH(PROFILE::F_RANK);
 
     const size_t variableCount = inData.cols();
@@ -48,10 +49,9 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
         for (size_t i = 0; i != groupCount; ++i)
             if (n(i) == 0)
                 throw std::invalid_argument(
-                    "Unable to do F-test: The group with index " + std::to_string(i) + " is empty."
-                );
+                    "Unable to do F-test: The group with index " + std::to_string(i) + " is empty.");
 
-  
+
     ArrayXf f(variableCount);
     const double a = (sampleCount - groupCount) / (groupCount - 1.0);
 
@@ -63,7 +63,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     blockWidth = minBlockWidth * divideRoundUp(blockWidth, minBlockWidth);
     blockCount = divideRoundUp(variableCount, blockWidth);
 
-#pragma omp parallel num_threads(static_cast<int>(blockCount))
+#pragma omp parallel num_threads(static_cast <int>(blockCount))
     {
         ASSERT(static_cast<size_t>(omp_get_num_threads()) == blockCount);
 
@@ -71,7 +71,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
         ArrayXXdr totalMean(1, blockWidth);
         ArrayXXdr ss(groupCount, blockWidth);
 
-        const size_t k = omp_get_thread_num();      // block index
+        const size_t k = omp_get_thread_num();   // block index
         const size_t j0 = k * blockWidth;
         const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
 
@@ -82,7 +82,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
         RefXf fBlock(f.segment(j0, j1 - j0));
 
         meanBlock = 0.0;
-        for (size_t i: samples) {
+        for (size_t i : samples) {
             size_t s = outData(i);
             meanBlock.row(s) += inDataBlock.row(i).cast<double>();
         }
@@ -96,21 +96,10 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
         totalMeanBlock = (meanBlock.colwise() * n.cast<double>()).colwise().sum() / sampleCount;
 
-        fBlock = (
-            a
-            *
-            (
-                (meanBlock.rowwise() - totalMeanBlock.row(0)).square().colwise()
-                *
-                n.cast<double>()
-            ).colwise().sum()
-            /
-            (
-                ssBlock.colwise().sum()
-                +
-                numeric_limits<double>::min()
-            )
-        ).cast<float>();
+        fBlock
+            = (a * ((meanBlock.rowwise() - totalMeanBlock.row(0)).square().colwise() * n.cast<double>()).colwise().sum()
+               / (ssBlock.colwise().sum() + numeric_limits<double>::min()))
+                  .cast<float>();
     }
 
     if (f.isNaN().any()) {
@@ -132,12 +121,7 @@ ArrayXs fTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optS
     const ArrayXf f = fStatistic(inData, outData, std::move(optSamples));
     ArrayXs ind(variableCount);
 
-    sortedIndices(
-        std::data(f),
-        std::data(f) + variableCount,
-        std::data(ind),
-        [](auto x) { return -x; }
-    );
+    sortedIndices(std::data(f), std::data(f) + variableCount, std::data(ind), [](auto x) { return -x; });
 
     return ind;
 }

@@ -7,8 +7,7 @@
 struct TreeNode;
 
 
-class BasePredictor
-{
+class BasePredictor {
 public:
     virtual ~BasePredictor() = default;
 
@@ -27,16 +26,15 @@ public:
 
 protected:
     BasePredictor() = default;
-    
-// deleted:
+
+    // deleted:
     BasePredictor(const BasePredictor&) = delete;
     BasePredictor& operator=(const BasePredictor&) = delete;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class ZeroPredictor : public BasePredictor
-{
+class ZeroPredictor : public BasePredictor {
 public:
     virtual ~ZeroPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
@@ -56,8 +54,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class ConstantPredictor : public BasePredictor
-{
+class ConstantPredictor : public BasePredictor {
 public:
     virtual ~ConstantPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
@@ -79,8 +76,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class StumpPredictor : public BasePredictor
-{
+class StumpPredictor : public BasePredictor {
 public:
     virtual ~StumpPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
@@ -106,8 +102,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class TreePredictor : public BasePredictor
-{
+class TreePredictor : public BasePredictor {
 public:
     virtual ~TreePredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
@@ -131,8 +126,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class ForestPredictor : public BasePredictor
-{
+class ForestPredictor : public BasePredictor {
 public:
     virtual ~ForestPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;

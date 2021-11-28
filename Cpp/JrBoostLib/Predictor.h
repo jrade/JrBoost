@@ -16,8 +16,7 @@ class BasePredictor;
 // 7 - added union predictors
 // 8 - added variable weights, simplified handling of variable count
 
-class Predictor : public std::enable_shared_from_this<Predictor>
-{
+class Predictor : public std::enable_shared_from_this<Predictor> {
 public:
     virtual ~Predictor();
 
@@ -34,7 +33,7 @@ public:
 protected:
     Predictor(size_t variableCount);
 
-// deleted:
+    // deleted:
     Predictor(const Predictor&) = delete;
     Predictor& operator=(const Predictor&) = delete;
 
@@ -55,23 +54,15 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class BoostPredictor : public Predictor
-{
+class BoostPredictor : public Predictor {
 public:
-    static shared_ptr<const Predictor> createInstance(
-        double c0,
-        double c1,
-        vector<unique_ptr<const BasePredictor>>&& basePredictors
-    );
+    static shared_ptr<const Predictor>
+    createInstance(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors);
 
     virtual ~BoostPredictor();
 
 private:
-    BoostPredictor(
-        double c0,
-        double c1,
-        vector<unique_ptr<const BasePredictor>>&& basePredictors
-    );
+    BoostPredictor(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors);
     static size_t initVariableCount_(const vector<unique_ptr<const BasePredictor>>& basePredictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
@@ -90,8 +81,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class EnsemblePredictor : public Predictor
-{
+class EnsemblePredictor : public Predictor {
 public:
     static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
     virtual ~EnsemblePredictor();
@@ -114,8 +104,7 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class UnionPredictor : public Predictor
-{
+class UnionPredictor : public Predictor {
 public:
     static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
     virtual ~UnionPredictor();
@@ -129,7 +118,7 @@ private:
     virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;
     static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
-    
+
     vector<shared_ptr<const Predictor>> predictors_;
 
     friend class Predictor;

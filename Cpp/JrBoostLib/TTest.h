@@ -8,13 +8,8 @@
 enum class TestDirection { Up, Down, Any };
 
 
-ArrayXf tStatistic(
-    CRefXXfr inData,
-    CRefXs outData,
-    optional<vector<size_t>> optSamples = {});
+ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples = {});
 
 ArrayXs tTestRank(
-    CRefXXfr inData, CRefXs outData,
-    optional<vector<size_t>> optSamples = {},
-    TestDirection testDirection = TestDirection::Any
-);
+    CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples = {},
+    TestDirection testDirection = TestDirection::Any);

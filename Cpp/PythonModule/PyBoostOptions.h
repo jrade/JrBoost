@@ -9,19 +9,21 @@
 namespace py = pybind11;
 
 
-namespace pybind11::detail
-{
-    // custom converter for class BoostOptions
+namespace pybind11::detail {
 
-    template<> struct type_caster<BoostOptions> {
-    public:
-        PYBIND11_TYPE_CASTER(BoostOptions, _("BoostOptions"));
-        bool load(py::handle h, bool);
-        static py::handle cast(const BoostOptions& opt, py::return_value_policy, py::handle /*parent*/);
+// custom converter for class BoostOptions
 
-    private:
-        using PyBoostOptions_ = map<string, std::variant<bool, size_t, double>>;
-        static BoostOptions fromPython_(const PyBoostOptions_& param);
-        static PyBoostOptions_ toPython_(const BoostOptions& opt);
-    };
-}
+template<>
+struct type_caster<BoostOptions> {
+public:
+    PYBIND11_TYPE_CASTER(BoostOptions, _("BoostOptions"));
+    bool load(py::handle h, bool);
+    static py::handle cast(const BoostOptions& opt, py::return_value_policy, py::handle /*parent*/);
+
+private:
+    using PyBoostOptions_ = map<string, std::variant<bool, size_t, double>>;
+    static BoostOptions fromPython_(const PyBoostOptions_& param);
+    static PyBoostOptions_ toPython_(const BoostOptions& opt);
+};
+
+}   // namespace pybind11::detail

@@ -33,7 +33,8 @@ inline size_t base128Load(istream& is)
     for (size_t shift = 0; shift != 63; shift += 7) {
         const size_t m = is.get();
         n |= (m & 0x7f) << shift;
-        if (m < 0x80) return n;
+        if (m < 0x80)
+            return n;
     }
 
     const size_t m = is.get();

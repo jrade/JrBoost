@@ -9,20 +9,14 @@ class BoostTrainer;
 class Predictor;
 
 
-vector<shared_ptr<const Predictor>> parallelTrain(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt);
+vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt);
 
-ArrayXXdc parallelTrainAndPredict(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXfc testInData
-);
+ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData);
 
 ArrayXd parallelTrainAndEval(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXfc testInData, CRefXs testOutData, function<double(CRefXs, CRefXd)> lossFun
-);
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
+    function<double(CRefXs, CRefXd)> lossFun);
 
 ArrayXd parallelTrainAndEvalWeighted(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    CRefXXfc testInData, CRefXs testOutData, CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun
-);
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
+    CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun);

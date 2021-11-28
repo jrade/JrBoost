@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "BasePredictor.h"
 
 #include "Base128Encoding.h"
@@ -39,63 +40,37 @@ unique_ptr<const BasePredictor> BasePredictor::load(istream& is, int version)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-unique_ptr<const BasePredictor> ZeroPredictor::createInstance()
-{
-    return makeUnique<ZeroPredictor>();
-}
+unique_ptr<const BasePredictor> ZeroPredictor::createInstance() { return makeUnique<ZeroPredictor>(); }
 
-void ZeroPredictor::predict(CRefXXfc /*inData*/, double /*c*/, RefXd /*outData*/) const
-{}
+void ZeroPredictor::predict(CRefXXfc /*inData*/, double /*c*/, RefXd /*outData*/) const {}
 
-size_t ZeroPredictor::variableCount() const
-{
-    return 0;
-}
+size_t ZeroPredictor::variableCount() const { return 0; }
 
-void ZeroPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const
-{}
+void ZeroPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const {}
 
 unique_ptr<const BasePredictor> ZeroPredictor::reindexVariables(const vector<size_t>& /*newIndices*/) const
 {
     return createInstance();
 }
 
-void ZeroPredictor::save(ostream& os) const
-{
-    os.put('Z');
-}
+void ZeroPredictor::save(ostream& os) const { os.put('Z'); }
 
-unique_ptr<const BasePredictor> ZeroPredictor::load(istream& /*is*/, int /*version*/)
-{
-    return createInstance();
-}
+unique_ptr<const BasePredictor> ZeroPredictor::load(istream& /*is*/, int /*version*/) { return createInstance(); }
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ConstantPredictor::ConstantPredictor(double y) :
-    y_(static_cast<float>(y))
-{
-    ASSERT(std::isfinite(y));
-}
+ConstantPredictor::ConstantPredictor(double y) : y_(static_cast<float>(y)) { ASSERT(std::isfinite(y)); }
 
-unique_ptr<const BasePredictor> ConstantPredictor::createInstance(double y)
-{
-    return makeUnique<ConstantPredictor>(y);
-}
+unique_ptr<const BasePredictor> ConstantPredictor::createInstance(double y) { return makeUnique<ConstantPredictor>(y); }
 
 void ConstantPredictor::predict(CRefXXfc /*inData*/, double c, RefXd outData) const
 {
     outData += c * static_cast<double>(y_);
 }
 
-size_t ConstantPredictor::variableCount() const
-{
-    return 0;
-}
+size_t ConstantPredictor::variableCount() const { return 0; }
 
-void ConstantPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const
-{
-}
+void ConstantPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const {}
 
 unique_ptr<const BasePredictor> ConstantPredictor::reindexVariables(const vector<size_t>& /*newIndices*/) const
 {
@@ -110,7 +85,8 @@ void ConstantPredictor::save(ostream& os) const
 
 unique_ptr<const BasePredictor> ConstantPredictor::load(istream& is, int version)
 {
-    if (version < 2) is.get();
+    if (version < 2)
+        is.get();
     float y;
     is.read(reinterpret_cast<char*>(&y), sizeof(y));
     return createInstance(y);
@@ -119,11 +95,7 @@ unique_ptr<const BasePredictor> ConstantPredictor::load(istream& is, int version
 //----------------------------------------------------------------------------------------------------------------------
 
 StumpPredictor::StumpPredictor(size_t j, float x, float leftY, float rightY, float gain) :
-    j_{ j },
-    x_{ x },
-    leftY_{ leftY },
-    rightY_{ rightY },
-    gain_{ gain }
+    j_{j}, x_{x}, leftY_{leftY}, rightY_{rightY}, gain_{gain}
 {
     ASSERT(std::isfinite(x) && std::isfinite(leftY) && std::isfinite(rightY));
 }
@@ -142,15 +114,9 @@ void StumpPredictor::predict(CRefXXfc inData, double c, RefXd outData) const
     }
 }
 
-size_t StumpPredictor::variableCount() const
-{
-    return j_ + 1;
-}
+size_t StumpPredictor::variableCount() const { return j_ + 1; }
 
-void StumpPredictor::variableWeights(double c, RefXd weights) const
-{
-    weights(j_) += c * gain_;
-}
+void StumpPredictor::variableWeights(double c, RefXd weights) const { weights(j_) += c * gain_; }
 
 unique_ptr<const BasePredictor> StumpPredictor::reindexVariables(const vector<size_t>& newIndices) const
 {
@@ -171,7 +137,8 @@ void StumpPredictor::save(ostream& os) const
 
 unique_ptr<const BasePredictor> StumpPredictor::load(istream& is, int version)
 {
-    if (version < 2) is.get();
+    if (version < 2)
+        is.get();
 
     size_t j;
     float x;
@@ -207,13 +174,9 @@ unique_ptr<const BasePredictor> StumpPredictor::load(istream& is, int version)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-TreePredictor::TreePredictor(const TreeNode* root) :
-    nodes_(TreeTools::cloneTree(root))
-{}
+TreePredictor::TreePredictor(const TreeNode* root) : nodes_(TreeTools::cloneTree(root)) {}
 
-TreePredictor::TreePredictor(vector<TreeNode>&& nodes) :
-    nodes_(move(nodes))
-{}
+TreePredictor::TreePredictor(vector<TreeNode>&& nodes) : nodes_(move(nodes)) {}
 
 unique_ptr<const BasePredictor> TreePredictor::createInstance(const TreeNode* root)
 {
@@ -267,9 +230,11 @@ unique_ptr<const BasePredictor> TreePredictor::load(istream& is, int version)
 
 ForestPredictor::ForestPredictor(vector<unique_ptr<const BasePredictor>>&& basePredictors) :
     basePredictors_(move(basePredictors))
-{}
+{
+}
 
-unique_ptr<const BasePredictor> ForestPredictor::createInstance(vector<unique_ptr<const BasePredictor>>&& basePredictors)
+unique_ptr<const BasePredictor>
+ForestPredictor::createInstance(vector<unique_ptr<const BasePredictor>>&& basePredictors)
 {
     return makeUnique<ForestPredictor>(move(basePredictors));
 }
@@ -300,7 +265,7 @@ unique_ptr<const BasePredictor> ForestPredictor::reindexVariables(const vector<s
 {
     vector<unique_ptr<const BasePredictor>> basePredictors;
     basePredictors.reserve(size(basePredictors_));
-    for (const auto& basePredictor: basePredictors_)
+    for (const auto& basePredictor : basePredictors_)
         basePredictors.push_back(basePredictor->reindexVariables(newIndices));
     return createInstance(move(basePredictors));
 }

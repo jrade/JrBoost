@@ -5,8 +5,7 @@
 #pragma once
 
 
-struct TreeNode
-{
+struct TreeNode {
     // true for leaf nodes, false for interior nodes
     bool isLeaf;
 
@@ -23,20 +22,19 @@ struct TreeNode
 };
 
 
-namespace TreeTools
-{
-    size_t nodeCount(const TreeNode* node);
-    size_t treeDepth(const TreeNode* node);
-    float maxNodeGain(const TreeNode* node);
+namespace TreeTools {
+size_t nodeCount(const TreeNode* node);
+size_t treeDepth(const TreeNode* node);
+float maxNodeGain(const TreeNode* node);
 
-    void pruneTree(TreeNode* node, float minNodeGain);
-    vector<TreeNode> cloneTree(const TreeNode* node);       // first node in the returned vector is the root
-    vector<TreeNode> reindexTree(const TreeNode* node, const vector<size_t>& newIndices);
+void pruneTree(TreeNode* node, float minNodeGain);
+vector<TreeNode> cloneTree(const TreeNode* node);   // first node in the returned vector is the root
+vector<TreeNode> reindexTree(const TreeNode* node, const vector<size_t>& newIndices);
 
-    void predict(const TreeNode* node, CRefXXfc inData, double c, RefXd outData);
-    size_t variableCount(const TreeNode* node);
-    void variableWeights(const TreeNode* node, double c, RefXd weights);
+void predict(const TreeNode* node, CRefXXfc inData, double c, RefXd outData);
+size_t variableCount(const TreeNode* node);
+void variableWeights(const TreeNode* node, double c, RefXd weights);
 
-    void saveTree(const TreeNode* node, ostream& os);
-    vector<TreeNode> loadTree(istream& is, int version);    // first node in the returned vector is the root
-}
+void saveTree(const TreeNode* node, ostream& os);
+vector<TreeNode> loadTree(istream& is, int version);   // first node in the returned vector is the root
+}   // namespace TreeTools

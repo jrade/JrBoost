@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "TreeNodeTrainer.h"
 
 #if PACKED_DATA
@@ -61,14 +62,14 @@ void TreeNodeTrainer<SampleIndex>::update(
 #endif
     const SampleIndex* pSortedSamplesBegin,
     const SampleIndex* pSortedSamplesEnd,
-    size_t j
-)
+    size_t j)
 {
     // the samples in the range [pSortedSamplesBegin, pSortedSamplesEnd) should be sorted according to inData.col(j)
 
     ASSERT(static_cast<size_t>(pSortedSamplesEnd - pSortedSamplesBegin) == sampleCount_);
 
-    if (sumW_ == 0) return;
+    if (sumW_ == 0)
+        return;
 
     const float* pInDataColJ = std::data(inData.col(j));
 
@@ -104,21 +105,21 @@ void TreeNodeTrainer<SampleIndex>::update(
 
         const double score = square(leftSumWY) / leftSumW + square(rightSumWY) / rightSumW;
 
-        if (score <= score_) continue;  // usually true .......................
+        if (score <= score_)
+            continue;   // usually true .......................
 
         ++slowBranchCount_;
 
-        if (p < pSortedSamplesBegin + minNodeSize_
-            || p > pSortedSamplesEnd - minNodeSize_
-            || leftSumW < minNodeWeight_
-            || rightSumW < minNodeWeight_
-        ) continue;
+        if (p < pSortedSamplesBegin + minNodeSize_ || p > pSortedSamplesEnd - minNodeSize_ || leftSumW < minNodeWeight_
+            || rightSumW < minNodeWeight_)
+            continue;
 
         const float leftX = pInDataColJ[i];
-        const float rightX = pInDataColJ[nextI];     // leftX <= rightX
+        const float rightX = pInDataColJ[nextI];   // leftX <= rightX
         const float midX = (leftX + rightX) / 2;
 
-        if (leftX == midX) continue;
+        if (leftX == midX)
+            continue;
 
         splitFound_ = true;
         score_ = score;
@@ -139,9 +140,12 @@ void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
     iterationCount_ += other.iterationCount_;
     slowBranchCount_ += other.slowBranchCount_;
 
-    if (!other.splitFound_) return;
-    if (splitFound_ && other.score_ < score_) return;
-    if (splitFound_ && other.score_ == score_ && j_ < other.j_) return;     // makes joining deterministic
+    if (!other.splitFound_)
+        return;
+    if (splitFound_ && other.score_ < score_)
+        return;
+    if (splitFound_ && other.score_ == score_ && j_ < other.j_)
+        return;   // makes joining deterministic
 
     splitFound_ = true;
     score_ = other.score_;
@@ -164,7 +168,8 @@ size_t TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNo
     TreeNodeExt* pParentNode = *ppParentNode;
     ++*ppParentNode;
 
-    if (!splitFound_) return 0;
+    if (!splitFound_)
+        return 0;
 
     pParentNode->isLeaf = false;
     pParentNode->j = j_;

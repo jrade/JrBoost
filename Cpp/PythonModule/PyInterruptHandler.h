@@ -5,19 +5,21 @@
 #pragma once
 
 
-class PyInterruptHandler : public InterruptHandler
-{
+class PyInterruptHandler : public InterruptHandler {
 public:
     virtual void check()
     {
-        if (std::this_thread::get_id() != theMainThreadId) return;
+        if (std::this_thread::get_id() != theMainThreadId)
+            return;
 
         time_t presentTime = time(nullptr);
-        if (presentTime < lastTime_ + 1) return;
+        if (presentTime < lastTime_ + 1)
+            return;
         lastTime_ = presentTime;
 
         pybind11::gil_scoped_acquire acquire;
-        if (PyErr_CheckSignals() == 0) return;
+        if (PyErr_CheckSignals() == 0)
+            return;
 
         throw py::error_already_set();
     }

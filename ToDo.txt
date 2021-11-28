@@ -1,35 +1,44 @@
 prioritized:
 
 	Clang format
-		don't enable it yet, except when testing
-		is there way of applying format file to all source files
+		is there way of applying format file to all source files?
+			find foo/bar/ -iname *.h -o -iname *.cpp | xargs clang-format -i
+
+		#include pch.h in separate block
 		things to fix:
-			spaces in brace initializer lists
-			trailing ) on separate line
+			sort includes by block (IncludeBlocks)
 			freedom to place arguments on same or separate lines
+			consructor initializer lists
 		compare with other format file
-		review all the settings we have changed
 
-	check file size with and w/o gain again
-		resurrect the Leukemia train script and train with that
+	UML diagram
 
-	remove support for old file format versions
-		throw exception of they are detected
-			but first decide how to handle gain
+	refactor 
+		TreeTrainerBase -> TreeTrainer, TreeTrainer->TreeTrainerImpl
+			TreeTrainer::createInstance
+			get rid of ForestTrainer
+			add a TreeTrainerBuffers struct
+			update UML diagrams
+
+	profile:
+		revive and use the Leukemia train and eval script
+		file size with and w/o gain again
+			resurrect the Leukemia train script and train with that
+		packed data
+			why does inner thread synch take so much time with packed data?
+				do some more detailed profiling?
+				what happens if there are no inner threads?
+					push things to max with 128 threads, no inner threads on fast PC
+			test with Higgs cv on Laptop
+			if we keep it, don't pass around outData and weights
+		do we need the drop py::arg().noconvert() in t-test and F-test python wrappers?
 
 	review new stratification code
 		test with leukemia
 
-	packed data
-		why does inner thread synch take so much time with packed data?
-			do some more detailed profiling?
-			what happens if there are no inner threads?
-				push things to max with 128 threads, no inner threads on fast PC
-		test with Higgs cv on Laptop
-		if we keep it, don't pass around outData and weights
-
-	drop py::arg().noconvert() in t-test and F-test python wrappers?
-		profile
+	remove support for old file format versions
+		throw exception if they are detected
+			but first decide how to handle gain
 
 	release 0.1
 
@@ -77,12 +86,11 @@ optimizations (speed):
 	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
 	PGO
 
+later:
+	Clang format: test BreakBeforeClosingParen when it is released
+
 minor things:
-	compare performance (speed and accuracy) with xgboost
-		construct Python classes with same interface as jrboost python classes
-	UML diagrams
 	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
-	clang code formatting
 	pybind11:
 		seems arguments of types such as optional<reference_wrapper<vector<int>>> are not supported
 			that would be useful for passing sample lists to t-test and F-test
@@ -95,3 +103,6 @@ minor things:
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
+	compare performance (speed and accuracy) with xgboost
+		construct Python classes with same interface as jrboost python classes
+

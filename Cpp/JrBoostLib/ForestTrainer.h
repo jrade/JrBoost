@@ -9,15 +9,15 @@ class BasePredictor;
 class TreeTrainerBase;
 
 
-class ForestTrainer
-{
+class ForestTrainer {
 public:
     ForestTrainer(CRefXXfc inData, CRefXu8 strata);
     ~ForestTrainer();
 
-    unique_ptr<const BasePredictor> train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
+    unique_ptr<const BasePredictor>
+    train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
-// deleted:
+    // deleted:
     ForestTrainer(const ForestTrainer&) = delete;
     ForestTrainer& operator=(const ForestTrainer&) = delete;
 

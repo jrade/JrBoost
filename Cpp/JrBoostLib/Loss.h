@@ -29,7 +29,7 @@ inline double linLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
         throw std::invalid_argument("True outdata has values that are not 0 or 1.");
     if (!predData.isFinite().all())
         throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
-    if(!(predData >= 0.0f && predData <= 1.0f).all())
+    if (!(predData >= 0.0f && predData <= 1.0f).all())
         throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
     if (!weights.isFinite().all())
         throw std::invalid_argument("Weights has values that are infinity or NaN.");
@@ -53,7 +53,7 @@ inline double logLoss(CRefXs outData, CRefXd predData, double gamma = 0.001)
         throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
     if (!(predData >= 0.0f && predData <= 1.0f).all())
         throw std::invalid_argument("Predicted outdata has values that do not lie in the interval [0.0, 1.0].");
-    if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
+    if (!(gamma > 0 && gamma <= 1.0))   // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
 
     const double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
@@ -75,10 +75,11 @@ inline double logLossWeighted(CRefXs outData, CRefXd predData, CRefXd weights, d
         throw std::invalid_argument("Weights has values that are infinity or NaN.");
     if (!(weights > 0.0).all())
         throw std::invalid_argument("Weights has non-positive values.");
-    if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
+    if (!(gamma > 0 && gamma <= 1.0))   // carefully written to trap NaN
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
 
-    const double falsePos = (weights * (1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
+    const double falsePos
+        = (weights * (1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
     const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
     return falsePos + falseNeg;
 }
@@ -87,14 +88,11 @@ class LogLoss {
 public:
     LogLoss(double gamma) : gamma_(gamma)
     {
-        if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
+        if (!(gamma > 0 && gamma <= 1.0))   // carefully written to trap NaN
             throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     }
 
-    double operator()(CRefXs outData, CRefXd predData) const
-    {
-        return logLoss(outData, predData, gamma_);
-    }
+    double operator()(CRefXs outData, CRefXd predData) const { return logLoss(outData, predData, gamma_); }
 
     string name() const
     {
@@ -111,7 +109,7 @@ class LogLossWeighted {
 public:
     LogLossWeighted(double gamma) : gamma_(gamma)
     {
-        if (!(gamma > 0 && gamma <= 1.0))       // carefully written to trap NaN
+        if (!(gamma > 0 && gamma <= 1.0))   // carefully written to trap NaN
             throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
     }
 
@@ -146,15 +144,15 @@ inline double auc(CRefXs outData, CRefXd predData)
 
     vector<pair<size_t, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
-        tmp[i] = { outData[i], predData[i] };
+        tmp[i] = {outData[i], predData[i]};
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
 
     size_t a = 0;
     size_t b = 0;
     for (auto [y, pred] : tmp) {
-        //if (y == 0)
+        // if (y == 0)
         //    a += 1;
-        //else
+        // else
         //    b += a;
         a += 1 - y;
         b += y * a;
@@ -180,17 +178,18 @@ inline double aucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 
     vector<tuple<size_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
-        tmp[i] = { outData[i], predData[i], weights[i] };
-    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+        tmp[i] = {outData[i], predData[i], weights[i]};
+    pdqsort_branchless(
+        begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
 
     double a = 0.0;
     double b = 0.0;
     double totalWeight = 0.0;
 
     for (auto [y, pred, w] : tmp) {
-        //if (y == 0)
+        // if (y == 0)
         //    a += w;
-        //else
+        // else
         //    b += w * a;
         a += w - y * w;
         b += (y * w) * a;
@@ -213,15 +212,15 @@ inline double aoc(CRefXs outData, CRefXd predData)
 
     vector<pair<size_t, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
-        tmp[i] = { outData[i], predData[i] };
+        tmp[i] = {outData[i], predData[i]};
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
 
     size_t a = 0;
     size_t b = 0;
     for (auto [y, pred] : tmp) {
-        //if (y == 0)
+        // if (y == 0)
         //    b += a;
-        //else
+        // else
         //    a += 1;
         a += y;
         b += (1 - y) * a;
@@ -247,17 +246,18 @@ inline double aocWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 
     vector<tuple<size_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
-        tmp[i] = { outData[i], predData[i], weights[i] };
-    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+        tmp[i] = {outData[i], predData[i], weights[i]};
+    pdqsort_branchless(
+        begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
 
     double a = 0.0;
     double b = 0.0;
     double totalWeight = 0.0;
 
     for (auto [y, pred, w] : tmp) {
-        //if (y == 0)
+        // if (y == 0)
         //    b += w * a;
-        //else
+        // else
         //    a += w;
         a += y * w;
         b += (w - y * w) * a;
@@ -267,10 +267,7 @@ inline double aocWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
     return auc;
 }
 
-inline double negAuc(CRefXs outData, CRefXd predData)
-{
-    return -auc(outData, predData);
-}
+inline double negAuc(CRefXs outData, CRefXd predData) { return -auc(outData, predData); }
 
 inline double negAucWeighted(CRefXs outData, CRefXd predData, CRefXd weights)
 {

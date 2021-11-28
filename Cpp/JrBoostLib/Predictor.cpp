@@ -3,15 +3,14 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "Predictor.h"
 
 #include "Base128Encoding.h"
 #include "BasePredictor.h"
 
 
-Predictor::Predictor(size_t variableCount) :
-    variableCount_(variableCount)
-{}
+Predictor::Predictor(size_t variableCount) : variableCount_(variableCount) {}
 
 Predictor::~Predictor() = default;
 
@@ -32,16 +31,13 @@ ArrayXd Predictor::predict(CRefXXfc inData) const
     return pred;
 }
 
-ArrayXf Predictor::variableWeights() const
-{
-    return variableWeightsImpl_();
-}
+ArrayXf Predictor::variableWeights() const { return variableWeightsImpl_(); }
 
 shared_ptr<const Predictor> Predictor::reindexVariables(const vector<size_t>& newIndices) const
 {
     if (size(newIndices) < variableCount())
         throw std::runtime_error("The size of the new indices array"
-            " must be greater than or equal to the variable count.");
+                                 " must be greater than or equal to the variable count.");
     return reindexVariablesImpl_(newIndices);
 }
 
@@ -68,7 +64,7 @@ shared_ptr<const Predictor> Predictor::load(const string& filePath)
     ifstream ifs;
     ifs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
     ifs.open(filePath, std::ios::binary);
-        return load(ifs);
+    return load(ifs);
 }
 
 shared_ptr<const Predictor> Predictor::load(istream& is)
@@ -85,7 +81,8 @@ shared_ptr<const Predictor> Predictor::load(istream& is)
         if (version < 1)
             parseError(is);
         if (version > currentFileFormatVersion_)
-            throw std::runtime_error("Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
+            throw std::runtime_error(
+                "Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
 
         shared_ptr<const Predictor> pred = loadImpl_(is, version);
 
@@ -97,7 +94,7 @@ shared_ptr<const Predictor> Predictor::load(istream& is)
     catch (const std::ios::failure&) {
         parseError(is);
     }
-    catch (const std::overflow_error&) {    // thrown by base128Load()
+    catch (const std::overflow_error&) {   // thrown by base128Load()
         parseError(is);
     }
 }
@@ -124,24 +121,15 @@ shared_ptr<const Predictor> Predictor::loadImpl_(istream& is, int version)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<const Predictor> BoostPredictor::createInstance(
-    double c0,
-    double c1,
-    vector<unique_ptr<const BasePredictor>>&& basePredictors
-)
+shared_ptr<const Predictor>
+BoostPredictor::createInstance(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors)
 {
     return makeShared<BoostPredictor>(c0, c1, move(basePredictors));
 }
 
-BoostPredictor::BoostPredictor(
-    double c0,
-    double c1,
-    vector<unique_ptr<const BasePredictor>>&& basePredictors
-) :
-    Predictor(initVariableCount_(basePredictors)),
-    c0_{ static_cast<float>(c0) },
-    c1_{ static_cast<float>(c1) },
-    basePredictors_{ move(basePredictors) }
+BoostPredictor::BoostPredictor(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors) :
+    Predictor(initVariableCount_(basePredictors)), c0_{static_cast<float>(c0)}, c1_{static_cast<float>(c1)},
+    basePredictors_{move(basePredictors)}
 {
 }
 
@@ -231,10 +219,8 @@ shared_ptr<const Predictor> EnsemblePredictor::createInstance(const vector<share
     return makeShared<EnsemblePredictor>(predictors);
 }
 
-EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<const Predictor>>& predictors
-) :
-    Predictor(initVariableCount_(predictors)),
-    predictors_(predictors)
+EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<const Predictor>>& predictors) :
+    Predictor(initVariableCount_(predictors)), predictors_(predictors)
 {
 }
 
@@ -288,7 +274,8 @@ void EnsemblePredictor::saveImpl_(ostream& os) const
 
 shared_ptr<const Predictor> EnsemblePredictor::loadImpl_(istream& is, int version)
 {
-    if (version < 2) is.get();
+    if (version < 2)
+        is.get();
 
     size_t n;
     if (version < 5) {
@@ -315,8 +302,7 @@ shared_ptr<const Predictor> UnionPredictor::createInstance(const vector<shared_p
 }
 
 UnionPredictor::UnionPredictor(const vector<shared_ptr<const Predictor>>& predictors) :
-    Predictor(initVariableCount_(predictors)),
-    predictors_(predictors)
+    Predictor(initVariableCount_(predictors)), predictors_(predictors)
 {
 }
 

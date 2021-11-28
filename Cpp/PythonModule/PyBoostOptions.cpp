@@ -3,6 +3,7 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "PyBoostOptions.h"
 
 namespace py = pybind11;
@@ -28,7 +29,7 @@ bool tcBO::load(py::handle h, bool)
     }
     catch (const py::cast_error&) {
         string msg = "Boost parameters must be a dict "
-            "with keys of type str and values of type bool, int or float.";
+                     "with keys of type str and values of type bool, int or float.";
         throw std::invalid_argument(msg);
     }
 

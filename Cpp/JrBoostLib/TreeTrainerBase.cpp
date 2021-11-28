@@ -3,13 +3,14 @@
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
 #include "pch.h"
+
 #include "TreeTrainerBase.h"
 
 
 size_t TreeTrainerBase::bufferSize()
 {
     size_t n = 0;
-#pragma omp parallel reduction(+: n)
+#pragma omp parallel reduction(+ : n)
     {
 #if PACKED_DATA
         n += bufferSize0_(threadLocalData0_.wyPacks);
