@@ -1,0 +1,51 @@
+@startuml
+
+hide members
+skinparam defaultFontSize 15
+
+
+together {
+	class BoostOptions
+	class TreeOptions
+}
+
+BoostOptions --|> TreeOptions
+
+
+together {
+	class BoostTrainer
+	abstract TreeTrainerBase
+}
+
+BoostTrainer *-- "1" TreeTrainerBase
+
+
+together {
+	class TreeTrainer<SampleIndex>
+	class NodeTrainer<SampleIndex>
+}
+
+TreeTrainer *-- "many" NodeTrainer
+
+
+together {
+	class BoostPredictor
+	class TreePredictor
+	class TreeNode
+}
+
+BoostPredictor  *-- "many" TreePredictor
+TreePredictor *-- "many" TreeNode
+
+
+BoostOptions <.  BoostTrainer : uses
+TreeOptions <. TreeTrainerBase : uses
+
+TreeTrainerBase <|- TreeTrainer
+
+BoostTrainer .> BoostPredictor : creates
+TreeTrainer .> TreePredictor : creates
+TreeTrainer .> TreeNode : creates
+NodeTrainer .> TreeNode  : initializes
+
+@enduml

@@ -1,18 +1,5 @@
 prioritized:
 
-	Clang format
-		is there way of applying format file to all source files?
-			find foo/bar/ -iname *.h -o -iname *.cpp | xargs clang-format -i
-
-		#include pch.h in separate block
-		things to fix:
-			sort includes by block (IncludeBlocks)
-			freedom to place arguments on same or separate lines
-			consructor initializer lists
-		compare with other format file
-
-	UML diagram
-
 	refactor 
 		TreeTrainerBase -> TreeTrainer, TreeTrainer->TreeTrainerImpl
 			TreeTrainer::createInstance

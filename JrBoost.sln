@@ -11,9 +11,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		License.txt = License.txt
 		Notes.txt = Notes.txt
 		Otto Notes.txt = Otto Notes.txt
+		Predictor.plantuml = Predictor.plantuml
 		Profile.txt = Profile.txt
 		ReadMe.txt = ReadMe.txt
 		ToDo.txt = ToDo.txt
+		Trainer.plantuml = Trainer.plantuml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}"

@@ -1,0 +1,41 @@
+@startuml
+
+hide members
+skinparam defaultFontSize 15
+
+
+abstract Predictor
+class BoostPredictor
+class EnsemblePredictor
+class UnionPredictor
+
+Predictor <|-- BoostPredictor
+Predictor <|-- EnsemblePredictor
+Predictor <|-- UnionPredictor
+
+EnsemblePredictor *-- "many" Predictor
+UnionPredictor *-- "many" Predictor
+
+
+abstract BasePredictor
+class ZeroPredictor
+class ConstantPredictor
+class StumpPredictor
+class TreePredictor
+class ForestPredictor
+class TreeNode
+
+BasePredictor <|-- ZeroPredictor
+BasePredictor <|-- ConstantPredictor
+BasePredictor <|-- StumpPredictor
+BasePredictor <|-- TreePredictor
+BasePredictor <|-- ForestPredictor
+
+ForestPredictor *-- "many" BasePredictor
+
+BoostPredictor *-- "many" BasePredictor
+
+TreePredictor *-- "many" TreeNode
+
+
+@enduml
