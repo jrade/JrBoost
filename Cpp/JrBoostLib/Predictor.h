@@ -14,11 +14,11 @@ class BasePredictor;
 // 5 - Base128 encoded integers, removed gain from stump and tree predictors
 // 6 - changed predictor and base predictor tags
 // 7 - added union predictors
-// 8 - added variable weights, simplified handling of variable count
+// 8 - added variable weights, simplified handling of variable count, reintroduced gain
 
-class Predictor : public std::enable_shared_from_this<Predictor> {
+class Predictor {   // abstract class
 public:
-    virtual ~Predictor();
+    virtual ~Predictor() = default;
 
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXfc inData) const;
@@ -32,8 +32,6 @@ public:
 
 protected:
     Predictor(size_t variableCount);
-
-    // deleted:
     Predictor(const Predictor&) = delete;
     Predictor& operator=(const Predictor&) = delete;
 
@@ -84,7 +82,7 @@ private:
 class EnsemblePredictor : public Predictor {
 public:
     static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
-    virtual ~EnsemblePredictor();
+    virtual ~EnsemblePredictor() = default;
 
 private:
     EnsemblePredictor(const vector<shared_ptr<const Predictor>>& predictors);
@@ -107,7 +105,7 @@ private:
 class UnionPredictor : public Predictor {
 public:
     static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
-    virtual ~UnionPredictor();
+    virtual ~UnionPredictor() = default;
 
 private:
     UnionPredictor(const vector<shared_ptr<const Predictor>>& predictors);

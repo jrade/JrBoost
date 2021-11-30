@@ -7,7 +7,7 @@
 struct TreeNode;
 
 
-class BasePredictor {
+class BasePredictor {   // abstract class
 public:
     virtual ~BasePredictor() = default;
 
@@ -26,8 +26,6 @@ public:
 
 protected:
     BasePredictor() = default;
-
-    // deleted:
     BasePredictor(const BasePredictor&) = delete;
     BasePredictor& operator=(const BasePredictor&) = delete;
 };

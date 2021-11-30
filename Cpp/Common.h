@@ -135,5 +135,3 @@ inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJO
 
 
 #define PACKED_DATA 0
-
-#define SAVE_GAIN 1

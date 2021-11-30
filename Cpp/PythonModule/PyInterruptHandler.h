@@ -21,7 +21,7 @@ public:
         if (PyErr_CheckSignals() == 0)
             return;
 
-        throw py::error_already_set();
+        throw pybind11::error_already_set();
     }
 
 private:

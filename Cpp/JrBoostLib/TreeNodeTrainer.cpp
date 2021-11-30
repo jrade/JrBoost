@@ -7,7 +7,7 @@
 #include "TreeNodeTrainer.h"
 
 #if PACKED_DATA
-#include "TreeTrainerBase.h"
+#include "TreeTrainer.h"
 #endif
 
 #include "BaseOptions.h"

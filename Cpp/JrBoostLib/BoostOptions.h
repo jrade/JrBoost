@@ -7,7 +7,7 @@
 #include "BaseOptions.h"
 
 
-class BoostOptions : public BaseOptions {
+class BoostOptions : public BaseOptions {   // POD class, so no need for virtual destructor
 public:
     BoostOptions() = default;
     BoostOptions(const BoostOptions&) = default;

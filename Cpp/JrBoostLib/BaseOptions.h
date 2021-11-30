@@ -14,9 +14,11 @@
 // other: saveMemory, test
 
 
-class BaseOptions {
+class BaseOptions {   // POD class, so no need for virtual destructor
 public:
     BaseOptions() = default;
+    BaseOptions(const BaseOptions&) = default;
+    BaseOptions& operator=(const BaseOptions&) = default;
     ~BaseOptions() = default;
 
     size_t forestSize() const { return forestSize_; }
@@ -50,10 +52,6 @@ public:
     void setPruneFactor(double p);
     void setSaveMemory(bool b);
     void setTest(size_t n);
-
-protected:
-    BaseOptions(const BaseOptions&) = default;
-    BaseOptions& operator=(const BaseOptions&) = default;
 
 private:
     size_t forestSize_{1};

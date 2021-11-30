@@ -6,7 +6,7 @@
 
 #include "Profile.h"
 
-#include "TreeTrainerBase.h"
+#include "TreeTrainerBuffers.h"
 
 
 void PROFILE::START()
@@ -148,7 +148,7 @@ string PROFILE::result_()
     ss << "zero calibration: " << adjustment << '\n';
     ss << "profiling overhead: " << (100.0 * totalAdjustment) / totalAdjustedClockCycleCount << "%" << '\n';
     ss << "slow branch: " << (100.0 * slowBranchCount_) / splitIterationCount_ << "%" << '\n';
-    ss << "buffer size: " << formatByteCount_(TreeTrainerBase::bufferSize()) << '\n';
+    ss << "buffer size: " << formatByteCount_(TreeTrainerBuffers::bufferSize()) << '\n';
 
     for (int id = 0; id < CLOCK_COUNT; ++id)
         clocks_[id].reset();

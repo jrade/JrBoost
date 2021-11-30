@@ -6,8 +6,6 @@
 
 #include "../JrBoostLib/BoostOptions.h"
 
-namespace py = pybind11;
-
 
 namespace pybind11::detail {
 
@@ -17,8 +15,8 @@ template<>
 struct type_caster<BoostOptions> {
 public:
     PYBIND11_TYPE_CASTER(BoostOptions, _("BoostOptions"));
-    bool load(py::handle h, bool);
-    static py::handle cast(const BoostOptions& opt, py::return_value_policy, py::handle /*parent*/);
+    bool load(pybind11::handle h, bool);
+    static pybind11::handle cast(const BoostOptions& opt, pybind11::return_value_policy, pybind11::handle /*parent*/);
 
 private:
     using PyBoostOptions_ = map<string, std::variant<bool, size_t, double>>;

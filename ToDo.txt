@@ -1,16 +1,7 @@
 prioritized:
 
-	refactor 
-		TreeTrainerBase -> TreeTrainer, TreeTrainer->TreeTrainerImpl
-			TreeTrainer::createInstance
-			get rid of ForestTrainer
-			add a TreeTrainerBuffers struct
-			update UML diagrams
-
 	profile:
 		revive and use the Leukemia train and eval script
-		file size with and w/o gain again
-			resurrect the Leukemia train script and train with that
 		packed data
 			why does inner thread synch take so much time with packed data?
 				do some more detailed profiling?
@@ -18,18 +9,18 @@ prioritized:
 					push things to max with 128 threads, no inner threads on fast PC
 			test with Higgs cv on Laptop
 			if we keep it, don't pass around outData and weights
-		do we need the drop py::arg().noconvert() in t-test and F-test python wrappers?
+		do we need the py::arg().noconvert() in t-test and F-test python wrappers?
 
 	review new stratification code
 		test with leukemia
 
-	remove support for old file format versions
-		throw exception if they are detected
-			but first decide how to handle gain
+	do everything under minor things
+
+	add a USE_INTEL_INTRINSICS macro, surrounded by MSVC check, add note in ReadMe.txt
+
+	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
 
 	release 0.1
-
-	do everything under minor things
 
 ..............................................................
 
@@ -75,9 +66,10 @@ optimizations (speed):
 
 later:
 	Clang format: test BreakBeforeClosingParen when it is released
+	remove support for old file format versions
 
 minor things:
-	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
+
 	pybind11:
 		seems arguments of types such as optional<reference_wrapper<vector<int>>> are not supported
 			that would be useful for passing sample lists to t-test and F-test
@@ -85,11 +77,12 @@ minor things:
 			py::class_<Predictor, shared_ptr<const Predictor>>{ mod, "Predictor" }
 			py::class_<const Predictor, shared_ptr<const Predictor>>{ mod, "Predictor" }
 			also, unique_ptr to const T
+
 	Eigen:
 		why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
+
 	compare performance (speed and accuracy) with xgboost
 		construct Python classes with same interface as jrboost python classes
-

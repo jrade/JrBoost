@@ -10,6 +10,7 @@
 
 
 namespace TreeTools {
+
 size_t nodeCount(const TreeNode* node)
 {
     if (node->isLeaf)
@@ -119,9 +120,7 @@ void saveTreeImpl_(const TreeNode* node, ostream& os)
     else {
         base128Save(os, node->j);
         os.write(reinterpret_cast<const char*>(&node->x), sizeof(node->x));
-#if SAVE_GAIN
         os.write(reinterpret_cast<const char*>(&node->gain), sizeof(node->gain));
-#endif
         saveTreeImpl_(node->leftChild, os);
         saveTreeImpl_(node->rightChild, os);
     }
@@ -162,13 +161,8 @@ TreeNode* loadTreeImpl_(TreeNode* node, istream& is, int version)
             is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));
         else if (version < 8)
             node->gain = numeric_limits<float>::quiet_NaN();
-        else {
-#if SAVE_GAIN
+        else
             is.read(reinterpret_cast<char*>(&node->gain), sizeof(node->gain));
-#else
-            node->gain = numeric_limits<float>::quiet_NaN();
-#endif
-        }
 
         node->leftChild = node + 1;
         node->rightChild = loadTreeImpl_(node->leftChild, is, version);
@@ -192,4 +186,5 @@ vector<TreeNode> loadTree(istream& is, int version)
 
     return nodes;
 }
+
 }   // namespace TreeTools

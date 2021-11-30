@@ -4,10 +4,10 @@
 
 #include "pch.h"
 
-#include "TreeTrainerBase.h"
+#include "TreeTrainerBuffers.h"
 
 
-size_t TreeTrainerBase::bufferSize()
+size_t TreeTrainerBuffers::bufferSize()
 {
     size_t n = 0;
 #pragma omp parallel reduction(+ : n)
@@ -27,7 +27,7 @@ size_t TreeTrainerBase::bufferSize()
 }
 
 template<typename T>
-size_t TreeTrainerBase::bufferSizeImpl_()
+size_t TreeTrainerBuffers::bufferSizeImpl_()
 {
     size_t n = 0;
 
@@ -42,13 +42,13 @@ size_t TreeTrainerBase::bufferSizeImpl_()
 }
 
 template<typename T>
-size_t TreeTrainerBase::bufferSizeImpl_(const vector<T>& t)
+size_t TreeTrainerBuffers::bufferSizeImpl_(const vector<T>& t)
 {
     return t.capacity() * sizeof(T);
 }
 
 template<typename T>
-size_t TreeTrainerBase::bufferSizeImpl_(const vector<vector<T>>& t)
+size_t TreeTrainerBuffers::bufferSizeImpl_(const vector<vector<T>>& t)
 {
     size_t n = t.capacity() * sizeof(vector<T>);
     for (const auto& u : t)
@@ -58,7 +58,7 @@ size_t TreeTrainerBase::bufferSizeImpl_(const vector<vector<T>>& t)
 
 //......................................................................................................................
 
-void TreeTrainerBase::freeBuffers()
+void TreeTrainerBuffers::freeBuffers()
 {
 #pragma omp parallel
     {
@@ -76,7 +76,7 @@ void TreeTrainerBase::freeBuffers()
 }
 
 template<typename T>
-void TreeTrainerBase::freeBuffersImpl_()
+void TreeTrainerBuffers::freeBuffersImpl_()
 {
     freeBufferImpl_(&threadLocalData1_<T>.orderedSamplesByVariable);
     freeBufferImpl_(&threadLocalData1_<T>.sampleBuffer);
@@ -87,7 +87,7 @@ void TreeTrainerBase::freeBuffersImpl_()
 }
 
 template<typename T>
-void TreeTrainerBase::freeBufferImpl_(vector<T>* t)
+void TreeTrainerBuffers::freeBufferImpl_(vector<T>* t)
 {
     t->clear();
     t->shrink_to_fit();

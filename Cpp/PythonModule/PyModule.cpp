@@ -10,7 +10,7 @@
 #include "../JrBoostLib/Paralleltrain.h"
 #include "../JrBoostLib/Predictor.h"
 #include "../JrBoostLib/TTest.h"
-#include "../JrBoostLib/TreeTrainerBase.h"
+#include "../JrBoostLib/TreeTrainerBuffers.h"
 #include "PyBoostOptions.h"
 #include "PyInterruptHandler.h"
 
@@ -92,7 +92,7 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     // parallelTrainAndEval() makes callbacks from multi-threaded code.
     // These callbacks may be to Python functions that need to acquire the GIL.
-    // If we don't relasee the GIL here it will be held by the master thread and the other threads will be blocked
+    // If we don't release the GIL here it will be held by the master thread and the other threads will be blocked.
 
 
     // Loss functions
@@ -150,8 +150,8 @@ PYBIND11_MODULE(_jrboostext, mod)
     mod.def("getOuterThreadCount", []() { return ::globOuterThreadCount; });
     mod.def("setOuterThreadCount", [](size_t n) { ::globOuterThreadCount = n; });
 
-    mod.def("bufferSize", &TreeTrainerBase::bufferSize);
-    mod.def("clearBuffers", &TreeTrainerBase::freeBuffers);
+    mod.def("bufferSize", &TreeTrainerBuffers::bufferSize);
+    mod.def("clearBuffers", &TreeTrainerBuffers::freeBuffers);
 
     mod.attr("eigenVersion") = py::str(theEigenVersion);
     mod.attr("pybind11Version") = py::str(thePybind11Version);

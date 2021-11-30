@@ -12,9 +12,6 @@
 
 Predictor::Predictor(size_t variableCount) : variableCount_(variableCount) {}
 
-Predictor::~Predictor() = default;
-
-
 ArrayXd Predictor::predict(CRefXXfc inData) const
 {
     PROFILE::PUSH(PROFILE::BOOST_PREDICT);
@@ -128,7 +125,9 @@ BoostPredictor::createInstance(double c0, double c1, vector<unique_ptr<const Bas
 }
 
 BoostPredictor::BoostPredictor(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors) :
-    Predictor(initVariableCount_(basePredictors)), c0_{static_cast<float>(c0)}, c1_{static_cast<float>(c1)},
+    Predictor(initVariableCount_(basePredictors)),
+    c0_{static_cast<float>(c0)},
+    c1_{static_cast<float>(c1)},
     basePredictors_{move(basePredictors)}
 {
 }
@@ -233,8 +232,6 @@ size_t EnsemblePredictor::initVariableCount_(const vector<shared_ptr<const Predi
     return n;
 }
 
-EnsemblePredictor::~EnsemblePredictor() = default;
-
 
 ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData) const
 {
@@ -313,8 +310,6 @@ size_t UnionPredictor::initVariableCount_(const vector<shared_ptr<const Predicto
         n = std::max(n, predictor->variableCount());
     return n;
 }
-
-UnionPredictor::~UnionPredictor() = default;
 
 
 ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData) const

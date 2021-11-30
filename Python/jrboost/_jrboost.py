@@ -2,7 +2,7 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import copy, os, random, warnings
+import copy, random
 import numpy as np
 import pandas as pd
 
@@ -27,6 +27,8 @@ def oneHotEncode(dataSeries):
 
 
 def stratifiedRandomFolds(outData, foldCount, samples = None):
+
+    assert foldCount >= 2
 
     if samples is None:
         tmp = list(enumerate(outData))

@@ -9,18 +9,21 @@
 #include "BasePredictor.h"
 #include "BoostOptions.h"
 #include "FastExp.h"
-#include "ForestTrainer.h"
 #include "Predictor.h"
+#include "TreeTrainer.h"
 
 
 BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights, optional<ArrayXu8> strata) :
     sampleCount_{
         (validateData_(inData, outData, weights, strata),   // do validation before anything else
          static_cast<size_t>(inData.rows()))},
-    variableCount_{static_cast<size_t>(inData.cols())}, inData_{std::move(inData)},
-    outData_{2.0 * outData.cast<double>() - 1.0}, weights_{std::move(weights)},
-    strata_{strata ? std::move(*strata) : std::move(outData)}, globaLogOddsRatio_{getGlobalLogOddsRatio_()},
-    baseTrainer_{std::make_unique<ForestTrainer>(inData_, strata_)}
+    variableCount_{static_cast<size_t>(inData.cols())},
+    inData_{std::move(inData)},
+    outData_{2.0 * outData.cast<double>() - 1.0},
+    weights_{std::move(weights)},
+    strata_{strata ? std::move(*strata) : std::move(outData)},
+    globaLogOddsRatio_{getGlobalLogOddsRatio_()},
+    baseTrainer_{TreeTrainer::createInstance(inData_, strata_)}
 {
 }
 

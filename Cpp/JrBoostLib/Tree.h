@@ -23,6 +23,7 @@ struct TreeNode {
 
 
 namespace TreeTools {
+
 size_t nodeCount(const TreeNode* node);
 size_t treeDepth(const TreeNode* node);
 float maxNodeGain(const TreeNode* node);
@@ -37,4 +38,5 @@ void variableWeights(const TreeNode* node, double c, RefXd weights);
 
 void saveTree(const TreeNode* node, ostream& os);
 vector<TreeNode> loadTree(istream& is, int version);   // first node in the returned vector is the root
+
 }   // namespace TreeTools

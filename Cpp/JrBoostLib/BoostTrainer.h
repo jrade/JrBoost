@@ -5,8 +5,8 @@
 #pragma once
 
 class BoostOptions;
-class ForestTrainer;
 class Predictor;
+class TreeTrainer;
 
 
 class BoostTrainer {
@@ -14,13 +14,12 @@ public:
     BoostTrainer(
         ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd> weights = std::nullopt,
         optional<ArrayXu8> strata = std::nullopt);
+    BoostTrainer(const BoostTrainer&) = delete;
+    BoostTrainer& operator=(const BoostTrainer&) = delete;
     ~BoostTrainer();
 
     shared_ptr<const Predictor> train(const BoostOptions& opt, size_t threadCount = 0) const;
 
-    // deleted:
-    BoostTrainer(const BoostTrainer&) = delete;
-    BoostTrainer& operator=(const BoostTrainer&) = delete;
 
 private:
     static void validateData_(CRefXXfc inData, CRefXu8 outData, optional<CRefXd> weights, optional<CRefXu8> strata);
@@ -39,5 +38,5 @@ private:
     const optional<ArrayXd> weights_;
     const ArrayXu8 strata_;
     const double globaLogOddsRatio_;
-    const unique_ptr<const ForestTrainer> baseTrainer_;
+    const unique_ptr<const TreeTrainer> baseTrainer_;
 };

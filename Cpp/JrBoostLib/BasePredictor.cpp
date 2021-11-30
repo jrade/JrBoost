@@ -130,9 +130,7 @@ void StumpPredictor::save(ostream& os) const
     os.write(reinterpret_cast<const char*>(&x_), sizeof(x_));
     os.write(reinterpret_cast<const char*>(&leftY_), sizeof(leftY_));
     os.write(reinterpret_cast<const char*>(&rightY_), sizeof(rightY_));
-#if SAVE_GAIN
     os.write(reinterpret_cast<const char*>(&gain_), sizeof(gain_));
-#endif
 }
 
 unique_ptr<const BasePredictor> StumpPredictor::load(istream& is, int version)
@@ -163,11 +161,7 @@ unique_ptr<const BasePredictor> StumpPredictor::load(istream& is, int version)
     else if (version < 8)
         gain = numeric_limits<float>::quiet_NaN();
     else
-#if SAVE_GAIN
         is.read(reinterpret_cast<char*>(&gain), sizeof(gain));
-#else
-        gain = numeric_limits<float>::quiet_NaN();
-#endif
 
     return createInstance(j, x, leftY, rightY, gain);
 }

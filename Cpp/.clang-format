@@ -9,7 +9,7 @@ BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Stroustrup
 BreakConstructorInitializers: AfterColon
 ColumnLimit: 120
-ContinuationIndentWidth: 4
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ExperimentalAutoDetectBinPacking: true
 IndentWidth: 4
 MaxEmptyLinesToKeep: 2

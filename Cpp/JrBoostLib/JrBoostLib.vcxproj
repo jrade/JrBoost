@@ -99,9 +99,9 @@
     <ClInclude Include="Profile.h" />
     <ClInclude Include="StaticStack.h" />
     <ClInclude Include="Tree.h" />
-    <ClInclude Include="ForestTrainer.h" />
+    <ClInclude Include="TreeTrainerImpl.h" />
     <ClInclude Include="TreeTrainer.h" />
-    <ClInclude Include="TreeTrainerBase.h" />
+    <ClInclude Include="TreeTrainerBuffers.h" />
     <ClInclude Include="TTest.h" />
   </ItemGroup>
   <ItemGroup>
@@ -119,9 +119,9 @@
     <ClCompile Include="Predictor.cpp" />
     <ClCompile Include="Profile.cpp" />
     <ClCompile Include="Tree.cpp" />
-    <ClCompile Include="ForestTrainer.cpp" />
     <ClCompile Include="TreeTrainer.cpp" />
-    <ClCompile Include="TreeTrainerBase.cpp" />
+    <ClCompile Include="TreeTrainerImpl.cpp" />
+    <ClCompile Include="TreeTrainerBuffers.cpp" />
     <ClCompile Include="TTest.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

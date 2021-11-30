@@ -47,13 +47,10 @@
     <ClInclude Include="TreeNodeTrainer.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
-    <ClInclude Include="ForestTrainer.h">
+    <ClInclude Include="TreeTrainerImpl.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
     <ClInclude Include="TreeTrainer.h">
-      <Filter>Base Predictor</Filter>
-    </ClInclude>
-    <ClInclude Include="TreeTrainerBase.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
     <ClInclude Include="BoostTrainer.h">
@@ -68,6 +65,9 @@
     </ClInclude>
     <ClInclude Include="BoostOptions.h">
       <Filter>Predictor</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeTrainerBuffers.h">
+      <Filter>Base Predictor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -93,13 +93,7 @@
     <ClCompile Include="TreeNodeTrainer.cpp">
       <Filter>Base Predictor</Filter>
     </ClCompile>
-    <ClCompile Include="ForestTrainer.cpp">
-      <Filter>Base Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="TreeTrainer.cpp">
-      <Filter>Base Predictor</Filter>
-    </ClCompile>
-    <ClCompile Include="TreeTrainerBase.cpp">
+    <ClCompile Include="TreeTrainerImpl.cpp">
       <Filter>Base Predictor</Filter>
     </ClCompile>
     <ClCompile Include="BoostTrainer.cpp">
@@ -113,6 +107,12 @@
     </ClCompile>
     <ClCompile Include="BoostOptions.cpp">
       <Filter>Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainerBuffers.cpp">
+      <Filter>Base Predictor</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeTrainer.cpp">
+      <Filter>Base Predictor</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

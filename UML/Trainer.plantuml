@@ -14,18 +14,18 @@ BoostOptions --|> TreeOptions
 
 together {
 	class BoostTrainer
-	abstract TreeTrainerBase
+	abstract TreeTrainer
 }
 
-BoostTrainer *-- "1" TreeTrainerBase
+BoostTrainer *-- "1" TreeTrainer
 
 
 together {
-	class TreeTrainer<SampleIndex>
+	class TreeTrainerImpl<SampleIndex>
 	class NodeTrainer<SampleIndex>
 }
 
-TreeTrainer *-- "many" NodeTrainer
+TreeTrainerImpl *-- "many" NodeTrainer
 
 
 together {
@@ -39,13 +39,13 @@ TreePredictor *-- "many" TreeNode
 
 
 BoostOptions <.  BoostTrainer : uses
-TreeOptions <. TreeTrainerBase : uses
+TreeOptions <. TreeTrainer : uses
 
-TreeTrainerBase <|- TreeTrainer
+TreeTrainer <|- TreeTrainerImpl
 
 BoostTrainer .> BoostPredictor : creates
-TreeTrainer .> TreePredictor : creates
-TreeTrainer .> TreeNode : creates
+TreeTrainerImpl .> TreePredictor : creates
+TreeTrainerImpl .> TreeNode : creates
 NodeTrainer .> TreeNode  : initializes
 
 @enduml
