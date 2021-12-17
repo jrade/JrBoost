@@ -32,8 +32,8 @@ void BaseOptions::setMinRelSampleWeight(double w)
 
 void BaseOptions::setUsedSampleRatio(double r)
 {
-    if (!(r >= 0.0 && r <= 1.0))   // carefully written to trap NaN
-        throw std::invalid_argument("usedSampleRatio must lie in the interval [0.0, 1.0].");
+    if (!(r > 0.0 && r <= 1.0))   // carefully written to trap NaN
+        throw std::invalid_argument("usedSampleRatio must lie in the interval (0.0, 1.0].");
     usedSampleRatio_ = r;
 }
 

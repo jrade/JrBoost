@@ -15,7 +15,7 @@
 #include "PyInterruptHandler.h"
 
 
-PYBIND11_MODULE(_jrboostext, mod)
+PYBIND11_MODULE(_jrboost, mod)
 {
     namespace py = pybind11;
 
@@ -41,16 +41,10 @@ PYBIND11_MODULE(_jrboostext, mod)
         .def("reindexVariables", &Predictor::reindexVariables)
         .def("save", py::overload_cast<const string&>(&Predictor::save, py::const_))
         .def_static("load", py::overload_cast<const string&>(&Predictor::load))
-        .def_static(
-            "createEnsemble",
-            [](const vector<shared_ptr<const Predictor>> predictors) {
-                return std::const_pointer_cast<Predictor>(EnsemblePredictor::createInstance(predictors));
-            })
+        .def_static("createEnsemble", &EnsemblePredictor::createInstance)
         .def_static(
             "createUnion",
-            [](const vector<shared_ptr<const Predictor>> predictors) {
-                return std::const_pointer_cast<Predictor>(UnionPredictor::createInstance(predictors));
-            })
+            [](const vector<shared_ptr<Predictor>>& predictors) { return UnionPredictor::createInstance(predictors); })
         .def("__repr__", [](const Predictor&) { return "<jrboost.Predictor>"; })
         .def(py::pickle(
             [](const Predictor& pred) {
@@ -62,7 +56,7 @@ PYBIND11_MODULE(_jrboostext, mod)
             [](const py::bytes& b) {
                 stringstream ss(static_cast<string>(b));
                 ss.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-                return std::const_pointer_cast<Predictor>(Predictor::load(ss));
+                return Predictor::load(ss);
             }));
 
 
@@ -70,13 +64,13 @@ PYBIND11_MODULE(_jrboostext, mod)
 
     py::class_<BoostTrainer>{mod, "BoostTrainer"}
         .def(
-            py::init<ArrayXXfc, ArrayXu8, optional<ArrayXd>>(), py::arg(), py::arg(),
-            py::arg("weights") = optional<ArrayXd>())
-        .def(
-            "train",
-            [](const BoostTrainer& trainer, const BoostOptions& opt) {
-                return std::const_pointer_cast<Predictor>(trainer.train(opt));
-            })
+            py::init<ArrayXXfc, ArrayXu8, optional<ArrayXd>, optional<ArrayXu8>>(),
+            py::arg(),
+            py::arg(),
+            py::kw_only(),
+            py::arg("weights") = optional<ArrayXd>(),
+            py::arg("strata") = optional<ArrayXu8>())
+        .def("train", [](const BoostTrainer& trainer, const BoostOptions& opt) { return trainer.train(opt); })
         .def("__repr__", [](const BoostTrainer&) { return "<jrboost.BoostTrainer>"; });
 
     mod.def("getDefaultBoostParam", []() { return BoostOptions(); });
@@ -127,14 +121,26 @@ PYBIND11_MODULE(_jrboostext, mod)
         .value("Any", TestDirection::Any);
 
     mod.def(
-        "tStatistic", &tStatistic, py::arg().noconvert(), py::arg(), py::arg("samples") = optional<vector<size_t>>());
+        "tStatistic",
+        &tStatistic,
+        py::arg().noconvert(),
+        py::arg(),
+        py::arg("samples") = optional<vector<size_t>>());
 
     mod.def(
-        "tTestRank", &tTestRank, py::arg().noconvert(), py::arg(), py::arg("samples") = optional<vector<size_t>>(),
+        "tTestRank",
+        &tTestRank,
+        py::arg().noconvert(),
+        py::arg(),
+        py::arg("samples") = optional<vector<size_t>>(),
         py::arg("direction") = TestDirection::Any);
 
     mod.def(
-        "fStatistic", &fStatistic, py::arg().noconvert(), py::arg(), py::arg("samples") = optional<vector<size_t>>());
+        "fStatistic",
+        &fStatistic,
+        py::arg().noconvert(),
+        py::arg(),
+        py::arg("samples") = optional<vector<size_t>>());
 
     mod.def("fTestRank", &fTestRank, py::arg().noconvert(), py::arg(), py::arg("samples") = optional<vector<size_t>>());
 

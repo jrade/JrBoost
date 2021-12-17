@@ -29,7 +29,10 @@
     <Compile Include="example\iris.py" />
     <Compile Include="example\otto.py" />
     <Compile Include="example\testselect.py" />
-    <Compile Include="jrboost\_jrboost.py" />
+    <Compile Include="jrboost\_train.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="jrboost\_util.py" />
     <Compile Include="jrboost\__init__.py" />
   </ItemGroup>
   <ItemGroup>

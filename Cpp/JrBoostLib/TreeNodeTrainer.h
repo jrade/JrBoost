@@ -19,7 +19,7 @@ struct TreeNodeExt : public TreeNode {
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-class TreeNodeTrainer {
+class TreeNodeTrainer {   // immutable class
 public:
     TreeNodeTrainer() = default;
     ~TreeNodeTrainer() = default;

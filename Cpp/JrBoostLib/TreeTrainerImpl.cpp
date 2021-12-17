@@ -131,55 +131,70 @@ vector<size_t> TreeTrainerImpl<SampleIndex>::initSampleCountByStratum_() const
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
-unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
+unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::TREE_TRAIN);
 
-    // how many different status values are there?
-    // not more than the number of samples
-    // not more than the number of nodes in any layer of the tree (except the last layer) plus one
-    //  (plus one is for status "unused")
-    //  (we never calculate sample status with respect to the last layer)
-
-    size_t maxNodeCount = 1;   // maximal number of nodes in any layer of the tree (except the last)
-    if (options.maxTreeDepth() >= 2) {
-        maxNodeCount = std::min<size_t>(
-            std::max<size_t>(1, sampleCount_ / options.minNodeSize()),
-            1LL << (options.maxTreeDepth() - 1));
-    }
-
-    size_t maxStatusCount = std::min(sampleCount_, maxNodeCount + 1);
-
-    unique_ptr<const BasePredictor> pred;
-
-    if (maxStatusCount <= (1 << 8))
-        pred = trainImpl1_<uint8_t>(outData, weights, options, threadCount);
-    else if (maxStatusCount <= (1 << 16))
-        pred = trainImpl1_<uint16_t>(outData, weights, options, threadCount);
-    else if (maxStatusCount <= (1LL << 32))
-        pred = trainImpl1_<uint32_t>(outData, weights, options, threadCount);
-    else
-        pred = trainImpl1_<uint64_t>(outData, weights, options, threadCount);
-
-    PROFILE::POP();
-
-    return pred;
-}
-
-
-template<typename SampleIndex>
-template<typename SampleStatus>
-unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl1_(
-    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
-{
     if (currentInterruptHandler != nullptr)
         currentInterruptHandler->check();
 
     if (abortThreads)
         throw ThreadAborted();
 
+    // validateData_(outData, weights);
+
+    // how many different status values are there?
+    // not more than the number of samples
+    // not more than the number of nodes in any layer of the tree (except the last layer) plus one
+    //  (plus one is for status "unused")
+    //  (we never calculate sample status with respect to the last layer)
+    //
+    size_t maxNodeCount = 1;   // maximal number of nodes in any layer of the tree (except the last)
+    if (options.maxTreeDepth() >= 2) {
+        maxNodeCount = std::min<size_t>(
+            std::max<size_t>(1, sampleCount_ / options.minNodeSize()),
+            1LL << (options.maxTreeDepth() - 1));
+    }
+    size_t maxStatusCount = std::min(sampleCount_, maxNodeCount + 1);
+
+    initTree_();
+
+    if (maxStatusCount <= (1 << 8))
+        trainImpl1_<uint8_t>(outData, weights, options, threadCount);
+    else if (maxStatusCount <= (1 << 16))
+        trainImpl1_<uint16_t>(outData, weights, options, threadCount);
+    else if (maxStatusCount <= (1LL << 32))
+        trainImpl1_<uint32_t>(outData, weights, options, threadCount);
+    else
+        trainImpl1_<uint64_t>(outData, weights, options, threadCount);
+
+    PROFILE::POP();
+
+    return createPredictor_();
+}
+
+
+template<typename SampleIndex>
+template<typename SampleStatus>
+void TreeTrainerImpl<SampleIndex>::trainImpl1_(
+    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
+{
+#if PACKED_DATA
+    PROFILE::PUSH(PROFILE::PACK_DATA);
+    initWyPacks(outData, weights);
+    PROFILE::POP(sampleCount_);
+#endif
+
+    PROFILE::PUSH(PROFILE::INIT_SAMPLE_STATUS);
+    size_t ITEM_COUNT = sampleCount_;
+    size_t usedSampleCount = initSampleStatus_<SampleStatus>(outData, weights, options);
+
     size_t usedVariableCount = usedVariableCount_(options);
+    if (usedVariableCount == 0) {
+        PROFILE::POP(ITEM_COUNT);
+        return;
+    }
 
     if (!::globParallelTree)
         threadCount = 1;
@@ -189,41 +204,19 @@ unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl1_(
     threadCount = std::min<size_t>(threadCount, usedVariableCount);
     const size_t threadShift = std::uniform_int_distribution<size_t>(0, threadCount - 1)(theRne);
 
-    size_t ITEM_COUNT;
-
-    /*
-        // validate data
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::VALIDATE);
-        size_t ITEM_COUNT = sampleCount_;
-        validateData_(outData, weights);
-    */
-
-#if PACKED_DATA
-    PROFILE::PUSH(PROFILE::PACK_DATA);
-    ITEM_COUNT = sampleCount_;
-    initWyPacks(outData, weights);
-    PROFILE::POP(ITEM_COUNT);
-#endif
-
-    initTree_();   // very fast, no need to profile
-
-    PROFILE::PUSH(PROFILE::INIT_SAMPLE_STATUS);
-    ITEM_COUNT = sampleCount_;
-    size_t usedSampleCount = initSampleStatus_<SampleStatus>(outData, weights, options);
-
     for (size_t d = 0; d != options.maxTreeDepth(); ++d) {
 
         if (d == 0 || options.selectVariablesByLevel()) {
-            PROFILE::SWITCH(ITEM_COUNT, PROFILE::USED_VARIABLES);
+            PROFILE::SWITCH(PROFILE::USED_VARIABLES, ITEM_COUNT);
             ITEM_COUNT = initUsedVariables_(options);
         }
 
         initNodeTrainers_(options, d, threadCount);   // very fast, no need to profile
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::ZERO);
+        PROFILE::SWITCH(PROFILE::ZERO, ITEM_COUNT);
         ITEM_COUNT = 0;
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::INNER_THREAD_SYNCH);
+        PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
         ITEM_COUNT = 0;
 
         std::atomic<size_t> nextUsedVariableIndex = 0;
@@ -256,31 +249,31 @@ unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl1_(
                 const SampleIndex* pOrderedSamples;
 
                 if (d == 0) {
-                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::INIT_ORDERED_SAMPLES);
+                    PROFILE::SWITCH(PROFILE::INIT_ORDERED_SAMPLES, ITEM_COUNT);
                     ITEM_COUNT = sampleCount_;
                     pOrderedSamples = initOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
                 }
                 else if (options.saveMemory() || options.selectVariablesByLevel()) {
-                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_ORDERED_SAMPLES);
+                    PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
                     ITEM_COUNT = sampleCount_;
                     pOrderedSamples
                         = updateOrderedSampleSaveMemory_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
                 }
                 else {
-                    PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_ORDERED_SAMPLES);
+                    PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
                     ITEM_COUNT = usedSampleCount;
                     pOrderedSamples
                         = updateOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
                 }
 
-                PROFILE::SWITCH(ITEM_COUNT, PROFILE::FIND_BEST_SPLITS);
+                PROFILE::SWITCH(PROFILE::FIND_BEST_SPLITS, ITEM_COUNT);
                 ITEM_COUNT = usedSampleCount;
 #if PACKED_DATA
                 updateNodeTrainers_(pOrderedSamples, usedVariableIndex, d);
 #else
                 updateNodeTrainers_(outData, weights, pOrderedSamples, usedVariableIndex, d);
 #endif
-                PROFILE::SWITCH(ITEM_COUNT, PROFILE::INNER_THREAD_SYNCH);
+                PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
                 ITEM_COUNT = 0;
 
             }   // end variable index loop
@@ -299,7 +292,7 @@ unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl1_(
         if (d + 1 == options.maxTreeDepth())
             break;
 
-        PROFILE::SWITCH(ITEM_COUNT, PROFILE::UPDATE_SAMPLE_STATUS);
+        PROFILE::SWITCH(PROFILE::UPDATE_SAMPLE_STATUS, ITEM_COUNT);
         ITEM_COUNT = sampleCount_;
         updateSampleStatus_<SampleStatus>(outData, weights, d);
 
@@ -308,31 +301,25 @@ unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl1_(
     PROFILE::POP(ITEM_COUNT);
 
     // TO DO: PRUNE TREE
-
-    unique_ptr<const BasePredictor> predictor = createPredictor_();   // very fast, no need to profile
-
-    return predictor;
 };
 
-    //......................................................................................................................
+//......................................................................................................................
 
-    /*
-    template<typename SampleIndex>
-    void TreeTrainerImpl<SampleIndex>::validateData_(CRefXd outData, CRefXd weights) const
-    {
-        if (static_cast<size_t>(outData.rows()) != sampleCount_)
-            throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
-        if (!outData.isFinite().all())
-            throw std::invalid_argument("Train outdata has values that are infinity or NaN.");
+template<typename SampleIndex>
+void TreeTrainerImpl<SampleIndex>::validateData_(CRefXd outData, CRefXd weights) const
+{
+    if (static_cast<size_t>(outData.rows()) != sampleCount_)
+        throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
+    if (!outData.isFinite().all())
+        throw std::invalid_argument("Train outdata has values that are infinity or NaN.");
 
-        if (static_cast<size_t>(weights.rows()) != sampleCount_)
-            throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-        if (!weights.isFinite().all())
-            throw std::invalid_argument("Train weights have values that are infinity or NaN.");
-        if (!(weights >= 0.0).all())
-            throw std::invalid_argument("Train weights have non-negative values.");
-    }
-    */
+    if (static_cast<size_t>(weights.rows()) != sampleCount_)
+        throw std::invalid_argument("Train indata and weights have different numbers of samples.");
+    if (!weights.isFinite().all())
+        throw std::invalid_argument("Train weights have values that are infinity or NaN.");
+    if (!(weights >= 0.0).all())
+        throw std::invalid_argument("Train weights have non-negative values.");
+}
 
 #if PACKED_DATA
 
@@ -361,9 +348,9 @@ size_t TreeTrainerImpl<SampleIndex>::usedVariableCount_(const BaseOptions& optio
 {
     size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
     size_t usedVariableCount = static_cast<size_t>(std::round(options.usedVariableRatio() * candidateVariableCount));
-    usedVariableCount = std::max<size_t>(usedVariableCount, 1);
+    // usedVariableCount = std::max<size_t>(usedVariableCount, 1);
 
-    ASSERT(0 < usedVariableCount);
+    // ASSERT(0 < usedVariableCount);
     ASSERT(usedVariableCount <= candidateVariableCount);
     ASSERT(candidateVariableCount <= variableCount_);
 
@@ -949,11 +936,11 @@ size_t TreeTrainerImpl<SampleIndex>::finalizeNodeTrainers_(size_t d, size_t thre
 //......................................................................................................................
 
 template<typename SampleIndex>
-unique_ptr<const BasePredictor> TreeTrainerImpl<SampleIndex>::createPredictor_() const
+unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::createPredictor_() const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
 
-    unique_ptr<const BasePredictor> pred;
+    unique_ptr<BasePredictor> pred;
     const TreeNodeExt* root = data(t0.tree.front());
     const size_t treeDepth = TreeTools::treeDepth(root);
 

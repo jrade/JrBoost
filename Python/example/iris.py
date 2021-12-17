@@ -12,14 +12,14 @@ import jrboost
 validationParam = {
     'threadCount': os.cpu_count() // 2,
     'parallelTree': False,
-    'outerFoldCount': 10,
+    'foldCount': 10,
 }
 
 trainParam = {
     'minimizeAlgorithm': jrboost.minimizePopulation,
     'repetionCount': 1,
-    'innerFoldCount': 3,
-    'lossFun': jrboost.logLoss,
+    'foldCount': 3,
+    'targetLossFun': jrboost.logLoss,
 
     'boostParamGrid': {
         'iterationCount': [300],
@@ -33,6 +33,7 @@ trainParam = {
         #'saveMemory': [True],
         #'stratifiedSamples': [False],
         'selectVariablesByLevel': [True],
+        #'fastExp': [False],
     },
 
     'minimizeParam' : {
@@ -43,17 +44,9 @@ trainParam = {
     }
 }
 
-#result (average of 100 runs)
-#
-#Species          Iris-setosa  Iris-versicolor  Iris-virginica
-#Species
-#Iris-setosa             50.0             0.00            0.00
-#Iris-versicolor          0.0            46.85            3.15
-#Iris-virginica           0.0             3.22           46.78
-
 #-----------------------------------------------------------------------------------------------------------------------
 
-def validate():
+def main():
 
     print(f'validation: {validationParam}\n')
     print(f'train: {trainParam}\n')
@@ -61,7 +54,7 @@ def validate():
     if 'threadCount' in validationParam: jrboost.setThreadCount(validationParam['threadCount'])
     if 'parallelTree' in validationParam: jrboost.setParallelTree(validationParam['parallelTree'])
 
-    outerFoldCount = validationParam['outerFoldCount']
+    outerFoldCount = validationParam['foldCount']
 
     inDataFrame, outDataSeries = loadData()
     outDataFrame = jrboost.oneHotEncode(outDataSeries)
@@ -93,13 +86,8 @@ def validate():
 
                 trainInData = inData[trainSamples, :]
                 trainOutData = outData[trainSamples]
-                predictor = train(trainInData, trainOutData)
-
-                #predictor.save('foo.bin')
-                #predictor = predictor.load('foo.bin')
-
-                #pickle.dump(predictor, open('foo.pickle', 'wb'))
-                #predictor = pickle.load(open('foo.pickle', 'rb'))
+                _, predictor, medianBoostParam = jrboost.train(trainInData, trainOutData, trainParam)
+                print(formatBoostParam(medianBoostParam))
 
                 testInData = inData[testSamples, :]
                 predOutData[testSamples] = predictor.predict(testInData)
@@ -110,15 +98,13 @@ def validate():
         print()
         t += time.time()
         print(jrboost.PROFILE.STOP())
-        print(f'{t:.2f}s')
-        print()
+        print(f'{t:.2f}s\n')
 
         predOutDataSeries = predOutDataFrame.idxmax(axis = 1)
         for sample in samples:
             confusionFrame.loc[outDataSeries[sample], predOutDataSeries[sample]] += 1
 
-        print(confusionFrame / (i + 1))
-        print()
+        print((confusionFrame / (i + 1)).to_string(float_format = lambda x: f'{x:.2f}') + '\n')
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -130,58 +116,23 @@ def loadData():
     return inDataFrame, outDataSeries
 
 
-def train(inData, outData):
-
-    minimizeAlgorithm = trainParam['minimizeAlgorithm']
-    repetionCount = trainParam['repetionCount']
-    boostParamGrid = trainParam['boostParamGrid']
-    minimizeParam = trainParam['minimizeParam']
-
-    bestBoostParamList = []
-    for _ in range(repetionCount):
-        bestBoostParamList += minimizeAlgorithm(
-            lambda boostParamList: evaluateBoostParam(boostParamList, inData, outData),
-            boostParamGrid,
-            minimizeParam
-        )                 
-    print(formatBoostParam(bestBoostParamList[0]))
-
-    trainer = jrboost.BoostTrainer(inData, outData)
-    predictorList = [trainer.train(boostParam) for boostParam in bestBoostParamList]
-    predictor = jrboost.Predictor.createEnsemble(predictorList)
-    return predictor
-
-
-def evaluateBoostParam(boostParamList, inData, outData):
-
-    innerFoldCount = trainParam['innerFoldCount']
-    lossFun = trainParam['lossFun']
-
-    boostParamCount = len(boostParamList)
-    loss = np.zeros((boostParamCount,))
-    folds = jrboost.stratifiedRandomFolds(outData, innerFoldCount)
-    for trainSamples, testSamples in folds:
-
-        trainInData = inData[trainSamples, :]
-        trainOutData = outData[trainSamples]
-        trainer = jrboost.BoostTrainer(trainInData, trainOutData)
-
-        testInData = inData[testSamples, :]
-        testOutData = outData[testSamples]
-        loss += jrboost.parallelTrainAndEval(trainer, boostParamList, testInData, testOutData, lossFun)
-
-    return loss
-
-#-----------------------------------------------------------------------------------------------------------------------
-
 def formatBoostParam(boostParam):
     eta  = boostParam['eta']
     md = boostParam.get('maxTreeDepth', 1)
     usr = boostParam['usedSampleRatio']
-    uvr = boostParam['usedVariableRatio']
     mns = boostParam['minNodeSize']
-    return f'eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  uvr = {uvr:.2f}  mns = {mns}'
+    return f'  eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  mns = {mns}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-validate()
+main()
+
+
+#result (average of 100 runs)
+#
+#Species          Iris-setosa  Iris-versicolor  Iris-virginica
+#Species
+#Iris-setosa             50.0             0.00            0.00
+#Iris-versicolor          0.0            46.85            3.15
+#Iris-virginica           0.0             3.22           46.78
+

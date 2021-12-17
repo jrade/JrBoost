@@ -11,7 +11,7 @@
 #include "TreeTrainerImpl.h"
 
 
-unique_ptr<const TreeTrainer> TreeTrainer::createInstance(CRefXXfc inData, CRefXu8 strata)
+unique_ptr<TreeTrainer> TreeTrainer::createInstance(CRefXXfc inData, CRefXu8 strata)
 {
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     if (sampleCount <= 1 << 8)
@@ -25,14 +25,14 @@ unique_ptr<const TreeTrainer> TreeTrainer::createInstance(CRefXXfc inData, CRefX
 }
 
 
-unique_ptr<const BasePredictor>
+unique_ptr<BasePredictor>
 TreeTrainer::train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
 {
     const size_t forestSize = options.forestSize();
     if (forestSize == 1)
         return trainImpl0_(outData, weights, options, threadCount);
 
-    vector<unique_ptr<const BasePredictor>> basePredictors(forestSize);
+    vector<unique_ptr<BasePredictor>> basePredictors(forestSize);
     for (size_t k = 0; k != forestSize; ++k)
         basePredictors[k] = trainImpl0_(outData, weights, options, threadCount);
     return ForestPredictor::createInstance(move(basePredictors));

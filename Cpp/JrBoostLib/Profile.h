@@ -18,7 +18,6 @@ public:
         BOOST_PREDICT,
         TREE_TRAIN,
         TREE_PREDICT,
-        // VALIDATE_DATA,
         PACK_DATA,
         USED_VARIABLES,
         INIT_TREE,
@@ -44,7 +43,7 @@ public:
     static string STOP();
     static void PUSH(CLOCK_ID id);
     static void POP(size_t itemCount = 0);
-    static void SWITCH(size_t itemCount, CLOCK_ID id);
+    static void SWITCH(CLOCK_ID id, size_t itemCount = 0);
     static void UPDATE_BRANCH_STATISTICS(size_t iterationCount, size_t slowBranchCount);
 
 private:
@@ -61,8 +60,28 @@ private:
 
 
 inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
-    = {"main", "t-rank", "F-rank", "  boost train", "  boost predict", "  tree train", "  tree predict",
-       //"  validate data",
-       "  pack data", "  used variables", "  init tree", "  update tree", "  init sample status",
-       "  update sample status", "    init ord. samples", "    update ord. samples", "    find best splits", "  loss",
-       "inner thread synch", "outer thread synch", "test-1", "test-2", "test-3", "test-4", "test-5", "zero"};
+    = {"main",
+       "t-rank",
+       "F-rank",
+       "  boost train",
+       "  boost predict",
+       "  tree train",
+       "  tree predict",
+       "  pack data",
+       "  used variables",
+       "  init tree",
+       "  update tree",
+       "  init sample status",
+       "  update sample status",
+       "    init ord. samples",
+       "    update ord. samples",
+       "    find best splits",
+       "  loss",
+       "inner thread synch",
+       "outer thread synch",
+       "test-1",
+       "test-2",
+       "test-3",
+       "test-4",
+       "test-5",
+       "zero"};

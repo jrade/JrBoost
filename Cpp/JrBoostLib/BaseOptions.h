@@ -10,7 +10,7 @@
 // samples: minAbsSampleWeight, minRelSampleWeight, usedSampleRatio, stratifiedSamples
 // variables: topVariableCount, usedVariableRatio, selectVariablesByLevel
 // nodes: minNodeSize, minNodeWeight, minNodeGain
-// post processing: pruneFactor
+// post-processing: pruneFactor
 // other: saveMemory, test
 
 

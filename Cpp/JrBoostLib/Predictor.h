@@ -23,12 +23,12 @@ public:
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXfc inData) const;
     ArrayXf variableWeights() const;
-    shared_ptr<const Predictor> reindexVariables(const vector<size_t>& newIndices) const;
+    shared_ptr<Predictor> reindexVariables(const vector<size_t>& newIndices) const;
 
     void save(const string& filePath) const;
     void save(ostream& os) const;
-    static shared_ptr<const Predictor> load(const string& filePath);
-    static shared_ptr<const Predictor> load(istream& is);
+    static shared_ptr<Predictor> load(const string& filePath);
+    static shared_ptr<Predictor> load(istream& is);
 
 protected:
     Predictor(size_t variableCount);
@@ -38,9 +38,9 @@ protected:
 private:
     virtual ArrayXd predictImpl_(CRefXXfc inData) const = 0;
     virtual ArrayXf variableWeightsImpl_() const = 0;
-    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const = 0;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const = 0;
     virtual void saveImpl_(ostream& os) const = 0;
-    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
+    static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
     const size_t variableCount_;
 
@@ -52,26 +52,26 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class BoostPredictor : public Predictor {
+class BoostPredictor : public Predictor {   // immutable class
 public:
-    static shared_ptr<const Predictor>
-    createInstance(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors);
+    static shared_ptr<Predictor>
+    createInstance(double c0, double c1, vector<unique_ptr<BasePredictor>>&& basePredictors);
 
     virtual ~BoostPredictor();
 
 private:
-    BoostPredictor(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors);
-    static size_t initVariableCount_(const vector<unique_ptr<const BasePredictor>>& basePredictors);
+    BoostPredictor(double c0, double c1, vector<unique_ptr<BasePredictor>>&& basePredictors);
+    static size_t initVariableCount_(const vector<unique_ptr<BasePredictor>>& basePredictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
-    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;
-    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
+    static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
     float c0_;
     float c1_;
-    vector<unique_ptr<const BasePredictor>> basePredictors_;
+    vector<unique_ptr<BasePredictor>> basePredictors_;
 
     friend class Predictor;
     friend class MakeSharedHelper<BoostPredictor>;
@@ -79,22 +79,22 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class EnsemblePredictor : public Predictor {
+class EnsemblePredictor : public Predictor {   // immutable class
 public:
-    static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
+    static shared_ptr<Predictor> createInstance(const vector<shared_ptr<Predictor>>& predictors);
     virtual ~EnsemblePredictor() = default;
 
 private:
-    EnsemblePredictor(const vector<shared_ptr<const Predictor>>& predictors);
-    static size_t initVariableCount_(const vector<shared_ptr<const Predictor>>& predictors);
+    EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors);
+    static size_t initVariableCount_(const vector<shared_ptr<Predictor>>& predictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
-    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;
-    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
+    static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
-    vector<shared_ptr<const Predictor>> predictors_;
+    vector<shared_ptr<Predictor>> predictors_;
 
     friend class Predictor;
     friend class MakeSharedHelper<EnsemblePredictor>;
@@ -102,22 +102,22 @@ private:
 
 //----------------------------------------------------------------------------------------------------------------------
 
-class UnionPredictor : public Predictor {
+class UnionPredictor : public Predictor {   // immutable class
 public:
-    static shared_ptr<const Predictor> createInstance(const vector<shared_ptr<const Predictor>>& predictors);
+    static shared_ptr<Predictor> createInstance(const vector<shared_ptr<Predictor>>& predictors);
     virtual ~UnionPredictor() = default;
 
 private:
-    UnionPredictor(const vector<shared_ptr<const Predictor>>& predictors);
-    static size_t initVariableCount_(const vector<shared_ptr<const Predictor>>& predictors);
+    UnionPredictor(const vector<shared_ptr<Predictor>>& predictors);
+    static size_t initVariableCount_(const vector<shared_ptr<Predictor>>& predictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
-    virtual shared_ptr<const Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;
-    static shared_ptr<const Predictor> loadImpl_(istream& is, int version);
+    static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
-    vector<shared_ptr<const Predictor>> predictors_;
+    vector<shared_ptr<Predictor>> predictors_;
 
     friend class Predictor;
     friend class MakeSharedHelper<UnionPredictor>;

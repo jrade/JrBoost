@@ -10,7 +10,7 @@
 
 
 template<typename SampleIndex>
-class TreeTrainerImpl : public TreeTrainer, private TreeTrainerBuffers {
+class TreeTrainerImpl : public TreeTrainer, private TreeTrainerBuffers {   // immutable class
 public:
     TreeTrainerImpl(CRefXXfc inData, CRefXu8 strata);
     virtual ~TreeTrainerImpl() = default;
@@ -19,14 +19,13 @@ private:
     vector<size_t> initSampleCountByStratum_() const;
     vector<vector<SampleIndex>> initSortedSamples_() const;
 
-    virtual unique_ptr<const BasePredictor>
+    unique_ptr<BasePredictor>
     trainImpl0_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
     template<typename SampleStatus>
-    unique_ptr<const BasePredictor>
-    trainImpl1_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
+    void trainImpl1_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
-    // void validateData_(CRefXd outData, CRefXd weights) const;
+    void validateData_(CRefXd outData, CRefXd weights) const;
 #if PACKED_DATA
     void initWyPacks(CRefXd outData, CRefXd weights) const;
 #endif
@@ -57,7 +56,7 @@ private:
         const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
     size_t finalizeNodeTrainers_(size_t d, size_t threadCount) const;
 
-    unique_ptr<const BasePredictor> createPredictor_() const;
+    unique_ptr<BasePredictor> createPredictor_() const;
 
 private:
     const CRefXXfc inData_;

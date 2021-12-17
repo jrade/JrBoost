@@ -19,7 +19,7 @@ static double cost_(const BoostOptions& opt)
 }
 
 
-vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
+vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
 {
     const size_t optCount = size(opt);
 
@@ -29,7 +29,7 @@ vector<shared_ptr<const Predictor>> parallelTrain(const BoostTrainer& trainer, c
     vector<size_t> optIndicesSortedByCost(optCount);
     sortedIndices(cbegin(opt), cend(opt), begin(optIndicesSortedByCost), [](const auto& opt) { return -cost_(opt); });
 
-    vector<shared_ptr<const Predictor>> pred(optCount);
+    vector<shared_ptr<Predictor>> pred(optCount);
 
     const size_t totalThreadCount = omp_get_max_threads();
 
@@ -149,7 +149,7 @@ ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boos
                 break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
-            shared_ptr<const Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             predData.col(optIndex) = pred->predict(testInData);
         }
     }
@@ -216,11 +216,11 @@ ArrayXd parallelTrainAndEval(
                 break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
-            shared_ptr<const Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
-            PROFILE::SWITCH(0, PROFILE::LOSS);
+            PROFILE::SWITCH(PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData);
-            PROFILE::SWITCH(0, PROFILE::OUTER_THREAD_SYNCH);
+            PROFILE::SWITCH(PROFILE::OUTER_THREAD_SYNCH);
         }
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL;
@@ -284,11 +284,11 @@ ArrayXd parallelTrainAndEvalWeighted(
                 break;
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
-            shared_ptr<const Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
+            shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData);
-            PROFILE::SWITCH(0, PROFILE::LOSS);
+            PROFILE::SWITCH(PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData, testWeights);
-            PROFILE::SWITCH(0, PROFILE::OUTER_THREAD_SYNCH);
+            PROFILE::SWITCH(PROFILE::OUTER_THREAD_SYNCH);
         }
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL;

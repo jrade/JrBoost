@@ -23,7 +23,7 @@ BoostTrainer::BoostTrainer(ArrayXXfc inData, ArrayXu8 outData, optional<ArrayXd>
     weights_{std::move(weights)},
     strata_{strata ? std::move(*strata) : std::move(outData)},
     globaLogOddsRatio_{getGlobalLogOddsRatio_()},
-    baseTrainer_{TreeTrainer::createInstance(inData_, strata_)}
+    treeTrainer_{TreeTrainer::createInstance(inData_, strata_)}
 {
 }
 
@@ -68,12 +68,12 @@ double BoostTrainer::getGlobalLogOddsRatio_() const
     double p0, p1;
 
     if (!weights_) {
-        p0 = (1.0 - outData_).sum();
-        p1 = (1.0 + outData_).sum();
+        p0 = (1.0 - outData_).sum() / 2.0;
+        p1 = (1.0 + outData_).sum() / 2.0;
     }
     else {
-        p0 = ((*weights_) * (1.0 - outData_)).sum();
-        p1 = ((*weights_) * (1.0 + outData_)).sum();
+        p0 = ((*weights_) * (1.0 - outData_)).sum() / 2.0;
+        p1 = ((*weights_) * (1.0 + outData_)).sum() / 2.0;
     }
 
     if (p0 == 0.0)
@@ -86,12 +86,12 @@ double BoostTrainer::getGlobalLogOddsRatio_() const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<const Predictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::BOOST_TRAIN);
     const size_t ITEM_COUNT = sampleCount_ * opt.iterationCount();
 
-    shared_ptr<const Predictor> pred;
+    shared_ptr<Predictor> pred;
 
     double gamma = opt.gamma();
     if (gamma == 1.0)
@@ -108,7 +108,7 @@ shared_ptr<const Predictor> BoostTrainer::train(const BoostOptions& opt, size_t 
 
 //......................................................................................................................
 
-shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
@@ -122,7 +122,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
     double* pAdjWeights = std::data(adjWeights);
     double* pF = std::data(F);
 
-    vector<unique_ptr<const BasePredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
     for (size_t k = 0; k != iterationCount; ++k) {
 
@@ -158,7 +158,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
             // Visual C++ fails to autovectorize the fastExp() function with AVX2
             // (or the fastExp() function with AVX512F + AVX512DQ). Thus we do manual vectorization.
 
-#if defined(__AVX512F__) && defined(__AVX512DQ__)
+#if USE_INTEL_INTRINSICS && defined(__AVX512F__) && defined(__AVX512DQ__)
 
             // WARNING: NOT TESTED!
 
@@ -208,7 +208,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
                 }
             }
 
-#elif defined(__AVX2__)
+#elif USE_INTEL_INTRINSICS && defined(__AVX2__)
 
             size_t i = 0;
             __m256d adjWeightSum4 = _mm256_setzero_pd();
@@ -278,7 +278,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
         if (!std::isfinite(adjWeightSum))
             overflow_(opt);
 
-        unique_ptr<const BasePredictor> basePred = baseTrainer_->train(outData_, adjWeights, opt, threadCount);
+        unique_ptr<BasePredictor> basePred = treeTrainer_->train(outData_, adjWeights, opt, threadCount);
         PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
         PROFILE::POP();
@@ -290,7 +290,7 @@ shared_ptr<const Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, siz
 
 //......................................................................................................................
 
-shared_ptr<const Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
@@ -306,7 +306,7 @@ shared_ptr<const Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, s
     double* pAdjWeights = std::data(adjWeights);
     double* pF = std::data(F);
 
-    vector<unique_ptr<const BasePredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
     for (size_t k = 0; k != iterationCount; ++k) {
 
@@ -339,7 +339,7 @@ shared_ptr<const Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, s
         if (!std::isfinite(absAdjOutDataSum))
             overflow_(opt);
 
-        unique_ptr<const BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
+        unique_ptr<BasePredictor> basePred = treeTrainer_->train(adjOutData, adjWeights, opt, threadCount);
         PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
         PROFILE::POP();
@@ -351,7 +351,7 @@ shared_ptr<const Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, s
 
 //......................................................................................................................
 
-shared_ptr<const Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const
+shared_ptr<Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& opt, size_t threadCount) const
 {
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
@@ -368,7 +368,7 @@ shared_ptr<const Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOpti
     double* pAdjWeights = std::data(adjWeights);
     double* pF = std::data(F);
 
-    vector<unique_ptr<const BasePredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
 
     for (size_t k = 0; k != iterationCount; ++k) {
 
@@ -401,7 +401,7 @@ shared_ptr<const Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOpti
         if (!std::isfinite(adjWeightSum))
             overflow_(opt);
 
-        unique_ptr<const BasePredictor> basePred = baseTrainer_->train(adjOutData, adjWeights, opt, threadCount);
+        unique_ptr<BasePredictor> basePred = treeTrainer_->train(adjOutData, adjWeights, opt, threadCount);
         PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
         PROFILE::POP();

@@ -10,11 +10,11 @@ class BaseOptions;
 
 class TreeTrainer {   // abstract class
 public:
-    static unique_ptr<const TreeTrainer> createInstance(CRefXXfc inData, CRefXu8 strata);
+    static unique_ptr<TreeTrainer> createInstance(CRefXXfc inData, CRefXu8 strata);
 
     virtual ~TreeTrainer() = default;
 
-    virtual unique_ptr<const BasePredictor>
+    virtual unique_ptr<BasePredictor>
     train(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
 protected:
@@ -23,6 +23,6 @@ protected:
     TreeTrainer& operator=(const TreeTrainer&) = delete;
 
 private:
-    virtual unique_ptr<const BasePredictor>
+    virtual unique_ptr<BasePredictor>
     trainImpl0_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const = 0;
 };

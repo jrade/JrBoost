@@ -30,8 +30,10 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
             samples[i] = i;
     }
 
-    if (sampleCount < 3)
+    if (sampleCount < 3) {
+        PROFILE::POP();
         throw std::invalid_argument("Unable to do t-test: There must be at least three samples.");
+    }
 
     ArrayXs n = {{0, 0}};
     for (size_t i : samples) {
@@ -40,10 +42,14 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
     }
     // n(0) + n(1) = sampleCount
 
-    if (n(0) == 0)
+    if (n(0) == 0) {
+        PROFILE::POP();
         throw std::invalid_argument("Unable to do t-test: First group is empty.");
-    if (n(1) == 0)
+    }
+    if (n(1) == 0) {
+        PROFILE::POP();
         throw std::invalid_argument("Unable to do t-test: Second group is empty.");
+    }
 
     ArrayXf t(variableCount);
 

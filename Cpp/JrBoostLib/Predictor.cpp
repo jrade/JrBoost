@@ -30,7 +30,7 @@ ArrayXd Predictor::predict(CRefXXfc inData) const
 
 ArrayXf Predictor::variableWeights() const { return variableWeightsImpl_(); }
 
-shared_ptr<const Predictor> Predictor::reindexVariables(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> Predictor::reindexVariables(const vector<size_t>& newIndices) const
 {
     if (size(newIndices) < variableCount())
         throw std::runtime_error("The size of the new indices array"
@@ -56,7 +56,7 @@ void Predictor::save(ostream& os) const
     os.put('!');
 }
 
-shared_ptr<const Predictor> Predictor::load(const string& filePath)
+shared_ptr<Predictor> Predictor::load(const string& filePath)
 {
     ifstream ifs;
     ifs.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
@@ -64,7 +64,7 @@ shared_ptr<const Predictor> Predictor::load(const string& filePath)
     return load(ifs);
 }
 
-shared_ptr<const Predictor> Predictor::load(istream& is)
+shared_ptr<Predictor> Predictor::load(istream& is)
 {
     ASSERT(is.exceptions() == (std::ios::failbit | std::ios::badbit | std::ios::eofbit));
 
@@ -81,7 +81,7 @@ shared_ptr<const Predictor> Predictor::load(istream& is)
             throw std::runtime_error(
                 "Reading this JrBoost predictor file requires a newer version of the JrBoost library.");
 
-        shared_ptr<const Predictor> pred = loadImpl_(is, version);
+        shared_ptr<Predictor> pred = loadImpl_(is, version);
 
         if (is.get() != '!')
             parseError(is);
@@ -96,7 +96,7 @@ shared_ptr<const Predictor> Predictor::load(istream& is)
     }
 }
 
-shared_ptr<const Predictor> Predictor::loadImpl_(istream& is, int version)
+shared_ptr<Predictor> Predictor::loadImpl_(istream& is, int version)
 {
     int type = is.get();
     if (version < 6) {
@@ -118,13 +118,13 @@ shared_ptr<const Predictor> Predictor::loadImpl_(istream& is, int version)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<const Predictor>
-BoostPredictor::createInstance(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors)
+shared_ptr<Predictor>
+BoostPredictor::createInstance(double c0, double c1, vector<unique_ptr<BasePredictor>>&& basePredictors)
 {
     return makeShared<BoostPredictor>(c0, c1, move(basePredictors));
 }
 
-BoostPredictor::BoostPredictor(double c0, double c1, vector<unique_ptr<const BasePredictor>>&& basePredictors) :
+BoostPredictor::BoostPredictor(double c0, double c1, vector<unique_ptr<BasePredictor>>&& basePredictors) :
     Predictor(initVariableCount_(basePredictors)),
     c0_{static_cast<float>(c0)},
     c1_{static_cast<float>(c1)},
@@ -132,7 +132,7 @@ BoostPredictor::BoostPredictor(double c0, double c1, vector<unique_ptr<const Bas
 {
 }
 
-size_t BoostPredictor::initVariableCount_(const vector<unique_ptr<const BasePredictor>>& basePredictors)
+size_t BoostPredictor::initVariableCount_(const vector<unique_ptr<BasePredictor>>& basePredictors)
 {
     size_t n = 0;
     for (const auto& basePredictor : basePredictors)
@@ -161,9 +161,9 @@ ArrayXf BoostPredictor::variableWeightsImpl_() const
     return weights.cast<float>();
 }
 
-shared_ptr<const Predictor> BoostPredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> BoostPredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
 {
-    vector<unique_ptr<const BasePredictor>> basePredictors;
+    vector<unique_ptr<BasePredictor>> basePredictors;
     basePredictors.reserve(size(basePredictors_));
     for (const auto& basePredictor : basePredictors_)
         basePredictors.push_back(basePredictor->reindexVariables(newIndices));
@@ -180,7 +180,7 @@ void BoostPredictor::saveImpl_(ostream& os) const
         basePredictor->save(os);
 }
 
-shared_ptr<const Predictor> BoostPredictor::loadImpl_(istream& is, int version)
+shared_ptr<Predictor> BoostPredictor::loadImpl_(istream& is, int version)
 {
     if (version < 2)
         is.ignore(5);
@@ -203,7 +203,7 @@ shared_ptr<const Predictor> BoostPredictor::loadImpl_(istream& is, int version)
     else
         n = base128Load(is);
 
-    vector<unique_ptr<const BasePredictor>> basePredictors;
+    vector<unique_ptr<BasePredictor>> basePredictors;
     basePredictors.reserve(n);
     for (; n != 0; --n)
         basePredictors.push_back(BasePredictor::load(is, version));
@@ -213,17 +213,17 @@ shared_ptr<const Predictor> BoostPredictor::loadImpl_(istream& is, int version)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<const Predictor> EnsemblePredictor::createInstance(const vector<shared_ptr<const Predictor>>& predictors)
+shared_ptr<Predictor> EnsemblePredictor::createInstance(const vector<shared_ptr<Predictor>>& predictors)
 {
     return makeShared<EnsemblePredictor>(predictors);
 }
 
-EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<const Predictor>>& predictors) :
+EnsemblePredictor::EnsemblePredictor(const vector<shared_ptr<Predictor>>& predictors) :
     Predictor(initVariableCount_(predictors)), predictors_(predictors)
 {
 }
 
-size_t EnsemblePredictor::initVariableCount_(const vector<shared_ptr<const Predictor>>& predictors)
+size_t EnsemblePredictor::initVariableCount_(const vector<shared_ptr<Predictor>>& predictors)
 {
     ASSERT(!predictors.empty());
     size_t n = 0;
@@ -252,9 +252,9 @@ ArrayXf EnsemblePredictor::variableWeightsImpl_() const
     return weights;
 }
 
-shared_ptr<const Predictor> EnsemblePredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> EnsemblePredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
 {
-    vector<shared_ptr<const Predictor>> predictors;
+    vector<shared_ptr<Predictor>> predictors;
     predictors.reserve(size(predictors_));
     for (const auto& predictor : predictors_)
         predictors.push_back(predictor->reindexVariablesImpl_(newIndices));
@@ -269,7 +269,7 @@ void EnsemblePredictor::saveImpl_(ostream& os) const
         predictor->saveImpl_(os);
 }
 
-shared_ptr<const Predictor> EnsemblePredictor::loadImpl_(istream& is, int version)
+shared_ptr<Predictor> EnsemblePredictor::loadImpl_(istream& is, int version)
 {
     if (version < 2)
         is.get();
@@ -283,7 +283,7 @@ shared_ptr<const Predictor> EnsemblePredictor::loadImpl_(istream& is, int versio
     else
         n = base128Load(is);
 
-    vector<shared_ptr<const Predictor>> predictors;
+    vector<shared_ptr<Predictor>> predictors;
     predictors.reserve(n);
     for (; n != 0; --n)
         predictors.push_back(Predictor::loadImpl_(is, version));
@@ -293,17 +293,17 @@ shared_ptr<const Predictor> EnsemblePredictor::loadImpl_(istream& is, int versio
 
 //----------------------------------------------------------------------------------------------------------------------
 
-shared_ptr<const Predictor> UnionPredictor::createInstance(const vector<shared_ptr<const Predictor>>& predictors)
+shared_ptr<Predictor> UnionPredictor::createInstance(const vector<shared_ptr<Predictor>>& predictors)
 {
     return makeShared<UnionPredictor>(predictors);
 }
 
-UnionPredictor::UnionPredictor(const vector<shared_ptr<const Predictor>>& predictors) :
+UnionPredictor::UnionPredictor(const vector<shared_ptr<Predictor>>& predictors) :
     Predictor(initVariableCount_(predictors)), predictors_(predictors)
 {
 }
 
-size_t UnionPredictor::initVariableCount_(const vector<shared_ptr<const Predictor>>& predictors)
+size_t UnionPredictor::initVariableCount_(const vector<shared_ptr<Predictor>>& predictors)
 {
     size_t n = 0;
     for (const auto& predictor : predictors)
@@ -329,9 +329,9 @@ ArrayXf UnionPredictor::variableWeightsImpl_() const
     return weights;
 }
 
-shared_ptr<const Predictor> UnionPredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> UnionPredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
 {
-    vector<shared_ptr<const Predictor>> predictors;
+    vector<shared_ptr<Predictor>> predictors;
     predictors.reserve(size(predictors_));
     for (const auto& predictor : predictors_)
         predictors.push_back(predictor->reindexVariablesImpl_(newIndices));
@@ -346,10 +346,10 @@ void UnionPredictor::saveImpl_(ostream& os) const
         predictor->saveImpl_(os);
 }
 
-shared_ptr<const Predictor> UnionPredictor::loadImpl_(istream& is, int version)
+shared_ptr<Predictor> UnionPredictor::loadImpl_(istream& is, int version)
 {
     size_t n = base128Load(is);
-    vector<shared_ptr<const Predictor>> predictors;
+    vector<shared_ptr<Predictor>> predictors;
     predictors.reserve(n);
     for (; n != 0; --n)
         predictors.push_back(Predictor::loadImpl_(is, version));

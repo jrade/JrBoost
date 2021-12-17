@@ -33,10 +33,14 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
         groupCount = std::max(groupCount, outData(i));
     groupCount += 1;
 
-    if (groupCount < 2)
+    if (groupCount < 2) {
+        PROFILE::POP();
         throw std::invalid_argument("Unable to do F-test: There must be at least two groups.");
-    if (sampleCount <= groupCount)
+    }
+    if (sampleCount <= groupCount) {
+        PROFILE::POP();
         throw std::invalid_argument("Unable to do F-test: There must be more samples than groups.");
+    }
 
     ArrayXs n = ArrayXs::Zero(groupCount);
     for (size_t i : samples) {

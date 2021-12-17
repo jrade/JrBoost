@@ -64,7 +64,7 @@ void PROFILE::POP(size_t itemCount)
     }
 }
 
-void PROFILE::SWITCH(size_t itemCount, CLOCK_ID id)
+void PROFILE::SWITCH(CLOCK_ID id, size_t itemCount)
 {
     if (!enabled_)
         return;
