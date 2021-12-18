@@ -85,10 +85,14 @@ def _merge(a):
 
 class TrivialPreprocessor:
 
-    def __init__(self, inData, outData, variableCount = None):
-        pass
+    def __init__(self, inData, outData, *, samples = None, variableCount = None):
+        self._variableCount = variableCount
 
-    def __call__(self, inData):
+    def __call__(self, inData, *, samples = None):
+        if self._variableCount is not None:
+            inData = inData[:, :self._variableCount]
+        if samples is not None:
+            inData = inData[samples, :]
         return inData
 
     def __bool__(self):
@@ -97,20 +101,23 @@ class TrivialPreprocessor:
 
 class TTestPreprocessor:
 
-    def __init__(self, inData, outData, variableCount = None):
-        self._variables = jrboost.tTestRank(inData, outData)
+    def __init__(self, inData, outData, *, samples = None, variableCount = None):
+        self._variables = jrboost.tTestRank(inData, outData, samples = samples)
         if variableCount is not None:
             self._variables = self._variables[: variableCount]
 
-    def __call__(self, inData):
-        return inData[:, self._variables]
+    def __call__(self, inData, *, samples = None):
+        inData = inData[:, self._variables]
+        if samples is not None:
+            inData = inData[samples, :]
+        return inData
 
     def __bool__(self):
         return True
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def train(inData, outData, param, *, weights = None, strata = None):
+def train(inData, outData, param, *, samples = None, weights = None, strata = None):
 
     repCount = param.get('repCount', 1)
     minimizeAlgorithm = param['minimizeAlgorithm']
@@ -121,25 +128,28 @@ def train(inData, outData, param, *, weights = None, strata = None):
     bestBoostParams = []
     for _ in range(repCount):
         bestBoostParams += minimizeAlgorithm(
-            lambda boostParams: _trainAndEval(boostParams, inData, outData, param, weights, strata),
+            lambda boostParams: _trainAndEval(boostParams, inData, outData, param, samples, weights, strata),
             boostParamGrid,
-            minimizeParam
-        )
+            minimizeParam)
 
+    variableCount = None
     if 'topVariableCount' in boostParamGrid:
-        maxTopVariableCount = max(bp['topVariableCount'] for bp in bestBoostParams)
-        pp = PP(inData, outData, maxTopVariableCount)
-    else:
-        pp = PP(inData, outData)
+        variableCount = max(bp['topVariableCount'] for bp in bestBoostParams)
+    pp = PP(inData, outData, samples = samples, variableCount = variableCount)
+    inData = pp(inData, samples = samples)
 
-    inData = pp(inData)
+    if samples is not None:
+        outData = outData[samples]
+        weights = None if weights is None else weights[samples]
+        strata = None if strata is None else strata[samples]
+
     trainer = jrboost.BoostTrainer(inData, outData, weights = weights, strata = strata)
     pred = jrboost.Predictor.createEnsemble([trainer.train(bp) for bp in bestBoostParams])
 
     return pp, pred, _medianBoostParam(bestBoostParams)
 
 
-def _trainAndEval(boostParams, inData, outData, param, weights, strata):
+def _trainAndEval(boostParams, inData, outData, param, samples, weights, strata):
 
     PP = param.get('preprocessor', TrivialPreprocessor)
     foldCount = param['foldCount']
@@ -148,28 +158,25 @@ def _trainAndEval(boostParams, inData, outData, param, weights, strata):
 
     loss = np.zeros((len(boostParams),))
 
-    for trainSamples, testSamples in jrboost.stratifiedRandomFolds(outData if strata is None else strata, foldCount):
+    for trainSamples, testSamples in jrboost.stratifiedRandomFolds(outData if strata is None else strata, foldCount, samples):
 
-        trainInData = inData[trainSamples, :]
+        variableCount = None
+        if 'topVariableCount' in boostParamGrid:
+            variableCount = max(bp['topVariableCount'] for bp in boostParams)
+        pp = PP(inData, outData, samples = trainSamples, variableCount = variableCount)
+        trainInData = pp(inData, samples = trainSamples)
+
         trainOutData = outData[trainSamples]
         trainWeights = None if weights is None else weights[trainSamples]
         trainStrata = None if strata is None else strata[trainSamples]
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData, strata = trainStrata, weights = trainWeights)
 
-        if 'topVariableCount' in boostParamGrid:
-            maxTopVariableCount = max(bp['topVariableCount'] for bp in boostParams)
-            pp = PP(trainInData, trainOutData, maxTopVariableCount)
-        else:
-            pp = PP(trainInData, trainOutData)
-        trainInData = pp(trainInData)
-
-        trainer = jrboost.BoostTrainer(trainInData, trainOutData, strata = trainStrata)
-
-        testInData = pp(inData[testSamples, :])
+        testInData = pp(inData, samples = testSamples)
         testOutData = outData[testSamples]
+        testWeights = None if weights is None else weights[testSamples]
         if weights is None:
             loss += jrboost.parallelTrainAndEval(trainer, boostParams, testInData, testOutData, targetLossFun)
         else:
-            testWeights = weights[testSamples]
             loss += jrboost.parallelTrainAndEvalWeighted(
                 trainer, boostParams, testInData, testOutData, testWeights, targetLossFun)
 

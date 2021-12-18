@@ -169,9 +169,9 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     else
         trainImpl1_<uint64_t>(outData, weights, options, threadCount);
 
+    unique_ptr<BasePredictor> pred = createPredictor_();
     PROFILE::POP();
-
-    return createPredictor_();
+    return pred;
 }
 
 

@@ -1,10 +1,9 @@
 
 next:
-	jrboost.train() function that takes sample argument
-		need preprocessors that take sample argument
 
-	update Leukemia to use the new train function
-		test the  with and without samples argument to jrboost.train()
+	review reindexing API - invert the index array?
+		where is reindexing used?
+	also do compactify when we are at it?
 
 	commit
 
@@ -12,6 +11,7 @@ next:
 		do complete implementations of both
 		overload, does order matter for resolution
 		try reducing one to the other both ways and profile
+			multi-predict implemented using single-predict can easily be parallellized
 
 	commit
 
@@ -44,6 +44,10 @@ report:
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
+
+have BoostTrainer::BoostTrainer() take a samples argument?
+	same for Predictor::predict()?
+	use this to simplify jrboost::train() implementation
 
 .............................................................................
 		

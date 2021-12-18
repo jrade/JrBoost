@@ -125,6 +125,7 @@ PYBIND11_MODULE(_jrboost, mod)
         &tStatistic,
         py::arg().noconvert(),
         py::arg(),
+        py::kw_only(),
         py::arg("samples") = optional<vector<size_t>>());
 
     mod.def(
@@ -132,6 +133,7 @@ PYBIND11_MODULE(_jrboost, mod)
         &tTestRank,
         py::arg().noconvert(),
         py::arg(),
+        py::kw_only(),
         py::arg("samples") = optional<vector<size_t>>(),
         py::arg("direction") = TestDirection::Any);
 
@@ -140,9 +142,16 @@ PYBIND11_MODULE(_jrboost, mod)
         &fStatistic,
         py::arg().noconvert(),
         py::arg(),
+        py::kw_only(),
         py::arg("samples") = optional<vector<size_t>>());
 
-    mod.def("fTestRank", &fTestRank, py::arg().noconvert(), py::arg(), py::arg("samples") = optional<vector<size_t>>());
+    mod.def(
+        "fTestRank",
+        &fTestRank,
+        py::arg().noconvert(),
+        py::arg(),
+        py::kw_only(),
+        py::arg("samples") = optional<vector<size_t>>());
 
 
     // Other
