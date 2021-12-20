@@ -44,6 +44,8 @@ unique_ptr<BasePredictor> ZeroPredictor::createInstance() { return makeUnique<Ze
 
 void ZeroPredictor::predict(CRefXXfc /*inData*/, double /*c*/, RefXd /*outData*/) const {}
 
+double ZeroPredictor::predictOne(CRefXf inData) const { return 0.0; }
+
 size_t ZeroPredictor::variableCount() const { return 0; }
 
 void ZeroPredictor::variableWeights(double /*c*/, RefXd /*weights*/) const {}
@@ -63,10 +65,9 @@ ConstantPredictor::ConstantPredictor(double y) : y_(static_cast<float>(y)) { ASS
 
 unique_ptr<BasePredictor> ConstantPredictor::createInstance(double y) { return makeUnique<ConstantPredictor>(y); }
 
-void ConstantPredictor::predict(CRefXXfc /*inData*/, double c, RefXd outData) const
-{
-    outData += c * static_cast<double>(y_);
-}
+void ConstantPredictor::predict(CRefXXfc /*inData*/, double c, RefXd outData) const { outData += c * y_; }
+
+double ConstantPredictor::predictOne(CRefXf inData) const { return y_; }
 
 size_t ConstantPredictor::variableCount() const { return 0; }
 
@@ -113,6 +114,8 @@ void StumpPredictor::predict(CRefXXfc inData, double c, RefXd outData) const
         outData(i) += c * y;
     }
 }
+
+double StumpPredictor::predictOne(CRefXf inData) const { return (inData(j_) < x_) ? leftY_ : rightY_; }
 
 size_t StumpPredictor::variableCount() const { return j_ + 1; }
 
@@ -188,6 +191,12 @@ void TreePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
     TreeTools::predict(root, inData, c, outData);
 }
 
+double TreePredictor::predictOne(CRefXf inData) const
+{
+    const TreeNode* root = data(nodes_);
+    return TreeTools::predictOne(root, inData);
+}
+
 size_t TreePredictor::variableCount() const
 {
     const TreeNode* root = data(nodes_);
@@ -237,6 +246,15 @@ void ForestPredictor::predict(CRefXXfc inData, double c, RefXd outData) const
     c /= size(basePredictors_);
     for (const auto& basePredictor : basePredictors_)
         basePredictor->predict(inData, c, outData);
+}
+
+double ForestPredictor::predictOne(CRefXf inData) const
+{
+    double pred = 0;
+    for (const auto& basePredictor : basePredictors_)
+        pred += basePredictor->predictOne(inData);
+    pred /= size(basePredictors_);
+    return pred;
 }
 
 size_t ForestPredictor::variableCount() const

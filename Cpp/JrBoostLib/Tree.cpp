@@ -95,6 +95,13 @@ void predict(const TreeNode* root, CRefXXfc inData, double c, RefXd outData)
     }
 }
 
+double predictOne(const TreeNode* node, CRefXf inData)
+{
+    while (!node->isLeaf)
+        node = (inData(node->j) < node->x) ? node->leftChild : node->rightChild;
+    return node->y;
+}
+
 size_t variableCount(const TreeNode* node)
 {
     if (node->isLeaf)

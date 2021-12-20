@@ -22,11 +22,11 @@ ArrayXd Predictor::predict(CRefXXfc inData) const
         throw std::invalid_argument("Test indata has values that are infinity or NaN.");
 
     ArrayXd pred = predictImpl_(inData);
-
     PROFILE::POP();
-
     return pred;
 }
+
+double Predictor::predictOne(CRefXf inData) const { return predictOneImpl_(inData); }
 
 ArrayXf Predictor::variableWeights() const { return variableWeightsImpl_(); }
 
@@ -152,6 +152,14 @@ ArrayXd BoostPredictor::predictImpl_(CRefXXfc inData) const
     return 1.0 / (1.0 + (-pred).exp());
 }
 
+double BoostPredictor::predictOneImpl_(CRefXf inData) const
+{
+    double pred = c0_;
+    for (const auto& basePredictor : basePredictors_)
+        pred += c1_ * basePredictor->predictOne(inData);
+    return 1.0 / (1.0 + std::exp(-pred));
+}
+
 ArrayXf BoostPredictor::variableWeightsImpl_() const
 {
     ArrayXd weights = ArrayXd::Zero(variableCount());
@@ -232,13 +240,21 @@ size_t EnsemblePredictor::initVariableCount_(const vector<shared_ptr<Predictor>>
     return n;
 }
 
-
 ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
     for (const auto& predictor : predictors_)
         pred += predictor->predictImpl_(inData);
+    pred /= static_cast<double>(size(predictors_));
+    return pred;
+}
+
+double EnsemblePredictor::predictOneImpl_(CRefXf inData) const
+{
+    double pred = 0.0;
+    for (const auto& predictor : predictors_)
+        pred += predictor->predictOneImpl_(inData);
     pred /= static_cast<double>(size(predictors_));
     return pred;
 }
@@ -311,13 +327,20 @@ size_t UnionPredictor::initVariableCount_(const vector<shared_ptr<Predictor>>& p
     return n;
 }
 
-
 ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
     for (const auto& predictor : predictors_)
         pred += (1.0 - pred) * predictor->predictImpl_(inData);
+    return pred;
+}
+
+double UnionPredictor::predictOneImpl_(CRefXf inData) const
+{
+    double pred = 0.0;
+    for (const auto& predictor : predictors_)
+        pred += (1.0 - pred) * predictor->predictOneImpl_(inData);
     return pred;
 }
 

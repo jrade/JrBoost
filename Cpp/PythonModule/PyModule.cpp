@@ -36,6 +36,7 @@ PYBIND11_MODULE(_jrboost, mod)
 
     py::class_<Predictor, shared_ptr<Predictor>>{mod, "Predictor"}
         .def("predict", &Predictor::predict)
+        .def("predictOne", &Predictor::predictOne)
         .def("variableCount", &Predictor::variableCount)
         .def("variableWeights", &Predictor::variableWeights)
         .def("reindexVariables", &Predictor::reindexVariables)

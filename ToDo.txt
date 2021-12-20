@@ -1,17 +1,15 @@
 
 next:
 
-	review reindexing API - invert the index array?
-		where is reindexing used?
-	also do compactify when we are at it?
+	refactor preprocessors
+		a single preprocessor class and several preprocessor factory functions (e.g. trivial, simple, PCA)
+			TrivialPreprocessor, SimplePreprocessor, LinearPreprocessor, preprocessByTTest, etc.
+		implement union of preprocessors
 
 	commit
 
-	predict() overload that takes a one-dim array and returns a double (when classifying a single sample)
-		do complete implementations of both
-		overload, does order matter for resolution
-		try reducing one to the other both ways and profile
-			multi-predict implemented using single-predict can easily be parallellized
+	review reindexing API - invert the index array?
+		where is reindexing used?
 
 	commit
 
@@ -45,10 +43,6 @@ report:
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
 
-have BoostTrainer::BoostTrainer() take a samples argument?
-	same for Predictor::predict()?
-	use this to simplify jrboost::train() implementation
-
 .............................................................................
 		
 major tasks:
@@ -73,6 +67,9 @@ features to add:
 		applications: PCA, separate counts for up- and down-regulated variables, chromosomes, NCC
 	new way of calculating variable importance weights: when predicting (instead of when training)
 	exception safe profiling
+	have BoostTrainer::BoostTrainer() take a samples argument?
+		same for Predictor::predict()?
+		use this to simplify jrboost::train() implementation
 
 optimizations (accuracy):
 	iterate from both ends and meet in the middle when finding best split

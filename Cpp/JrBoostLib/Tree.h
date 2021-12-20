@@ -33,6 +33,7 @@ vector<TreeNode> cloneTree(const TreeNode* node);   // first node in the returne
 vector<TreeNode> reindexTree(const TreeNode* node, const vector<size_t>& newIndices);
 
 void predict(const TreeNode* node, CRefXXfc inData, double c, RefXd outData);
+double predictOne(const TreeNode* node, CRefXf inData);
 size_t variableCount(const TreeNode* node);
 void variableWeights(const TreeNode* node, double c, RefXd weights);
 

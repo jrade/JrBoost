@@ -22,6 +22,7 @@ public:
 
     size_t variableCount() const { return variableCount_; }
     ArrayXd predict(CRefXXfc inData) const;
+    double predictOne(CRefXf inData) const;
     ArrayXf variableWeights() const;
     shared_ptr<Predictor> reindexVariables(const vector<size_t>& newIndices) const;
 
@@ -37,6 +38,7 @@ protected:
 
 private:
     virtual ArrayXd predictImpl_(CRefXXfc inData) const = 0;
+    virtual double predictOneImpl_(CRefXf inData) const = 0;
     virtual ArrayXf variableWeightsImpl_() const = 0;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const = 0;
     virtual void saveImpl_(ostream& os) const = 0;
@@ -64,6 +66,7 @@ private:
     static size_t initVariableCount_(const vector<unique_ptr<BasePredictor>>& basePredictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
+    virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;
@@ -89,6 +92,7 @@ private:
     static size_t initVariableCount_(const vector<shared_ptr<Predictor>>& predictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
+    virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;
@@ -112,6 +116,7 @@ private:
     static size_t initVariableCount_(const vector<shared_ptr<Predictor>>& predictors);
 
     virtual ArrayXd predictImpl_(CRefXXfc inData) const;
+    virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
     virtual void saveImpl_(ostream& os) const;

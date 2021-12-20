@@ -14,6 +14,7 @@ public:
     // make a prediction based on inData
     // add the prediction, multiplied by c, to outData
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const = 0;
+    virtual double predictOne(CRefXf inData) const = 0;
 
     virtual size_t variableCount() const = 0;
     // add the variable importance weights, multiplied by c, to weights
@@ -36,6 +37,7 @@ class ZeroPredictor : public BasePredictor {   // immutable class
 public:
     virtual ~ZeroPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual double predictOne(CRefXf inData) const;
     virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
     virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
@@ -56,6 +58,7 @@ class ConstantPredictor : public BasePredictor {   // immutable class
 public:
     virtual ~ConstantPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual double predictOne(CRefXf inData) const;
     virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
     virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
@@ -78,6 +81,7 @@ class StumpPredictor : public BasePredictor {   // immutable class
 public:
     virtual ~StumpPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual double predictOne(CRefXf inData) const;
     virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
     virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
@@ -104,6 +108,7 @@ class TreePredictor : public BasePredictor {   // immutable class
 public:
     virtual ~TreePredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual double predictOne(CRefXf inData) const;
     virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
     virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
@@ -128,6 +133,7 @@ class ForestPredictor : public BasePredictor {
 public:
     virtual ~ForestPredictor() = default;
     virtual void predict(CRefXXfc inData, double c, RefXd outData) const;
+    virtual double predictOne(CRefXf inData) const;
     virtual size_t variableCount() const;
     virtual void variableWeights(double c, RefXd weights) const;
     virtual unique_ptr<BasePredictor> reindexVariables(const vector<size_t>& newIndices) const;
