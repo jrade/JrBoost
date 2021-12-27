@@ -20,6 +20,8 @@ next:
 			add support for weights to train function
 			need a wrapping train function that calculates the cutoff
 
+	have train and loss functions take samples argument
+
 	commit
 
 	do a quick test test compiling with Clang for Visual Studio

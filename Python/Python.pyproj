@@ -29,6 +29,9 @@
     <Compile Include="example\iris.py" />
     <Compile Include="example\otto.py" />
     <Compile Include="example\testselect.py" />
+    <Compile Include="jrboost\_preprocess_and_train.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="jrboost\_train.py">
       <SubType>Code</SubType>
     </Compile>

@@ -86,7 +86,7 @@ def main():
 
                 trainInData = inData[trainSamples, :]
                 trainOutData = outData[trainSamples]
-                _, predictor, medianBoostParam = jrboost.train(trainInData, trainOutData, trainParam)
+                predictor, medianBoostParam = jrboost.train(trainInData, trainOutData, trainParam)
                 print(formatBoostParam(medianBoostParam))
 
                 testInData = inData[testSamples, :]
