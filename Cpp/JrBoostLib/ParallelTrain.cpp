@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -84,7 +84,7 @@ vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const v
             pred[optIndex] = trainer.train(opt[optIndex], innerThreadCount);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    END_EXCEPTION_SAFE_OMP_PARALLEL
     PROFILE::POP();
 
     return pred;
@@ -150,10 +150,10 @@ ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boos
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
-            predData.col(optIndex) = pred->predict(testInData);
+            predData.col(optIndex) = pred->predict(testInData, innerThreadCount);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    END_EXCEPTION_SAFE_OMP_PARALLEL
     PROFILE::POP();
 
     return predData;
@@ -217,13 +217,13 @@ ArrayXd parallelTrainAndEval(
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
-            ArrayXd predData = pred->predict(testInData);
+            ArrayXd predData = pred->predict(testInData, innerThreadCount);
             PROFILE::SWITCH(PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData);
             PROFILE::SWITCH(PROFILE::OUTER_THREAD_SYNCH);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    END_EXCEPTION_SAFE_OMP_PARALLEL
     PROFILE::POP();
 
     return scores;
@@ -285,13 +285,13 @@ ArrayXd parallelTrainAndEvalWeighted(
 
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
-            ArrayXd predData = pred->predict(testInData);
+            ArrayXd predData = pred->predict(testInData, innerThreadCount);
             PROFILE::SWITCH(PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData, testWeights);
             PROFILE::SWITCH(PROFILE::OUTER_THREAD_SYNCH);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL;
+    END_EXCEPTION_SAFE_OMP_PARALLEL
     PROFILE::POP();
 
     return scores;

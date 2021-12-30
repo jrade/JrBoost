@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -35,7 +35,7 @@ PYBIND11_MODULE(_jrboost, mod)
     // Predictor
 
     py::class_<Predictor, shared_ptr<Predictor>>{mod, "Predictor"}
-        .def("predict", &Predictor::predict)
+        .def("predict", [](shared_ptr<Predictor> predictor, CRefXXfc inData) { return predictor->predict(inData); })
         .def("predictOne", &Predictor::predictOne)
         .def("variableCount", &Predictor::variableCount)
         .def("variableWeights", &Predictor::variableWeights)
@@ -43,9 +43,7 @@ PYBIND11_MODULE(_jrboost, mod)
         .def("save", py::overload_cast<const string&>(&Predictor::save, py::const_))
         .def_static("load", py::overload_cast<const string&>(&Predictor::load))
         .def_static("createEnsemble", &EnsemblePredictor::createInstance)
-        .def_static(
-            "createUnion",
-            [](const vector<shared_ptr<Predictor>>& predictors) { return UnionPredictor::createInstance(predictors); })
+        .def_static("createUnion", &UnionPredictor::createInstance)
         .def("__repr__", [](const Predictor&) { return "<jrboost.Predictor>"; })
         .def(py::pickle(
             [](const Predictor& pred) {

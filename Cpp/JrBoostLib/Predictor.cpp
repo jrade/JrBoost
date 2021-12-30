@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -8,25 +8,43 @@
 
 #include "Base128Encoding.h"
 #include "BasePredictor.h"
+#include "ExceptionSafeOmp.h"
 
 
 Predictor::Predictor(size_t variableCount) : variableCount_(variableCount) {}
 
-ArrayXd Predictor::predict(CRefXXfc inData) const
+
+ArrayXd Predictor::predict(CRefXXfc inData, size_t threadCount) const
 {
-    PROFILE::PUSH(PROFILE::BOOST_PREDICT);
+    PROFILE::PUSH(PROFILE::PREDICT);
+
+    if (currentInterruptHandler != nullptr)
+        currentInterruptHandler->check();
+    if (abortThreads)
+        throw ThreadAborted();
 
     if (static_cast<size_t>(inData.cols()) < variableCount())
         throw std::invalid_argument("Test indata has fewer variables than train indata.");
     if (!inData.isFinite().all())
         throw std::invalid_argument("Test indata has values that are infinity or NaN.");
 
-    ArrayXd pred = predictImpl_(inData);
+    ArrayXd pred = predictImpl_(inData, threadCount);
+
+    PROFILE::SWITCH(PROFILE::ZERO);   // calibrate the profiling
     PROFILE::POP();
+
     return pred;
 }
 
-double Predictor::predictOne(CRefXf inData) const { return predictOneImpl_(inData); }
+double Predictor::predictOne(CRefXf inData) const
+{
+    if (static_cast<size_t>(inData.rows()) < variableCount())
+        throw std::invalid_argument("Test indata has fewer variables than train indata.");
+    if (!inData.isFinite().all())
+        throw std::invalid_argument("Test indata has values that are infinity or NaN.");
+
+    return predictOneImpl_(inData);
+}
 
 ArrayXf Predictor::variableWeights() const { return variableWeightsImpl_(); }
 
@@ -136,27 +154,61 @@ size_t BoostPredictor::initVariableCount_(const vector<unique_ptr<BasePredictor>
 {
     size_t n = 0;
     for (const auto& basePredictor : basePredictors)
-        n = std::max(n, basePredictor->variableCount());
+        n = std::max(n, basePredictor->variableCount_());
     return n;
 }
 
 BoostPredictor::~BoostPredictor() = default;
 
 
-ArrayXd BoostPredictor::predictImpl_(CRefXXfc inData) const
+ArrayXd BoostPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
+{
+    if (threadCount == 0)
+        threadCount = omp_get_max_threads();
+    if (threadCount == 1)
+        return predictImplNoThreads_(inData);
+
+    const size_t sampleCount = static_cast<size_t>(inData.rows());
+    const size_t basePredictorCount = size(basePredictors_);
+    const size_t outerThreadCount = std::min(threadCount, basePredictorCount);
+    const size_t padding = std::hardware_destructive_interference_size / sizeof(double);
+
+    static thread_local vector<double> buf;
+    buf.assign((sampleCount + padding) * outerThreadCount, 0.0);
+    Eigen::Map<ArrayXXdc> paddedPredByThread(data(buf), sampleCount + padding, outerThreadCount);
+    RefXXdc predByThread(paddedPredByThread(Eigen::seqN(0, sampleCount), Eigen::all));
+    std::atomic<size_t> nextK = 0;
+
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
+    {
+        const size_t id = omp_get_thread_num();
+        while (true) {
+            size_t k = nextK++;
+            if (k >= basePredictorCount)
+                break;
+            basePredictors_[k]->predict_(inData, static_cast<double>(c1_), predByThread.col(id));
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL
+
+    ArrayXd pred = static_cast<double>(c0_) + predByThread.rowwise().sum();
+    return (1.0 + (-pred).exp()).inverse();
+}
+
+ArrayXd BoostPredictor::predictImplNoThreads_(CRefXXfc inData) const
 {
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Constant(sampleCount, static_cast<double>(c0_));
     for (const auto& basePredictor : basePredictors_)
-        basePredictor->predict(inData, static_cast<double>(c1_), pred);
-    return 1.0 / (1.0 + (-pred).exp());
+        basePredictor->predict_(inData, static_cast<double>(c1_), pred);
+    return (1.0 + (-pred).exp()).inverse();
 }
 
 double BoostPredictor::predictOneImpl_(CRefXf inData) const
 {
     double pred = c0_;
     for (const auto& basePredictor : basePredictors_)
-        pred += c1_ * basePredictor->predictOne(inData);
+        pred += c1_ * basePredictor->predictOne_(inData);
     return 1.0 / (1.0 + std::exp(-pred));
 }
 
@@ -165,7 +217,7 @@ ArrayXf BoostPredictor::variableWeightsImpl_() const
     ArrayXd weights = ArrayXd::Zero(variableCount());
     const double c = 1.0 / size(basePredictors_);
     for (const auto& basePredictor : basePredictors_)
-        basePredictor->variableWeights(c, weights);
+        basePredictor->variableWeights_(c, weights);
     return weights.cast<float>();
 }
 
@@ -174,9 +226,10 @@ shared_ptr<Predictor> BoostPredictor::reindexVariablesImpl_(const vector<size_t>
     vector<unique_ptr<BasePredictor>> basePredictors;
     basePredictors.reserve(size(basePredictors_));
     for (const auto& basePredictor : basePredictors_)
-        basePredictors.push_back(basePredictor->reindexVariables(newIndices));
+        basePredictors.push_back(basePredictor->reindexVariables_(newIndices));
     return createInstance(c0_, c1_, move(basePredictors));
 }
+
 
 void BoostPredictor::saveImpl_(ostream& os) const
 {
@@ -185,7 +238,7 @@ void BoostPredictor::saveImpl_(ostream& os) const
     os.write(reinterpret_cast<const char*>(&c1_), sizeof(c1_));
     base128Save(os, size(basePredictors_));
     for (const auto& basePredictor : basePredictors_)
-        basePredictor->save(os);
+        basePredictor->save_(os);
 }
 
 shared_ptr<Predictor> BoostPredictor::loadImpl_(istream& is, int version)
@@ -214,7 +267,7 @@ shared_ptr<Predictor> BoostPredictor::loadImpl_(istream& is, int version)
     vector<unique_ptr<BasePredictor>> basePredictors;
     basePredictors.reserve(n);
     for (; n != 0; --n)
-        basePredictors.push_back(BasePredictor::load(is, version));
+        basePredictors.push_back(BasePredictor::load_(is, version));
 
     return createInstance(c0, c1, move(basePredictors));
 }
@@ -240,12 +293,46 @@ size_t EnsemblePredictor::initVariableCount_(const vector<shared_ptr<Predictor>>
     return n;
 }
 
-ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData) const
+
+ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
+{
+    if (threadCount == 0)
+        threadCount = omp_get_max_threads();
+    if (threadCount == 1)
+        return predictImplNoThreads_(inData);
+
+    const size_t sampleCount = static_cast<size_t>(inData.rows());
+    const size_t predictorCount = size(predictors_);
+    const size_t outerThreadCount = std::min(threadCount, predictorCount);
+    const size_t padding = std::hardware_destructive_interference_size / sizeof(double);
+
+    ArrayXXdc paddedPredByThread = ArrayXXdc::Zero(sampleCount + padding, outerThreadCount);
+    RefXXdc predByThread(paddedPredByThread(Eigen::seqN(0, sampleCount), Eigen::all));
+    std::atomic<size_t> nextK = 0;
+
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
+    {
+        const size_t id = omp_get_thread_num();
+        const size_t innerThreadCount
+            = (threadCount * (id + 1)) / outerThreadCount - (threadCount * id) / outerThreadCount;
+        while (true) {
+            size_t k = nextK++;
+            if (k >= predictorCount)
+                break;
+            predByThread.col(id) += predictors_[k]->predictImpl_(inData, innerThreadCount);
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL
+
+    return predByThread.rowwise().sum() / static_cast<double>(predictorCount);
+}
+
+ArrayXd EnsemblePredictor::predictImplNoThreads_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
     for (const auto& predictor : predictors_)
-        pred += predictor->predictImpl_(inData);
+        pred += predictor->predictImpl_(inData, 1);
     pred /= static_cast<double>(size(predictors_));
     return pred;
 }
@@ -276,6 +363,7 @@ shared_ptr<Predictor> EnsemblePredictor::reindexVariablesImpl_(const vector<size
         predictors.push_back(predictor->reindexVariablesImpl_(newIndices));
     return createInstance(move(predictors));
 }
+
 
 void EnsemblePredictor::saveImpl_(ostream& os) const
 {
@@ -327,21 +415,55 @@ size_t UnionPredictor::initVariableCount_(const vector<shared_ptr<Predictor>>& p
     return n;
 }
 
-ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData) const
+
+ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
+{
+    if (threadCount == 0)
+        threadCount = omp_get_max_threads();
+    if (threadCount == 1)
+        return predictImplNoThreads_(inData);
+
+    const size_t sampleCount = static_cast<size_t>(inData.rows());
+    const size_t predictorCount = size(predictors_);
+    const size_t outerThreadCount = std::min(threadCount, predictorCount);
+    const size_t padding = std::hardware_destructive_interference_size / sizeof(double);
+
+    ArrayXXdc paddedPredByThread = ArrayXXdc::Ones(sampleCount + padding, outerThreadCount);
+    RefXXdc predByThread(paddedPredByThread(Eigen::seqN(0, sampleCount), Eigen::all));
+    std::atomic<size_t> nextK = 0;
+
+    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
+    {
+        const size_t id = omp_get_thread_num();
+        const size_t innerThreadCount
+            = (threadCount * (id + 1)) / outerThreadCount - (threadCount * id) / outerThreadCount;
+        while (true) {
+            size_t k = nextK++;
+            if (k >= predictorCount)
+                break;
+            predByThread.col(id) *= 1.0 - predictors_[k]->predictImpl_(inData, innerThreadCount);
+        }
+    }
+    END_EXCEPTION_SAFE_OMP_PARALLEL
+
+    return 1.0 - predByThread.rowwise().prod();
+}
+
+ArrayXd UnionPredictor::predictImplNoThreads_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
-    ArrayXd pred = ArrayXd::Zero(sampleCount);
+    ArrayXd pred = ArrayXd::Ones(sampleCount);
     for (const auto& predictor : predictors_)
-        pred += (1.0 - pred) * predictor->predictImpl_(inData);
-    return pred;
+        pred *= 1.0 - predictor->predictImpl_(inData, 1);
+    return 1.0 - pred;
 }
 
 double UnionPredictor::predictOneImpl_(CRefXf inData) const
 {
-    double pred = 0.0;
+    double pred = 1.0;
     for (const auto& predictor : predictors_)
-        pred += (1.0 - pred) * predictor->predictOneImpl_(inData);
-    return pred;
+        pred *= 1.0 - predictor->predictOneImpl_(inData);
+    return 1.0 - pred;
 }
 
 ArrayXf UnionPredictor::variableWeightsImpl_() const
@@ -360,6 +482,7 @@ shared_ptr<Predictor> UnionPredictor::reindexVariablesImpl_(const vector<size_t>
         predictors.push_back(predictor->reindexVariablesImpl_(newIndices));
     return createInstance(predictors);
 }
+
 
 void UnionPredictor::saveImpl_(ostream& os) const
 {

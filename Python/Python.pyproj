@@ -22,10 +22,10 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="example\higgs.py" />
-    <Compile Include="example\higgs_old.py" />
+    <Compile Include="example\higgs.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="example\higgs_quick.py" />
-    <Compile Include="example\higgs_test.py" />
     <Compile Include="example\iris.py" />
     <Compile Include="example\otto.py" />
     <Compile Include="example\testselect.py" />

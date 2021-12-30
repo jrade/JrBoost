@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -55,8 +55,6 @@ private:
 #endif
         const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
     size_t finalizeNodeTrainers_(size_t d, size_t threadCount) const;
-
-    unique_ptr<BasePredictor> createPredictor_() const;
 
 private:
     const CRefXXfc inData_;

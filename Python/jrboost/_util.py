@@ -1,10 +1,11 @@
-#  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+#  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import copy, random
+import copy, random, re
 import numpy as np
 import pandas as pd
+import jrboost
 
 
 def oneHotEncode(dataSeries):
@@ -107,6 +108,15 @@ def minimizePopulation(f, grid, param):
     k = 0
     while True:
 
+        #if True:
+        #    print(k)
+        #    for key, value in grid.items():
+        #        if len(value) == 1: continue
+        #        value = xDict[key]
+        #        def round(x): return int(1000000 * x + 0.5) / 1000000
+        #        print(f'{key}: {round(np.quantile(value, 0.25))} / {round(np.quantile(value, 0.5))} / {round(np.quantile(value, 0.75))}')
+        #    print()
+
         xDict = _sample(xDict, populationCount)
         xList = _split(xDict)
         yList = f(xList)
@@ -150,3 +160,100 @@ def _merge(a):
     keys = a[0].keys()
     return {key : [item[key] for item in a] for key in keys}
 
+
+def optimizeHyperParam(inData, outData, param, *, samples = None, weights = None, strata = None):
+
+    repCount = param.get('repCount', 1)
+    minimizeAlgorithm = param['minimizeAlgorithm']
+    boostParamGrid = param['boostParamGrid']
+    minimizeParam = param.get('minimizeParam', {})
+
+    bestBoostParams = []
+    for _ in range(repCount):
+        bestBoostParams += minimizeAlgorithm(
+            lambda boostParams: _trainAndEval(boostParams, inData, outData, param, samples, weights, strata),
+            boostParamGrid,
+            minimizeParam)
+
+    return bestBoostParams
+
+
+def _trainAndEval(boostParams, inData, outData, param, samples, weights, strata):
+
+    foldCount = param['foldCount']
+    targetLossFun = param['targetLossFun']
+    boostParamGrid = param['boostParamGrid']
+
+    loss = np.zeros((len(boostParams),))
+
+    for trainSamples, testSamples in jrboost.stratifiedRandomFolds(outData if strata is None else strata, foldCount, samples):
+
+
+        trainInData = inData[trainSamples, :]
+        trainOutData = outData[trainSamples]
+        trainWeights = None if weights is None else weights[trainSamples]
+        trainStrata = None if strata is None else strata[trainSamples]
+
+        trainer = jrboost.BoostTrainer(trainInData, trainOutData, strata = trainStrata, weights = trainWeights)
+
+        testInData = inData[testSamples, :]
+        testOutData = outData[testSamples]
+        testWeights = None if weights is None else weights[testSamples]
+
+        if weights is None:
+            loss += jrboost.parallelTrainAndEval(trainer, boostParams, testInData, testOutData, targetLossFun)
+        else:
+            loss += jrboost.parallelTrainAndEvalWeighted(
+                trainer, boostParams, testInData, testOutData, testWeights, targetLossFun)
+
+    return loss
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def medianBoostParam(boostParams):
+
+    keys = boostParams[0].keys()
+    medianBp = { key : _roughMedian([boostParam[key] for boostParam in boostParams]) for key in keys}
+    return medianBp
+
+def _roughMedian(a):
+
+    if len(a) % 2 == 0:
+        return sorted(a)[len(a) // 2 - random.randint(0,1)]
+    else:
+        return sorted(a)[len(a) // 2]
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+_regCpp = re.compile('<built-in method (\S+) of PyCapsule object at 0x.{16}>')
+_regPy = re.compile('<function (\S+) at 0x.{16}>')
+
+def formatParam(obj, indent = 0):
+
+    if isinstance(obj, dict):
+        s = '{\n'
+        for key, value in obj.items():
+            s += (indent + 1) * '    ' + repr(key) + ': ' + formatParam(value, indent + 1) + '\n'
+        s += indent * '    ' + '}'
+        return s
+
+    if isinstance(obj, list):
+        return '[' + ', '.join(formatParam(a) for a in obj) + ']'
+
+    if isinstance(obj, tuple):
+        return '(' + ', '.join(formatParam(a) for a in obj) + ')'
+
+    s = str(obj)
+
+    m = _regCpp.match(s)
+    if m: 
+        return m.group(1)
+
+    m = _regPy.match(s)
+    if m: 
+        return m.group(1)
+
+    try:
+        return obj.name
+    except:
+        return s

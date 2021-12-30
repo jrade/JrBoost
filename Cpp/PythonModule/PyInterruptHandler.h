@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -12,10 +12,10 @@ public:
         if (std::this_thread::get_id() != theMainThreadId)
             return;
 
-        time_t presentTime = time(nullptr);
-        if (presentTime < lastTime_ + 1)
+        uint64_t ccc = __rdtsc();
+        if (ccc >= lastCcc_ && ccc < lastCcc_ + 1.0e8)
             return;
-        lastTime_ = presentTime;
+        lastCcc_ = ccc;
 
         pybind11::gil_scoped_acquire acquire;
         if (PyErr_CheckSignals() == 0)
@@ -25,7 +25,7 @@ public:
     }
 
 private:
-    time_t lastTime_ = 0;
+    uint64_t lastCcc_ = 0;
 };
 
 inline PyInterruptHandler thePyInterruptHandler;

@@ -1,4 +1,4 @@
-#  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+#  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -66,15 +66,3 @@ def _trainAndEval(boostParams, inData, outData, param, samples, weights, strata)
     return loss
 
 
-def _medianBoostParam(boostParams):
-
-    keys = boostParams[0].keys()
-    medianBp = { key : _roughMedian([boostParam[key] for boostParam in boostParams]) for key in keys}
-    return medianBp
-
-def _roughMedian(a):
-
-    if len(a) % 2 == 0:
-        return sorted(a)[len(a) // 2 - random.randint(0,1)]
-    else:
-        return sorted(a)[len(a) // 2]

@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -8,7 +8,6 @@
 
 #include "BaseOptions.h"
 #include "BasePredictor.h"
-#include "ExceptionSafeOmp.h"
 
 /*
 Overview:
@@ -136,12 +135,6 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
 {
     PROFILE::PUSH(PROFILE::TREE_TRAIN);
 
-    if (currentInterruptHandler != nullptr)
-        currentInterruptHandler->check();
-
-    if (abortThreads)
-        throw ThreadAborted();
-
     // validateData_(outData, weights);
 
     // how many different status values are there?
@@ -169,7 +162,10 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     else
         trainImpl1_<uint64_t>(outData, weights, options, threadCount);
 
-    unique_ptr<BasePredictor> pred = createPredictor_();
+    ThreadLocalData0_& t0 = threadLocalData0_;
+    const TreeNodeExt* root = data(t0.tree.front());
+    unique_ptr<BasePredictor> pred = TreePredictor::createInstance(root);
+
     PROFILE::POP();
     return pred;
 }
@@ -213,7 +209,7 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
 
         initNodeTrainers_(options, d, threadCount);   // very fast, no need to profile
 
-        PROFILE::SWITCH(PROFILE::ZERO, ITEM_COUNT);
+        PROFILE::SWITCH(PROFILE::ZERO, ITEM_COUNT);   // calibrate the profiling
         ITEM_COUNT = 0;
 
         PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
@@ -931,34 +927,6 @@ size_t TreeTrainerImpl<SampleIndex>::finalizeNodeTrainers_(size_t d, size_t thre
     childNodes.resize(childNodeCount);
 
     return usedSampleCount;
-}
-
-//......................................................................................................................
-
-template<typename SampleIndex>
-unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::createPredictor_() const
-{
-    ThreadLocalData0_& t0 = threadLocalData0_;
-
-    unique_ptr<BasePredictor> pred;
-    const TreeNodeExt* root = data(t0.tree.front());
-    const size_t treeDepth = TreeTools::treeDepth(root);
-
-    if (treeDepth == 0) {
-        // one memory allocation
-        if (root->y == 0.0f)
-            pred = ZeroPredictor::createInstance();
-        else
-            pred = ConstantPredictor::createInstance(root->y);
-    }
-    else if (treeDepth == 1)
-        // one memory allocation
-        pred = StumpPredictor::createInstance(root->j, root->x, root->leftChild->y, root->rightChild->y, root->gain);
-    else
-        // two memory allocations
-        pred = TreePredictor::createInstance(root);
-
-    return pred;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

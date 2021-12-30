@@ -1,33 +1,23 @@
+unify weighted and non-weighted functions
+	loss
+	patrallel train
+	use keyword only arguments for the weights
 
-next:
+review all functions with parallelism, esp. nested parallelism
 
-	refactor preprocessors
-		a single preprocessor class and several preprocessor factory functions (e.g. trivial, simple, PCA)
-			TrivialPreprocessor, SimplePreprocessor, LinearPreprocessor, preprocessByTTest, etc.
-		implement union of preprocessors
+get rid of the jrboost train functions
+	review ALL and AML code
 
-	commit
+improved Higgs example
 
-	review reindexing API - invert the index array?
-		where is reindexing used?
+test smart boost where we add two(?) predictors, take away one and repeat
+	use deque instead of std vector
+		generic storage
+	do a quick implementation where we replace the predictors att the beginning by zero predictors
 
-	commit
-
-	merge parallelTrainAndEval and parallelTrainAndEvalWeighted to one function?
-		keyword only arguments
-		need loss functions with optional weights (merge weighted and unweighted loss functions)
-		then update Higgs to use the new train function
-			add support for weights to train function
-			need a wrapping train function that calculates the cutoff
-
-	have train and loss functions take samples argument
-
-	commit
-
-	do a quick test test compiling with Clang for Visual Studio
-		devblogs.microsoft.com/cppblog/clang-llvm-support-in-visual-studio/
-		do we need the Intel Intrinsics to parallellize fastExp()?  Probably not
-
+do a quick test test compiling with Clang for Visual Studio
+	devblogs.microsoft.com/cppblog/clang-llvm-support-in-visual-studio/
+	do we need the Intel Intrinsics to parallellize fastExp()?  Probably not
 
 report:
 
@@ -44,6 +34,7 @@ report:
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
+
 
 .............................................................................
 		
@@ -64,14 +55,14 @@ major tasks:
 		what is the standard code organization for a Python extension module?
 
 features to add:
+	log parameter optimization process
+		log quartiles of each parameter after each cycle
 	U-test (with correct handling of ties)
 	multiple indata and multiple variable counts (to handle feature engineering)
 		applications: PCA, separate counts for up- and down-regulated variables, chromosomes, NCC
 	new way of calculating variable importance weights: when predicting (instead of when training)
 	exception safe profiling
-	have BoostTrainer::BoostTrainer() take a samples argument?
-		same for Predictor::predict()?
-		use this to simplify jrboost::train() implementation
+	have train, predict and loss functions take samples argument?
 
 optimizations (accuracy):
 	iterate from both ends and meet in the middle when finding best split
@@ -86,7 +77,6 @@ optimizations (speed):
 		ForestTrainer::train
 		TreeTrainer::updateSampleStatus_
 			easier if we do not use exact sums; can we do that?
-		predict functions
 	make branch free:
 		TreeTrainer::updateSampleStatus_:
 			introducing dummy nodes that contain the unused samples

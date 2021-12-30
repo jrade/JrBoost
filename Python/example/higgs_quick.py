@@ -1,4 +1,4 @@
-#  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+#  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -81,7 +81,7 @@ def main():
 
         predictor, cutoff = train(
             trainInData, trainOutData, trainWeights,
-           testInData, testOutData, testWeights)
+            testInData, testOutData, testWeights)
 
         t += time.time()
         print(PROFILE.STOP())
@@ -119,7 +119,7 @@ def main():
 def train(trainInData, trainOutData, trainWeights, testInData, testOutData, testWeights):
 
     repCount = param['repCount']
-    trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+    trainer = jrboost.BoostTrainer(trainInData, trainOutData, weights = trainWeights)
     if repCount == 1:
         predictor = trainer.train(boostParam)
     else:

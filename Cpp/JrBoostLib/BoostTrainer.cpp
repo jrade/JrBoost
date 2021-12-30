@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -279,9 +279,7 @@ shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t th
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = treeTrainer_->train(outData_, adjWeights, opt, threadCount);
-        PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
-        PROFILE::POP();
         basePredictors[k] = move(basePred);
     }
 
@@ -340,9 +338,7 @@ shared_ptr<Predictor> BoostTrainer::trainLogit_(const BoostOptions& opt, size_t 
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = treeTrainer_->train(adjOutData, adjWeights, opt, threadCount);
-        PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
-        PROFILE::POP();
         basePredictors[k] = move(basePred);
     }
 
@@ -402,9 +398,7 @@ shared_ptr<Predictor> BoostTrainer::trainRegularizedLogit_(const BoostOptions& o
             overflow_(opt);
 
         unique_ptr<BasePredictor> basePred = treeTrainer_->train(adjOutData, adjWeights, opt, threadCount);
-        PROFILE::PUSH(PROFILE::TREE_PREDICT);
         basePred->predict(inData_, eta, F);
-        PROFILE::POP();
         basePredictors[k] = move(basePred);
     }
 

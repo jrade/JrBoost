@@ -1,4 +1,4 @@
-#  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+#  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -22,7 +22,7 @@ trainParam = {
     'targetLossFun': jrboost.logLoss,
 
     'boostParamGrid': {
-        'iterationCount': [300],
+        'iterationCount': [300], #[100, 150, 200, 300, 500, 750, 1000],
         'eta':  [0.001, 0.0015, 0.002, 0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'usedVariableRatio': [0.5],
@@ -48,8 +48,8 @@ trainParam = {
 
 def main():
 
-    print(f'validation: {validationParam}\n')
-    print(f'train: {trainParam}\n')
+    print(f'validation: {jrboost.formatParam(validationParam)}\n')
+    print(f'train: {jrboost.formatParam(trainParam)}\n')
 
     if 'threadCount' in validationParam: jrboost.setThreadCount(validationParam['threadCount'])
     if 'parallelTree' in validationParam: jrboost.setParallelTree(validationParam['parallelTree'])
@@ -86,8 +86,14 @@ def main():
 
                 trainInData = inData[trainSamples, :]
                 trainOutData = outData[trainSamples]
-                predictor, medianBoostParam = jrboost.train(trainInData, trainOutData, trainParam)
-                print(formatBoostParam(medianBoostParam))
+
+                bestBoostParams = jrboost.optimizeHyperParam(trainInData, trainOutData, trainParam)
+                trainer = jrboost.BoostTrainer(trainInData, trainOutData)
+                predictor = jrboost.Predictor.createEnsemble(jrboost.parallelTrain(trainer, bestBoostParams))
+                print(formatBoostParam(jrboost.medianBoostParam(bestBoostParams)))
+
+                #predictor.save('foo.bin')
+                #predictor = jrboost.Predictor.load('foo.bin')
 
                 testInData = inData[testSamples, :]
                 predOutData[testSamples] = predictor.predict(testInData)
@@ -117,11 +123,12 @@ def loadData():
 
 
 def formatBoostParam(boostParam):
+    ic  = boostParam['iterationCount']
     eta  = boostParam['eta']
     md = boostParam.get('maxTreeDepth', 1)
     usr = boostParam['usedSampleRatio']
     mns = boostParam['minNodeSize']
-    return f'  eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  mns = {mns}'
+    return f'  ic = {ic}  eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  mns = {mns}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 

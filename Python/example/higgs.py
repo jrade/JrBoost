@@ -1,32 +1,39 @@
-#  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+#  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import datetime, gc, math, os, random, time
+import datetime, itertools, math, os, random, time
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import jrboost
-
-PROFILE = jrboost.PROFILE
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 param = {
     'threadCount': os.cpu_count() // 2,
-    'profile': True,
-    #'trainFraction': 0.1,
+    'dataDirPath': 'C:/Data/Kaggle/Higgs/',
+    'sampleRatio':  0.7,
+    'subsample': 1.0,
+    'repCount': 10,
+    'smoothThreshold': False
 }
 
 trainParam = {
-
-    'minimizeAlgorithm': jrboost.minimizePopulation,
+    'repCount': 1,
     'foldCount': 5,
-    #'lossFun': jrboost.negAucWeighted,
-    'lossFun': jrboost.LogLossWeighted(0.001),
-    #'lossFun': lambda a, b, c: -optimalCutoff(a, b, c)[1],
+    'targetLossFun': jrboost.LogLossWeighted(0.001),
+    'minimizeAlgorithm': jrboost.minimizePopulation,
+
+    'minimizeParam': {
+        'populationCount': 100,
+        'survivorCount': 50,
+        'cycleCount': 2,
+        'bestCount': 10,
+    },
 
     'boostParamGrid': {
-        #'minRelSampleWeight': [0.001],          #??????????????????????????+
+        #'minRelSampleWeight': [0.001],
         #'iterationCount': [1000],
         'iterationCount': [300],
         'eta':  [0.005, 0.007, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1],
@@ -34,219 +41,287 @@ trainParam = {
         'usedVariableRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
         'maxTreeDepth': [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         'minNodeSize': [100, 150, 200, 300, 500, 700, 1000],
-        #'pruneFactor': [0.0, 0.1, 0.2, 0.5],
+        #'selectVariablesByLevel': [True],
     },
-
-    'minimizeParam': {
-        'populationCount': 100,
-        'survivorCount': 50,
-        'cycleCount': 2,
-        'bestCount': 10,
-    }
 }
+
+outDirPath = None
+log = None
+iterationIndex = None
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 def main():
 
-    logFilePath = f'../Log OptTree {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.txt'
+    global outDirPath
+    timeStamp = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
+    subsample = param.get('subsample', None)
+    repCount = param.get('repCount', None)
+    outDirPath = f'../../Higgs output/Train C {timeStamp} {subsample} {repCount}/'
+
+    assert not os.path.exists(outDirPath)
+    os.makedirs(outDirPath)
+
+    threadCount = param['threadCount']
+    jrboost.setThreadCount(threadCount)
+
+    trainInDataFrame, trainOutDataSeries, trainWeightSeries, testInDataFrame = loadData()
+    trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
+    trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint8)
+    trainWeights = trainWeightSeries.to_numpy(dtype = np.float64)
+    testInData = testInDataFrame.to_numpy(dtype = np.float32)
+
+    logFilePath = outDirPath + f'Log.txt'
     with open(logFilePath, 'w', 1) as logFile:
-        def log(msg = '', end = '\n'): print(msg, end = end); logFile.write(msg + end)
+        def _log(msg = '', end = '\n'): print(msg, end = end); logFile.write(msg + end)
 
-        log(f'Parameters: {param}\n')
-        log(f'Training parameters:{trainParam}\n')
+        global log
+        log = _log
 
-        threadCount = param['threadCount']
-        profile = param['profile']
-        trainFraction = param.get('trainFraction', None)
+        log(jrboost.formatParam(param) + '\n')
+        log(jrboost.formatParam(trainParam) + '\n')
 
-        jrboost.setThreadCount(threadCount)
-
-        (trainInDataFrame, trainOutDataSeries, trainWeightSeries,
-            testInDataFrame, testOutDataSeries, testWeightSeries,
-            validationInDataFrame, validationOutDataSeries, validationWeightSeries
-        ) = loadData(trainFrac = trainFraction)
-
-        trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
-        trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint64)
-        trainWeights = trainWeightSeries.to_numpy(dtype = np.float64)
-
-        testInData = testInDataFrame.to_numpy(dtype = np.float32)
-        testOutData = testOutDataSeries.to_numpy(dtype = np.uint64)
-        testWeights = testWeightSeries.to_numpy(dtype = np.float64)
-
-        validationInData = validationInDataFrame.to_numpy(dtype = np.float32)
-        validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint64)
-        validationWeights = validationWeightSeries.to_numpy(dtype = np.float64)
- 
-        log(pd.DataFrame(
-            index = ['Train', 'Test', 'Validation'],
-            columns = ['Total', 'Neg.', 'Pos.', 'Pos. Ratio', 'Weight'],
-            data = [
-                [len(trainOutData), (1 - trainOutData).sum(), trainOutData.sum(), trainOutData.sum() / len(trainOutData), trainWeightSeries.sum()],
-                [len(testOutData), (1 - testOutData).sum(), testOutData.sum(), testOutData.sum() / len(testOutData), testWeightSeries.sum()],
-                [len(validationOutData), (1 - validationOutData).sum(), validationOutData.sum(), validationOutData.sum() / len(validationOutData), validationWeightSeries.sum()],
-            ]
-        ).to_string() + '\n')
-
-        # train predictor ..........................................................
-
-        t = -time.time()
-        if profile: PROFILE.START()
-
-        predictor, cutoff, msg = train(trainInData, trainOutData, trainWeights)
-        log(msg + '\n')
-
-        t += time.time()
-        if profile: log(PROFILE.STOP() + '\n')
-        log(formatTime(t) + '\n')
-
-        log(f'cutoff = {cutoff}\n')
-
-        # score ...................................................................
-
-        testPredData = predictor.predict(testInData)
-        score = amsScore(testOutData, testPredData, testWeights, cutoff)
-        log(f'test AMS = {score}')
-
-        validationPredData = predictor.predict(validationInData)
-        score = amsScore(validationOutData, validationPredData, validationWeights, cutoff)
-        log(f'validation AMS = {score}')
-
-        # create and save  .........................................................
-
-        testPredDataSeries = pd.Series(index = testOutDataSeries.index, data = testPredData)
-        validationPredDataSeries = pd.Series(index = validationOutDataSeries.index, data = validationPredData)
-        submissionPredDataSeries = pd.concat((testPredDataSeries, validationPredDataSeries)).sort_index()
-        submissionPredData = submissionPredDataSeries.to_numpy()
-        submissionPredRank = rank(submissionPredData) + 1
-        submissionPredClass = np.where(submissionPredData >= cutoff, 's', 'b')
-
-        submissionDataFrame = pd.DataFrame(
-            index = submissionPredDataSeries.index,
-            data = { 'RankOrder': submissionPredRank, 'Class': submissionPredClass, }
-        )
-        submissionDataFrame.to_csv('../../Higgs Submission.csv', sep = ',')
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def train(inData, outData, weights):
-
-    optimizeFun = trainParam['minimizeAlgorithm']
-
-    # determine the best hyperparameters
-    boostParamGrid = trainParam['boostParamGrid']
-    minimizeParam = trainParam['minimizeParam']
-    bestOptList = optimizeFun(
-        lambda optionList: evaluateBoostParam(
-            optionList, inData, outData, weights),
-        boostParamGrid,
-        minimizeParam
-    )
-    msg = formatOptions(bestOptList[0])
-
-    # determine optimal cutoff
-    predOutData = np.zeros((len(outData),))
-    foldCount = trainParam['foldCount']
-    folds = jrboost.stratifiedRandomFolds(outData, foldCount)
-    for trainSamples, testSamples in folds:
-
-        trainInData = inData[trainSamples, :]
-        trainOutData = outData[trainSamples]
-        trainWeights = weights[trainSamples]
-        trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
-        predictor = jrboost.EnsemblePredictor(jrboost.parallelTrain(trainer, bestOptList))
-
-        testInData = inData[testSamples, :]
-        predOutData[testSamples] = predictor.predict(testInData)
-
-    estCutoff, _ = optimalCutoff(outData, predOutData, weights)
-
-    # build predictor
-    trainer = jrboost.BoostTrainer(inData, outData, weights)
-    predictor = jrboost.EnsemblePredictor(jrboost.parallelTrain(trainer, bestOptList))
-
-    return predictor, estCutoff, msg
+        global iterationIndex
+        for iterationIndex in itertools.count():
+            log(f'----------------------- {iterationIndex} ---------------------------\n')
 
 
-def evaluateBoostParam(boostParamList, inData, outData, weights):
+            t = -time.time()
+            jrboost.PROFILE.START()
 
-    foldCount = trainParam['foldCount']
-    lossFun = trainParam['lossFun']
+            predictor, threshold = trainC(trainInData, trainOutData, trainWeights)
 
-    boostParamCount = len(boostParamList)
-    loss = np.zeros((boostParamCount,))
-    folds = jrboost.stratifiedRandomFolds(outData, foldCount)
-    for trainSamples, testSamples in folds:
+            t += time.time()
+            log(jrboost.PROFILE.STOP())
+            log(formatTime(t) + '\n')
 
-        print('.', end = '', flush = True)
+            # save result
 
-        trainInData = inData[trainSamples, :]
-        trainOutData = outData[trainSamples]
-        trainWeights = weights[trainSamples]
-        trainer = jrboost.BoostTrainer(trainInData, trainOutData, trainWeights)
+            predictorFilePath = outDirPath + f'Predictor {iterationIndex}.jrboost'
+            predictor.save(predictorFilePath)
 
-        testInData = inData[testSamples, :]
-        testOutData = outData[testSamples]
-        testWeights = weights[testSamples]
+            t = -time.time()
+            testPredData = predictor.predict(testInData);
+            t += time.time()
+            log(formatTime(t) + '\n')
 
-        loss += jrboost.parallelTrainAndEvalWeighted(trainer, boostParamList, testInData, testOutData, testWeights, lossFun)
-
-    print()
-
-    return loss
-
+            testPredDataSeries = pd.Series(
+                index = testInDataFrame.index,
+                data = testPredData
+            )
+            submissionDataFrame = pd.DataFrame({
+                'RankOrder': testPredDataSeries.rank(method = 'first', ascending = False).astype(int),
+                'Class': (testPredDataSeries >= threshold).map({False: 'b', True: 's'}) 
+            })
+            submissionFilePath = outDirPath + f'Submission {iterationIndex}.csv'
+            submissionDataFrame.to_csv(submissionFilePath, sep = ',')
 
 #-----------------------------------------------------------------------------------------------
 
-def loadData(trainFrac = None):
+def loadData():
 
-    dataFilePath = 'C:/Data/Higgs/atlas-higgs-challenge-2014-v2.csv'
-    dataFrame = pd.read_csv(dataFilePath, sep = ',', index_col = 0)
+    dataDirPath = param['dataDirPath']
 
-    trainSamples = dataFrame.index[dataFrame['KaggleSet'] == 't']
-    if trainFrac is not None and trainFrac != 1.0:
-        trainSampleCount = len(trainSamples)
-        trainSamples = pd.Index(random.sample(
-            trainSamples.tolist(),
-            round(trainFrac * trainSampleCount)
-        ))
-    testSamples = dataFrame.index[dataFrame['KaggleSet'] == 'b']
-    validationSamples = dataFrame.index[dataFrame['KaggleSet'] == 'v']
+    trainDataFilePath = dataDirPath + 'training.csv'
+    trainDataFrame = pd.read_csv(trainDataFilePath, sep = ',', index_col = 0)
+    trainDataFrame.index.name = 'EventId'
 
-    outDataSeries = pd.Series(index = dataFrame.index, data = 0)
-    outDataSeries[dataFrame['Label'] == 's'] = 1
-    weightSeries = dataFrame['KaggleWeight']
-    inDataFrame = dataFrame.drop(['Label', 'Weight', 'KaggleSet', 'KaggleWeight'], axis = 1)
+    trainOutDataSeries = trainDataFrame['Label'].map({'b': 0, 's': 1})
+    trainWeightSeries = trainDataFrame['Weight']
+    trainInDataFrame = trainDataFrame.drop(['Label', 'Weight'], axis = 1)
 
-    trainInDataFrame = inDataFrame.loc[trainSamples, :]
-    trainOutDataSeries = outDataSeries[trainSamples]
-    trainWeightSeries = weightSeries[trainSamples]
+    testDataFilePath = dataDirPath + 'test.csv'
+    testInDataFrame = pd.read_csv(testDataFilePath, sep = ',', index_col = 0)
+    testInDataFrame.index.name = 'EventId'
 
-    testInDataFrame = inDataFrame.loc[testSamples, :]
-    testOutDataSeries = outDataSeries[testSamples]
-    testWeightSeries = weightSeries[testSamples]
+    return trainInDataFrame, trainOutDataSeries, trainWeightSeries, testInDataFrame
 
-    validationInDataFrame = inDataFrame.loc[validationSamples, :]
-    validationOutDataSeries = outDataSeries[validationSamples]
-    validationWeightSeries = weightSeries[validationSamples]
-
-    return (
-        trainInDataFrame, trainOutDataSeries, trainWeightSeries,
-        testInDataFrame, testOutDataSeries, testWeightSeries,
-        validationInDataFrame, validationOutDataSeries, validationWeightSeries
-    )
-  
 #-----------------------------------------------------------------------------------------------------------------------
 
-def formatOptions(opt):
+def trainA(inData, outData, weights):
+
+    sampleRatio = param['sampleRatio']
+    inData1, outData1, weights1, inData2, outData2, weights2 = _splitData(inData, outData, weights, sampleRatio)
+    weights1 *= weights.sum() / weights1.sum()
+    weights2 *= weights.sum() / weights2.sum()
+
+    bestBoostParams = jrboost.optimizeHyperParam(inData1, outData1, trainParam, weights = weights1)
+    trainer = jrboost.BoostTrainer(inData1, outData1, weights = weights1)
+    predictor = jrboost.Predictor.createEnsemble(jrboost.parallelTrain(trainer, bestBoostParams))
+    log(formatBoostParams(bestBoostParams))
+
+    predData2 = predictor.predict(inData2)
+    threshold = optimalAmsThreshold(outData2, predData, weights2)
+    log(f'threshold = {threshold}')
+
+    return predictor, threshold
+
+
+def trainB(inData, outData, weights):
+
+    bestBoostParams = jrboost.optimizeHyperParam(inData, outData, trainParam, weights = weights)
+    log(formatBoostParams(bestBoostParams))
+
+    predictors = []
+    thresholds = []
+
+    for i, bp in enumerate(bestBoostParams):
+
+        sampleRatio = param['sampleRatio']
+        inData1, outData1, weights1, inData2, outData2, weights2 = _splitData(inData, outData, weights, sampleRatio)
+        weights1 *= weights.sum() / weights1.sum()
+        weights2 *= weights.sum() / weights2.sum()
+
+        trainer = jrboost.BoostTrainer(inData1, outData1, weights = weights1)
+        predictor = trainer.train(bp)
+        predData2 = predictor.predict(inData2)
+        threshold = optimalAmsThreshold(outData2, predData2, weights2, i)
+
+        predictors.append(predictor)
+        thresholds.append(threshold)
+
+    predictor = jrboost.Predictor.createEnsemble(predictors)
+    threshold = np.mean(thresholds)
+
+    log(f'threshold = {threshold}')
+
+    return predictor, threshold
+
+
+def trainC(inData, outData, weights):
+
+    subsample = param.get('subsample', 1.0)
+    repCount = param.get('repCount', 1)
+    sampleRatio = param['sampleRatio']
+
+    subInData, subOutData, subWeights = _subData(inData, outData, weights, subsample)
+    bestBoostParams = jrboost.optimizeHyperParam(subInData, subOutData, trainParam, weights = subWeights)
+    log(formatBoostParams(bestBoostParams))
+
+    outerPredictors = []
+    thresholds = []
+
+    for i in range(repCount):
+
+        inData1, outData1, weights1, inData2, outData2, weights2 = _splitData(inData, outData, weights, sampleRatio)
+        weights1 *= weights.sum() / weights1.sum()
+        weights2 *= weights.sum() / weights2.sum()
+
+        subInData1, subOutData1, subWeights1 = _subData(inData1, outData1, weights1, subsample)
+        trainer = jrboost.BoostTrainer(subInData1, subOutData1, weights = subWeights1)
+        innerPredictors = jrboost.parallelTrain(trainer, bestBoostParams)
+        innerPredictor = jrboost.Predictor.createEnsemble(innerPredictors)
+        outerPredictors.append(innerPredictor)
+
+        predData2 = innerPredictor.predict(inData2)
+        threshold = optimalAmsThreshold(outData2, predData2, weights2, i)
+        thresholds.append(threshold)
+
+    tmp = list(zip(outerPredictors, thresholds))
+    tmp.sort(key = lambda x: x[1])
+    trim = (repCount + 5) // 10
+    tmp = tmp[trim: -trim]
+    outerPredictors, thresholds = zip(*tmp)
+
+    outerPredictor = jrboost.Predictor.createEnsemble(outerPredictors)
+    threshold = np.mean(thresholds)
+    log(f'threshold = {threshold}\n')
+
+    return outerPredictor, threshold
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def _subData(inData, outData,  weights, ratio):
+    if ratio == 1.0:
+       return inData, outData, weights
+    samples, _ = jrboost.stratifiedRandomSplit(outData, ratio)
+    return inData[samples, :], outData[samples], weights[samples]
+
+def _splitData(inData, outData,  weights, ratio):
+    samples1, samples2 = jrboost.stratifiedRandomSplit(outData, ratio)
+    return inData[samples1, :], outData[samples1], weights[samples1], inData[samples2, :], outData[samples2], weights[samples2]
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def optimalAmsThreshold(outData, predData, weights, plotIndex = None):
+
+    i = np.flip(np.argsort(predData))
+    outData = outData[i]
+    predData = predData[i]
+    weights = weights[i]
+
+    truePos = 0.0
+    falsePos = 0.0
+    smoothTruePos = 0.0
+    smoothFalsePos = 0.0
+
+    thresholds = []
+    scores = []
+    smoothScores = []
+
+    sampleCount = len(outData)
+
+    for i in range(0, sampleCount - 1):
+
+        outValue = outData[i]
+        predValue = predData[i]
+        weight = weights[i]
+
+        truePos += outValue * weight
+        falsePos += (1.0 - outValue) * weight
+        smoothTruePos += predValue * weight
+        smoothFalsePos += (1.0 - predValue) * weight
+
+        nextPredValue = predData[i + 1]
+        if predValue == nextPredValue: continue
+
+        thresholds.append((predValue + nextPredValue) / 2.0)
+        scores.append(_amsScore(truePos, falsePos))
+        smoothScores.append(_amsScore(smoothTruePos, smoothFalsePos))
+
+    j = np.argmax(scores)
+    threshold = thresholds[j]
+    j = np.argmax(smoothScores)
+    smoothThreshold = thresholds[j]
+
+    plt.clf()
+    plt.scatter(x = thresholds, y = scores, s = 1, c = 'r')
+    plt.scatter(x = thresholds, y = smoothScores, s = 1, c = 'k')
+    plt.xlim(0.0, 0.1)
+    plt.ylim(0.0, 5.0)
+    plt.vlines(threshold, 0.0, 5.0, 'brown')
+    plt.vlines(smoothThreshold, 0.0, 5.0, 'gray')
+    plt.show(block = False)
+    plt.pause(1.0)
+    if plotIndex is None:
+        plotFilePath = outDirPath + f'Plot {iterationIndex}.png'
+    else:
+        plotFilePath = outDirPath + f'Plot {iterationIndex}-{plotIndex}.png'
+    plt.savefig(plotFilePath)
+
+    return smoothThreshold if param.get('smoothThreshold', False) else threshold
+
+
+def _amsScore(s, b):
+    b_r = 10.0
+    return math.sqrt( 2.0 * (
+		(s + b + b_r) 
+        * math.log (1.0 + s / (b + b_r)) 
+        - s
+	))
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def formatBoostParams(boostParams):
+    return formatBoostParam(jrboost.medianBoostParam(boostParams))
+
+def formatBoostParam(opt):
     eta = opt['eta']
-    usr = opt.get('usedSampleRatio', 1.0)
-    uvr = opt.get('usedVariableRatio', 1.0)
-    mns = opt.get('minNodeSize', 1)
-    md = opt.get('maxTreeDepth', 1)
-    pf = opt.get('pruneFactor', 0.0)
-    return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}  pf = {pf}'
+    usr = opt['usedSampleRatio']
+    uvr = opt['usedVariableRatio']
+    mns = opt['minNodeSize']
+    md = opt['maxTreeDepth']
+    return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}'
 
 def formatScore(score, precision = 4):
     return '(' + ', '.join((f'{x:.{precision}f}' for x in score)) + ')'
@@ -261,66 +336,4 @@ def formatTime(t):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def rank(data):
-    temp = data.argsort()
-    ranks1 = np.empty_like(temp)
-    ranks1[temp] = np.arange(len(temp))
-    return ranks1
-
-#-----------------------------------------------------------------------------------------------------------------------
-
-def _amsScoreImpl(s, b):
-
-    b_r = 10.0
-    return math.sqrt( 2.0 * (
-		(s + b + b_r) 
-        * math.log (1.0 + s / (b + b_r)) 
-        - s
-	))
-
-
-def amsScore(outData, predData, weights, cutoff):
-    truePos = np.sum(outData * (predData >= cutoff) * weights)
-    trueNeg = np.sum((1 - outData) * (predData >= cutoff) * weights)
-    return _amsScoreImpl(truePos, trueNeg)
-
-
-def optimalCutoff(outData, predData, weights):
-
-    truePos = 0.0
-    falsePos = 0.0
-    a = sorted(list(zip(outData, predData, weights)), key = lambda x: -x[1])
-
-    bestScore = _amsScoreImpl(truePos, falsePos)
-    bestI = -1
-
-    for i, (outValue, _, weight) in enumerate(a):
-
-        if outValue:
-            truePos += weight
-        else:
-            falsePos += weight
-
-        score = _amsScoreImpl(truePos, falsePos)
-        if score <= bestScore: continue
-
-        if i != len(a) - 1 and a[i][1] == a[i + 1][1]: continue
-
-        bestScore = score
-        bestI = i
-   
-    if bestI == -1:
-        bestCutoff = 1.0
-    elif bestI == len(a) - 1:
-        bestCutoff = 0.0
-    else:
-        bestCutoff = (a[bestI][1] + a[bestI + 1][1]) / 2.0 
-
-    return bestCutoff, bestScore
-
-#---------------------------------------------------------------------------------------------
-
-while True:
-    main()
-    print()
-
+main()

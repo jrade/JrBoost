@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -83,7 +83,6 @@ vector<TreeNode> reindexTree(const TreeNode* sourceRoot, const vector<size_t>& n
     return targetNodes;
 }
 
-
 void predict(const TreeNode* root, CRefXXfc inData, double c, RefXd outData)
 {
     const size_t sampleCount = inData.rows();
@@ -118,6 +117,7 @@ void variableWeights(const TreeNode* node, double c, RefXd weights)
     variableWeights(node->rightChild, c, weights);
 }
 
+//......................................................................................................................
 
 void saveTreeImpl_(const TreeNode* node, ostream& os)
 {

@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -15,9 +15,7 @@ public:
         T_RANK,
         F_RANK,
         BOOST_TRAIN,
-        BOOST_PREDICT,
         TREE_TRAIN,
-        TREE_PREDICT,
         PACK_DATA,
         USED_VARIABLES,
         INIT_TREE,
@@ -27,6 +25,7 @@ public:
         INIT_ORDERED_SAMPLES,
         UPDATE_ORDERED_SAMPLES,
         FIND_BEST_SPLITS,
+        PREDICT,
         LOSS,
         INNER_THREAD_SYNCH,
         OUTER_THREAD_SYNCH,
@@ -64,9 +63,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
        "t-rank",
        "F-rank",
        "  boost train",
-       "  boost predict",
        "  tree train",
-       "  tree predict",
        "  pack data",
        "  used variables",
        "  init tree",
@@ -76,6 +73,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
        "    init ord. samples",
        "    update ord. samples",
        "    find best splits",
+       "  predict",
        "  loss",
        "inner thread synch",
        "outer thread synch",
