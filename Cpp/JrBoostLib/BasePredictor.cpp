@@ -16,8 +16,8 @@ void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
     PROFILE::PUSH(PROFILE::ZERO);   // calibrate the profiling
     PROFILE::SWITCH(PROFILE::PREDICT);
 
-    if (currentInterruptHandler != nullptr)
-        currentInterruptHandler->check();
+    if (::currentInterruptHandler != nullptr)
+        ::currentInterruptHandler->check();
     if (abortThreads)
         throw ThreadAborted();
 

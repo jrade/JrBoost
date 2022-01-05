@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -17,16 +17,19 @@ public:
     double gamma() const { return gamma_; }
     size_t iterationCount() const { return iterationCount_; }
     double eta() const { return eta_; }
+    double cycle() const { return cycle_; }
     bool fastExp() const { return fastExp_; }
 
     void setGamma(double gamma);
     void setIterationCount(size_t n);
     void setEta(double eta);
+    void setCycle(double c);
     void setFastExp(bool b);
 
 private:
     double gamma_{1.0};
     size_t iterationCount_{1000};
     double eta_{0.1};
+    double cycle_{0.0};
     bool fastExp_{true};
 };

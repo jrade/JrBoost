@@ -18,8 +18,8 @@ ArrayXd Predictor::predict(CRefXXfc inData, size_t threadCount) const
 {
     PROFILE::PUSH(PROFILE::PREDICT);
 
-    if (currentInterruptHandler != nullptr)
-        currentInterruptHandler->check();
+    if (::currentInterruptHandler != nullptr)
+        ::currentInterruptHandler->check();
     if (abortThreads)
         throw ThreadAborted();
 

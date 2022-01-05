@@ -113,6 +113,7 @@ shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t th
     const size_t sampleCount = sampleCount_;
     const size_t iterationCount = opt.iterationCount();
     const double eta = opt.eta();
+    const double cycle = opt.cycle();
 
     ArrayXd adjWeights(sampleCount);
     ArrayXd F = ArrayXd::Constant(sampleCount, globaLogOddsRatio_ / 2.0);
@@ -122,9 +123,12 @@ shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t th
     double* pAdjWeights = std::data(adjWeights);
     double* pF = std::data(F);
 
-    vector<unique_ptr<BasePredictor>> basePredictors(iterationCount);
+    vector<unique_ptr<BasePredictor>> basePredictors;
+    basePredictors.reserve(iterationCount);
 
-    for (size_t k = 0; k != iterationCount; ++k) {
+    size_t k0 = 0;
+    double a = std::uniform_real_distribution<double>(0.0, 1.0)(::theRne);
+    for (size_t k1 = 0; k1 - k0 != iterationCount; ++k1) {
 
         double adjWeightSum = 0.0;
 
@@ -280,8 +284,17 @@ shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t th
 
         unique_ptr<BasePredictor> basePred = treeTrainer_->train(outData_, adjWeights, opt, threadCount);
         basePred->predict(inData_, eta, F);
-        basePredictors[k] = move(basePred);
+        basePredictors.push_back(move(basePred));
+
+        a += cycle;
+        if (a >= 1.0) {
+            basePredictors[k0]->predict(inData_, -eta, F);
+            ++k0;
+            a -= 1.0;
+        }
     }
+
+    basePredictors.erase(begin(basePredictors), begin(basePredictors) + k0);
 
     return BoostPredictor::createInstance(globaLogOddsRatio_, 2 * eta, move(basePredictors));
 }

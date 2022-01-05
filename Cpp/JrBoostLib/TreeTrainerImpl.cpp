@@ -198,7 +198,7 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
         threadCount = omp_get_max_threads();
     threadCount = std::min<size_t>(threadCount, omp_get_max_threads());
     threadCount = std::min<size_t>(threadCount, usedVariableCount);
-    const size_t threadShift = std::uniform_int_distribution<size_t>(0, threadCount - 1)(theRne);
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, threadCount - 1)(::theRne);
 
     for (size_t d = 0; d != options.maxTreeDepth(); ++d) {
 
@@ -359,7 +359,7 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(const BaseOptions& optio
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
-    RandomNumberEngine& rne = theRne;
+    RandomNumberEngine& rne = ::theRne;
 
     size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
     size_t usedVariableCount = usedVariableCount_(options);
@@ -414,7 +414,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
-    RandomNumberEngine& rne = theRne;
+    RandomNumberEngine& rne = ::theRne;
 
     size_t sampleCount = sampleCount_;
     t2.sampleStatus.resize(sampleCount);

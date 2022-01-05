@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -50,6 +50,8 @@ BoostOptions tcBO::fromPython_(const PyBoostOptions_& pyOpt)
                 opt.setIterationCount(std::get<size_t>(value));
             else if (key == "eta")
                 opt.setEta(std::get<double>(value));
+            else if (key == "cycle")
+                opt.setCycle(std::get<double>(value));
             else if (key == "fastExp")
                 opt.setFastExp(std::get<bool>(value));
             else if (key == "forestSize")
@@ -117,6 +119,7 @@ tcBO::PyBoostOptions_ tcBO::toPython_(const BoostOptions& opt)
     pyOpt["gamma"] = opt.gamma();
     pyOpt["iterationCount"] = opt.iterationCount();
     pyOpt["eta"] = opt.eta();
+    pyOpt["cycle"] = opt.cycle();
     pyOpt["fastExp"] = opt.fastExp();
     pyOpt["forestSize"] = opt.forestSize();
     pyOpt["maxTreeDepth"] = opt.maxTreeDepth();

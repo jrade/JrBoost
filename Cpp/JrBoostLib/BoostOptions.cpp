@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -22,4 +22,12 @@ void BoostOptions::setEta(double eta)
         throw std::invalid_argument("eta must be positive.");
     eta_ = eta;
 }
+
+void BoostOptions::setCycle(double c)
+{
+    if (!(c >= 0.0 && c < 1.0))   // carefully written to trap NaN
+        throw std::invalid_argument("cycle must lie in the interval [0.0, 1.0).");
+    cycle_ = c;
+}
+
 void BoostOptions::setFastExp(bool b) { fastExp_ = b; }

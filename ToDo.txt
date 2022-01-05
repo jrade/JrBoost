@@ -1,21 +1,28 @@
 unify weighted and non-weighted functions
 	loss
-	patrallel train
+	parallel train
 	use keyword only arguments for the weights
+	simplify _util._trainAndEval
+
+just keep the simplest jrboost train function as a standard function
+	use this in Iris and Higgs
+		kan the standard optimize nyperparams function be used any other way?
+	have ALL and AML use their own train functions
+	review ALL and AML code
 
 review all functions with parallelism, esp. nested parallelism
 
-get rid of the jrboost train functions
-	review ALL and AML code
-
 improved Higgs example
 
-test smart boost where we add two(?) predictors, take away one and repeat
-	use deque instead of std vector
-		generic storage
-	do a quick implementation where we replace the predictors att the beginning by zero predictors
+..................................................................................
 
-do a quick test test compiling with Clang for Visual Studio
+test and evaluate cycle option
+	run Leukemia 20x10x5 with and w/o cycling
+
+test minNodeWeight again
+	min¡bsNodeWeight and minRelNodeWeight???
+
+test compiling with Clang for Visual Studio
 	devblogs.microsoft.com/cppblog/clang-llvm-support-in-visual-studio/
 	do we need the Intel Intrinsics to parallellize fastExp()?  Probably not
 
@@ -35,11 +42,15 @@ report:
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
 
+............................................................................
+
+BART
+
+other ways of regularizing logit boost
 
 .............................................................................
 		
 major tasks:
-	BART
 	release 0.1
 	documentation of the different boost methods, incuding regularized logit boost
 	improved Higgs example (see "Higgs Notes.txt")
@@ -94,3 +105,4 @@ keep or ditch?
 	saveMemory option
 	stratifiedSamples option
 	support for loading old file format versions
+	cycle options

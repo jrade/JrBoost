@@ -48,7 +48,7 @@ vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const v
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
-    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(::theRne);
 
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
@@ -121,7 +121,7 @@ ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boos
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
-    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(::theRne);
 
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
@@ -188,7 +188,7 @@ ArrayXd parallelTrainAndEval(
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
-    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(::theRne);
 
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)
@@ -256,7 +256,7 @@ ArrayXd parallelTrainAndEvalWeighted(
     if (outerThreadCount > optCount)
         outerThreadCount = optCount;
 
-    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(theRne);
+    const size_t threadShift = std::uniform_int_distribution<size_t>(0, outerThreadCount - 1)(::theRne);
 
     vector<size_t> innerThreadCounts(outerThreadCount);
     if (::globParallelTree)

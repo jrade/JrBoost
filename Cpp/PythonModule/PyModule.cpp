@@ -19,7 +19,7 @@ PYBIND11_MODULE(_jrboost, mod)
 {
     namespace py = pybind11;
 
-    currentInterruptHandler = &thePyInterruptHandler;
+    ::currentInterruptHandler = &thePyInterruptHandler;
 
     py::register_exception_translator([](std::exception_ptr p) {
         try {
