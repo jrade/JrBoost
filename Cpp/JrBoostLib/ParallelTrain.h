@@ -1,4 +1,4 @@
-//  Copyright 2021 Johan Rade <johan.rade@gmail.com>.
+//  Copyright 2022 Johan Rade <johan.rade@gmail.com>.
 //  Distributed under the MIT license.
 //  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
@@ -14,9 +14,6 @@ vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const v
 ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData);
 
 ArrayXd parallelTrainAndEval(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
-    function<double(CRefXs, CRefXd)> lossFun);
-
-ArrayXd parallelTrainAndEvalWeighted(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
-    CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun);
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
+    function<double(CRefXs, CRefXd, optional<CRefXd>)> lossFun, CRefXXfc testInData, CRefXs testOutData,
+    optional<CRefXd> testWeights = std::nullopt);

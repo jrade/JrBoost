@@ -19,12 +19,11 @@ trainParam = {
     'minimizeAlgorithm': jrboost.minimizePopulation,
     'repetionCount': 1,
     'foldCount': 3,
-    'targetLossFun': jrboost.logLoss,
+    'targetLossFun': jrboost.LogLoss(0.001),
 
     'boostParamGrid': {
-        'iterationCount': [400], #[100, 150, 200, 300, 500, 750, 1000],
+        'iterationCount': [300], #[100, 150, 200, 300, 500, 750, 1000],
         'eta':  [0.001, 0.0015, 0.002, 0.003, 0.005, 0.007, 0.01, 0.015, 0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 0.7, 1.0],
-        'cycle':  [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
         'usedSampleRatio': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
         'usedVariableRatio': [0.5],
         'minNodeSize': [1, 2, 3],
@@ -126,11 +125,10 @@ def loadData():
 def formatBoostParam(boostParam):
     ic  = boostParam['iterationCount']
     eta  = boostParam['eta']
-    cc  = boostParam['cycle']
     md = boostParam.get('maxTreeDepth', 1)
     usr = boostParam['usedSampleRatio']
     mns = boostParam['minNodeSize']
-    return f'  ic = {ic}  eta = {eta:.4f}  cc = {cc:.1f}  md = {md}  usr = {usr:.1f}  mns = {mns}'
+    return f'  ic = {ic}  eta = {eta:.4f}  md = {md}  usr = {usr:.1f}  mns = {mns}'
 
 #-----------------------------------------------------------------------------------------------------------------------
 

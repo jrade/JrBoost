@@ -161,9 +161,10 @@ ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boos
 
 //----------------------------------------------------------------------------------------------------------------------
 
+/*
 ArrayXd parallelTrainAndEval(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
-    function<double(CRefXs, CRefXd)> lossFun)
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt, function<double(CRefXs, CRefXd)> lossFun,
+    CRefXXfc testInData, CRefXs testOutData)
 {
     size_t optCount = size(opt);
 
@@ -218,9 +219,7 @@ ArrayXd parallelTrainAndEval(
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData, innerThreadCount);
-            PROFILE::SWITCH(PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData);
-            PROFILE::SWITCH(PROFILE::OUTER_THREAD_SYNCH);
         }
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL
@@ -228,10 +227,12 @@ ArrayXd parallelTrainAndEval(
 
     return scores;
 }
+*/
 
-ArrayXd parallelTrainAndEvalWeighted(
-    const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData, CRefXs testOutData,
-    CRefXd testWeights, function<double(CRefXs, CRefXd, CRefXd)> lossFun)
+ArrayXd parallelTrainAndEval(
+    const BoostTrainer& trainer, const vector<BoostOptions>& opt,
+    function<double(CRefXs, CRefXd, optional<CRefXd>)> lossFun, CRefXXfc testInData, CRefXs testOutData,
+    optional<CRefXd> testWeights)
 {
     size_t optCount = size(opt);
 
@@ -286,9 +287,7 @@ ArrayXd parallelTrainAndEvalWeighted(
             size_t optIndex = optIndicesSortedByCost[sortedOptIndex];
             shared_ptr<Predictor> pred = trainer.train(opt[optIndex], innerThreadCount);
             ArrayXd predData = pred->predict(testInData, innerThreadCount);
-            PROFILE::SWITCH(PROFILE::LOSS);
             scores(optIndex) = lossFun(testOutData, predData, testWeights);
-            PROFILE::SWITCH(PROFILE::OUTER_THREAD_SYNCH);
         }
     }
     END_EXCEPTION_SAFE_OMP_PARALLEL

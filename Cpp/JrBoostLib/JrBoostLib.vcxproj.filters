@@ -114,6 +114,9 @@
     <ClCompile Include="TreeTrainer.cpp">
       <Filter>Base Predictor</Filter>
     </ClCompile>
+    <ClCompile Include="Loss.cpp">
+      <Filter>Extra</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Profiling">

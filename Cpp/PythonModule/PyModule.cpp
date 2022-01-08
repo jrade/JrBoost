@@ -63,25 +63,18 @@ PYBIND11_MODULE(_jrboost, mod)
 
     py::class_<BoostTrainer>{mod, "BoostTrainer"}
         .def(
-            py::init<ArrayXXfc, ArrayXu8, optional<ArrayXd>, optional<ArrayXu8>>(),
-            py::arg(),
-            py::arg(),
-            py::kw_only(),
-            py::arg("weights") = optional<ArrayXd>(),
-            py::arg("strata") = optional<ArrayXu8>())
+            py::init<ArrayXXfc, ArrayXu8, optional<ArrayXd>, optional<ArrayXu8>>(), py::arg(), py::arg(), py::kw_only(),
+            py::arg("weights") = std::nullopt, py::arg("strata") = std::nullopt)
         .def("train", [](const BoostTrainer& trainer, const BoostOptions& opt) { return trainer.train(opt); })
         .def("__repr__", [](const BoostTrainer&) { return "<jrboost.BoostTrainer>"; });
 
     mod.def("getDefaultBoostParam", []() { return BoostOptions(); });
 
-    mod.def("parallelTrain", &parallelTrain, py::arg(), py::arg());
-    mod.def("parallelTrainAndPredict", &parallelTrainAndPredict, py::arg(), py::arg(), py::arg());
+    mod.def("parallelTrain", &parallelTrain);
+    mod.def("parallelTrainAndPredict", &parallelTrainAndPredict);
     mod.def(
         "parallelTrainAndEval", &parallelTrainAndEval, py::arg(), py::arg(), py::arg(), py::arg(), py::arg(),
-        py::call_guard<py::gil_scoped_release>());
-    mod.def(
-        "parallelTrainAndEvalWeighted", &parallelTrainAndEvalWeighted, py::arg(), py::arg(), py::arg(), py::arg(),
-        py::arg(), py::arg(), py::call_guard<py::gil_scoped_release>());
+        py::arg("weights") = std::nullopt, py::call_guard<py::gil_scoped_release>());
 
     // parallelTrainAndEval() makes callbacks from multi-threaded code.
     // These callbacks may be to Python functions that need to acquire the GIL.
@@ -90,26 +83,15 @@ PYBIND11_MODULE(_jrboost, mod)
 
     // Loss functions
 
-    mod.def("linLoss", &linLoss);
-    mod.def("linLossWeighted", &linLossWeighted);
-    mod.def("logLoss", &logLoss, py::arg(), py::arg(), py::arg("gamma") = 0.001);
-    mod.def("logLossWeighted", &logLossWeighted, py::arg(), py::arg(), py::arg(), py::arg("gamma") = 0.001);
-    mod.def("auc", &auc);
-    mod.def("aucWeighted", &aucWeighted);
-    mod.def("aoc", &aoc);
-    mod.def("aocWeighted", &aocWeighted);
-    mod.def("negAuc", &negAuc);
-    mod.def("negAucWeighted", &negAucWeighted);
+    mod.def("linLoss", &linLoss, py::arg(), py::arg(), py::arg("weights") = std::nullopt);
+    mod.def("auc", &auc, py::arg(), py::arg(), py::arg("weights") = std::nullopt);
+    mod.def("aoc", &aoc, py::arg(), py::arg(), py::arg("weights") = std::nullopt);
+    mod.def("negAuc", &negAuc, py::arg(), py::arg(), py::arg("weights") = std::nullopt);
 
     py::class_<LogLoss>{mod, "LogLoss"}
         .def(py::init<double>())
-        .def("__call__", &LogLoss::operator())
+        .def("__call__", &LogLoss::operator(), py::arg(), py::arg(), py::arg("weights") = std::nullopt)
         .def_property_readonly("name", &LogLoss::name);
-
-    py::class_<LogLossWeighted>{mod, "LogLossWeighted"}
-        .def(py::init<double>())
-        .def("__call__", &LogLossWeighted::operator())
-        .def_property_readonly("name", &LogLossWeighted::name);
 
 
     // Statistical tests
@@ -119,38 +101,15 @@ PYBIND11_MODULE(_jrboost, mod)
         .value("Down", TestDirection::Down)
         .value("Any", TestDirection::Any);
 
-    mod.def(
-        "tStatistic",
-        &tStatistic,
-        py::arg().noconvert(),
-        py::arg(),
-        py::kw_only(),
-        py::arg("samples") = optional<vector<size_t>>());
+    mod.def("tStatistic", &tStatistic, py::arg().noconvert(), py::arg(), py::arg("samples") = std::nullopt);
 
     mod.def(
-        "tTestRank",
-        &tTestRank,
-        py::arg().noconvert(),
-        py::arg(),
-        py::kw_only(),
-        py::arg("samples") = optional<vector<size_t>>(),
+        "tTestRank", &tTestRank, py::arg().noconvert(), py::arg(), py::arg("samples") = std::nullopt,
         py::arg("direction") = TestDirection::Any);
 
-    mod.def(
-        "fStatistic",
-        &fStatistic,
-        py::arg().noconvert(),
-        py::arg(),
-        py::kw_only(),
-        py::arg("samples") = optional<vector<size_t>>());
+    mod.def("fStatistic", &fStatistic, py::arg().noconvert(), py::arg(), py::arg("samples") = std::nullopt);
 
-    mod.def(
-        "fTestRank",
-        &fTestRank,
-        py::arg().noconvert(),
-        py::arg(),
-        py::kw_only(),
-        py::arg("samples") = optional<vector<size_t>>());
+    mod.def("fTestRank", &fTestRank, py::arg().noconvert(), py::arg(), py::arg("samples") = std::nullopt);
 
 
     // Other

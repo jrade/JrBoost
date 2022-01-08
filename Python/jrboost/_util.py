@@ -200,11 +200,8 @@ def _trainAndEval(boostParams, inData, outData, param, samples, weights, strata)
         testOutData = outData[testSamples]
         testWeights = None if weights is None else weights[testSamples]
 
-        if weights is None:
-            loss += jrboost.parallelTrainAndEval(trainer, boostParams, testInData, testOutData, targetLossFun)
-        else:
-            loss += jrboost.parallelTrainAndEvalWeighted(
-                trainer, boostParams, testInData, testOutData, testWeights, targetLossFun)
+        loss += jrboost.parallelTrainAndEval(
+            trainer, boostParams, targetLossFun, testInData, testOutData, weights = testWeights)
 
     return loss
 

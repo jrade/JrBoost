@@ -14,7 +14,7 @@ param = {
     'threadCount': os.cpu_count() // 2,
     'dataDirPath': 'C:/Data/Kaggle/Higgs/',
     'sampleRatio':  0.7,
-    'subsample': 0.1,
+    'subsample': 0.01,
     'repCount': 10,
     'smoothThreshold': False,
 }
@@ -22,7 +22,7 @@ param = {
 trainParam = {
     'repCount': 1,
     'foldCount': 5,
-    'targetLossFun': jrboost.LogLossWeighted(0.001),
+    'targetLossFun': jrboost.LogLoss(0.001),
     'minimizeAlgorithm': jrboost.minimizePopulation,
 
     'minimizeParam': {

@@ -110,6 +110,7 @@
     <ClCompile Include="BoostOptions.cpp" />
     <ClCompile Include="BoostTrainer.cpp" />
     <ClCompile Include="FTest.cpp" />
+    <ClCompile Include="Loss.cpp" />
     <ClCompile Include="TreeNodeTrainer.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">
