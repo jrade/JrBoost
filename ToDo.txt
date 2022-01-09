@@ -1,6 +1,8 @@
 
-review use of ArrayXs
-	use for lists of samples or not?
+use ArrayXs for lists of samples in the C++ code
+	use numpy array for lists of samples in the Python code
+	have random split and random folds functions return numpy arrays
+	check the element type of the these numpy arrays
 
 just keep the simplest jrboost train function as a standard function
 	use this in Iris and Higgs
@@ -12,7 +14,7 @@ just keep the simplest jrboost train function as a standard function
 	ditch jrboost._preprocess_and_train
 	clean up jrbooost._init
 
-make sure ALL and MLL use uint8 for out data
+make sure MLL uses uint8 for out data
 
 review all functions with parallelism, esp. nested parallelism
 
@@ -31,17 +33,12 @@ test compiling with Clang for Visual Studio
 	do we need the Intel Intrinsics to parallellize fastExp()?  Probably not
 
 report:
-
 	MSVS autovectorizer:
 		does not handle reinterpret cast
 		if they fix this, then ditch all the Intel intrinsics code
-
 	pybind11:
-		seems arguments of types such as optional<reference_wrapper<vector<int>>> are not supported
-			that would be useful for passing sample lists to t-test and F-test
 		seem py::kw_only() does not interact well with callbacks
 			insert py::kw_only() in LogLoss::operator() and run Iris.py
-
 	Eigen:
 		why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 		why does std::data() not work here? (see Select.cpp)
