@@ -78,7 +78,7 @@ def main():
         for label in labels:
             print(label)
 
-            outData = outDataFrame[label].to_numpy(dtype = np.uint64)
+            outData = outDataFrame[label].to_numpy(dtype = np.uint8)
             predOutData = np.empty((len(samples),))
 
             folds = jrboost.stratifiedRandomFolds(outData, outerFoldCount)

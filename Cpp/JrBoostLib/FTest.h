@@ -5,6 +5,6 @@
 #pragma once
 
 
-ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples = std::nullopt);
+ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples = std::nullopt);
 
-ArrayXs fTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples = std::nullopt);
+ArrayXs fTestRank(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples = std::nullopt);

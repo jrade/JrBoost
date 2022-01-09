@@ -7,7 +7,7 @@
 #include "Loss.h"
 
 
-double linLoss(CRefXs outData, CRefXd predData, optional<CRefXd> optWeights)
+double linLoss(CRefXu8 outData, CRefXd predData, optional<CRefXd> optWeights)
 {
     PROFILE::PUSH(PROFILE::LOSS);
 
@@ -29,12 +29,12 @@ double linLoss(CRefXs outData, CRefXd predData, optional<CRefXd> optWeights)
         if (!(weights > 0.0).all())
             throw std::invalid_argument("Weights has non-positive values.");
 
-        const double falsePos = (weights * (1 - outData).cast<double>() * predData).sum();
+        const double falsePos = (weights * (1.0 - outData.cast<double>()) * predData).sum();
         const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData)).sum();
         loss = falsePos + falseNeg;
     }
     else {
-        const double falsePos = ((1 - outData).cast<double>() * predData).sum();
+        const double falsePos = ((1.0 - outData.cast<double>()) * predData).sum();
         const double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
         loss = falsePos + falseNeg;
     }
@@ -45,7 +45,7 @@ double linLoss(CRefXs outData, CRefXd predData, optional<CRefXd> optWeights)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-double logLoss_(CRefXs outData, CRefXd predData, optional<CRefXd> optWeights, double gamma)
+double logLoss_(CRefXu8 outData, CRefXd predData, optional<CRefXd> optWeights, double gamma)
 {
     PROFILE::PUSH(PROFILE::LOSS);
 
@@ -70,12 +70,12 @@ double logLoss_(CRefXs outData, CRefXd predData, optional<CRefXd> optWeights, do
             throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
 
         const double falsePos
-            = (weights * (1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
+            = (weights * (1.0 - outData.cast<double>()) * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
         const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
         loss = falsePos + falseNeg;
     }
     else {
-        const double falsePos = ((1 - outData).cast<double>() * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
+        const double falsePos = ((1.0 - outData.cast<double>()) * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
         const double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
         loss = falsePos + falseNeg;
     }
@@ -92,7 +92,7 @@ LogLoss::LogLoss(double gamma) : gamma_(gamma)
         throw std::invalid_argument("gamma must lie in the interval (0.0, 1.0].");
 }
 
-double LogLoss::operator()(CRefXs outData, CRefXd predData, optional<CRefXd> weights) const
+double LogLoss::operator()(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights) const
 {
     return logLoss_(outData, predData, weights, gamma_);
 }
@@ -106,10 +106,10 @@ string LogLoss::name() const
 
 //----------------------------------------------------------------------------------------------------------------------
 
-double aucNoWeights_(CRefXs outData, CRefXd predData);
-double aucWeights_(CRefXs outData, CRefXd predData, CRefXd weights);
+double aucNoWeights_(CRefXu8 outData, CRefXd predData);
+double aucWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights);
 
-double auc(CRefXs outData, CRefXd predData, optional<CRefXd> weights)
+double auc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights)
 {
     PROFILE::PUSH(PROFILE::LOSS);
 
@@ -130,10 +130,10 @@ double auc(CRefXs outData, CRefXd predData, optional<CRefXd> weights)
     return gain;
 }
 
-double aucNoWeights_(CRefXs outData, CRefXd predData)
+double aucNoWeights_(CRefXu8 outData, CRefXd predData)
 {
     const size_t sampleCount = outData.rows();
-    vector<pair<size_t, double>> tmp(sampleCount);
+    vector<pair<uint8_t, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i]};
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
@@ -152,7 +152,7 @@ double aucNoWeights_(CRefXs outData, CRefXd predData)
     return static_cast<double>(b) / (static_cast<double>(a) * static_cast<double>(sampleCount - a));
 }
 
-double aucWeights_(CRefXs outData, CRefXd predData, CRefXd weights)
+double aucWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights)
 {
     if (!weights.isFinite().all())
         throw std::invalid_argument("Weights has values that are infinity or NaN.");
@@ -160,7 +160,7 @@ double aucWeights_(CRefXs outData, CRefXd predData, CRefXd weights)
         throw std::invalid_argument("Weights has non-positive values.");
 
     const size_t sampleCount = outData.rows();
-    vector<tuple<size_t, double, double>> tmp(sampleCount);
+    vector<tuple<uint8_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i], weights[i]};
     pdqsort_branchless(
@@ -185,10 +185,10 @@ double aucWeights_(CRefXs outData, CRefXd predData, CRefXd weights)
 
 //......................................................................................................................
 
-double aocNoWeights_(CRefXs outData, CRefXd predData);
-double aocWeights_(CRefXs outData, CRefXd predData, CRefXd weights);
+double aocNoWeights_(CRefXu8 outData, CRefXd predData);
+double aocWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights);
 
-double aoc(CRefXs outData, CRefXd predData, optional<CRefXd> weights)
+double aoc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights)
 {
     PROFILE::PUSH(PROFILE::LOSS);
 
@@ -208,10 +208,10 @@ double aoc(CRefXs outData, CRefXd predData, optional<CRefXd> weights)
     return loss;
 }
 
-double aocNoWeights_(CRefXs outData, CRefXd predData)
+double aocNoWeights_(CRefXu8 outData, CRefXd predData)
 {
     const size_t sampleCount = outData.rows();
-    vector<pair<size_t, double>> tmp(sampleCount);
+    vector<pair<uint8_t, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i]};
     pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
@@ -230,7 +230,7 @@ double aocNoWeights_(CRefXs outData, CRefXd predData)
     return static_cast<double>(b) / (static_cast<double>(a) * static_cast<double>(sampleCount - a));
 }
 
-double aocWeights_(CRefXs outData, CRefXd predData, CRefXd weights)
+double aocWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights)
 {
     if (!weights.isFinite().all())
         throw std::invalid_argument("Weights has values that are infinity or NaN.");
@@ -238,7 +238,7 @@ double aocWeights_(CRefXs outData, CRefXd predData, CRefXd weights)
         throw std::invalid_argument("Weights has non-positive values.");
 
     const size_t sampleCount = outData.rows();
-    vector<tuple<size_t, double, double>> tmp(sampleCount);
+    vector<tuple<uint8_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i], weights[i]};
     pdqsort_branchless(
@@ -263,4 +263,4 @@ double aocWeights_(CRefXs outData, CRefXd predData, CRefXd weights)
 
 //......................................................................................................................
 
-double negAuc(CRefXs outData, CRefXd predData, optional<CRefXd> weights) { return -auc(outData, predData, weights); }
+double negAuc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights) { return -auc(outData, predData, weights); }

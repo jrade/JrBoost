@@ -15,5 +15,5 @@ ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boos
 
 ArrayXd parallelTrainAndEval(
     const BoostTrainer& trainer, const vector<BoostOptions>& opt,
-    function<double(CRefXs, CRefXd, optional<CRefXd>)> lossFun, CRefXXfc testInData, CRefXs testOutData,
+    function<double(CRefXu8, CRefXd, optional<CRefXd>)> lossFun, CRefXXfc testInData, CRefXu8 testOutData,
     optional<CRefXd> testWeights = std::nullopt);

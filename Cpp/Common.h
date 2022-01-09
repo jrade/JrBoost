@@ -90,7 +90,6 @@ using RefXXfr = Eigen::Ref<ArrayXXfr>;
 using Ref2Xdr = Eigen::Ref<Array2Xdr>;
 using RefXd = Eigen::Ref<ArrayXd>;
 using RefXf = Eigen::Ref<ArrayXf>;
-using RefXs = Eigen::Ref<ArrayXs>;
 using RefXu8 = Eigen::Ref<ArrayXu8>;
 
 using CRefXXdc = Eigen::Ref<const ArrayXXdc>;
@@ -100,7 +99,6 @@ using CRefXXfr = Eigen::Ref<const ArrayXXfr>;
 using CRef2Xdr = Eigen::Ref<const Array2Xdr>;
 using CRefXd = Eigen::Ref<const ArrayXd>;
 using CRefXf = Eigen::Ref<const ArrayXf>;
-using CRefXs = Eigen::Ref<const ArrayXs>;
 using CRefXu8 = Eigen::Ref<const ArrayXu8>;
 
 #define STR_HELPER(x) #x

@@ -7,7 +7,7 @@
 #include "TTest.h"
 
 
-ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
+ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples)
 {
     PROFILE::PUSH(PROFILE::T_RANK);
 
@@ -110,7 +110,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs tTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples, TestDirection testDirection)
+ArrayXs tTestRank(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples, TestDirection testDirection)
 {
     const size_t variableCount = inData.cols();
 

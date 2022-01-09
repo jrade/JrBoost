@@ -5,18 +5,18 @@
 #pragma once
 
 
-double linLoss(CRefXs outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
+double linLoss(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
 
 class LogLoss {
 public:
     LogLoss(double gamma);
-    double operator()(CRefXs outData, CRefXd predData, optional<CRefXd> weights = std::nullopt) const;
+    double operator()(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights = std::nullopt) const;
     string name() const;
 
 private:
     const double gamma_;
 };
 
-double auc(CRefXs outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
-double aoc(CRefXs outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
-double negAuc(CRefXs outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
+double auc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
+double aoc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);
+double negAuc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights = std::nullopt);

@@ -49,13 +49,13 @@ def main():
     ) = loadData(trainFrac = trainFraction)
 
     trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
-    trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint64)
+    trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint8)
     trainWeights = trainWeightSeries.to_numpy(dtype = np.float64)
     testInData = testInDataFrame.to_numpy(dtype = np.float32)
-    testOutData = testOutDataSeries.to_numpy(dtype = np.uint64)
+    testOutData = testOutDataSeries.to_numpy(dtype = np.uint8)
     testWeights = testWeightSeries.to_numpy(dtype = np.float64)
     validationInData = validationInDataFrame.to_numpy(dtype = np.float32)
-    validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint64)
+    validationOutData = validationOutDataSeries.to_numpy(dtype = np.uint8)
     validationWeights = validationWeightSeries.to_numpy(dtype = np.float64)
 
      

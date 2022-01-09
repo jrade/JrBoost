@@ -7,7 +7,7 @@
 #include "FTest.h"
 
 
-ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
+ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples)
 {
     PROFILE::PUSH(PROFILE::F_RANK);
 
@@ -30,7 +30,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
     size_t groupCount = 0;
     for (size_t i : samples)
-        groupCount = std::max(groupCount, outData(i));
+        groupCount = std::max<size_t>(groupCount, outData(i));
     groupCount += 1;
 
     if (groupCount < 2) {
@@ -119,7 +119,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> opt
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs fTestRank(CRefXXfr inData, CRefXs outData, optional<vector<size_t>> optSamples)
+ArrayXs fTestRank(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples)
 {
     const size_t variableCount = inData.cols();
     const ArrayXf f = fStatistic(inData, outData, std::move(optSamples));

@@ -74,10 +74,10 @@ def main():
         print(f'-------------------- {i} --------------------\n')
         t = -time.time()
         PROFILE.PUSH(PROFILE.MAIN)
-        predOutDataFrame = pd.DataFrame(index = testSamples, columns = labels, dtype = np.uint64)
+        predOutDataFrame = pd.DataFrame(index = testSamples, columns = labels, dtype = np.uint8)
 
         for label in labels:
-            trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint64);
+            trainOutData = trainOutDataFrame[label].to_numpy(dtype = np.uint8);
 
             bestOptList = optimizeFun(
                 cvParam,

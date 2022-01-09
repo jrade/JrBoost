@@ -1,4 +1,7 @@
 
+review use of ArrayXs
+	use for lists of samples or not?
+
 just keep the simplest jrboost train function as a standard function
 	use this in Iris and Higgs
 		kan the standard optimize nyperparams function be used any other way?
@@ -9,9 +12,7 @@ just keep the simplest jrboost train function as a standard function
 	ditch jrboost._preprocess_and_train
 	clean up jrbooost._init
 
-outdata as uint8 instead of uint64 consistently
-	change in parallel train, loss, t-test and F-test
-	check that the examples use uint8
+make sure ALL and MLL use uint8 for out data
 
 review all functions with parallelism, esp. nested parallelism
 
