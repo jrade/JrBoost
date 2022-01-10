@@ -1,22 +1,15 @@
 
-use ArrayXs for lists of samples in the C++ code
-	use numpy array for lists of samples in the Python code
-	have random split and random folds functions return numpy arrays
-	check the element type of the these numpy arrays
+assert correct thread counts in every omp parallel block
+continue review of ParallelTRain.cpp
+	thread shift?
 
-just keep the simplest jrboost train function as a standard function
-	use this in Iris and Higgs
-		kan the standard optimize nyperparams function be used any other way?
-	have ALL and AML use their own train functions
-	review ALL and AML code
-	also support for weights
-	ditch jrboost._train
-	ditch jrboost._preprocess_and_train
-	clean up jrbooost._init
+review profiling in TreeTrainerImpl::trainImpl1_
 
-make sure MLL uses uint8 for out data
-
-review all functions with parallelism, esp. nested parallelism
+review the non-nested parallelism
+	TreeTrainerImpl::initSortedSamples_
+	TreeTrainerImpl::trainImpl1_
+	TTest
+	FTest
 
 ..................................................................................
 

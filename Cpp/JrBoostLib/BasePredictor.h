@@ -26,7 +26,7 @@ private:
     virtual size_t variableCount_() const = 0;
     // add the variable importance weights, multiplied by c, to weights
     virtual void variableWeights_(double c, RefXd weights) const = 0;
-    virtual unique_ptr<BasePredictor> reindexVariables_(const vector<size_t>& newIndices) const = 0;
+    virtual unique_ptr<BasePredictor> reindexVariables_(CRefXs newIndices) const = 0;
     virtual void save_(ostream& os) const = 0;
 
     static unique_ptr<BasePredictor> load_(istream& is, int version);
@@ -50,7 +50,7 @@ private:
     virtual double predictOne_(CRefXf inData) const;
     virtual size_t variableCount_() const;
     virtual void variableWeights_(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables_(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<BasePredictor> reindexVariables_(CRefXs newIndices) const;
     virtual void save_(ostream& os) const;
 
     static unique_ptr<BasePredictor> load_(istream& is, int version);
@@ -74,7 +74,7 @@ private:
     virtual double predictOne_(CRefXf inData) const;
     virtual size_t variableCount_() const;
     virtual void variableWeights_(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables_(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<BasePredictor> reindexVariables_(CRefXs newIndices) const;
     virtual void save_(ostream& os) const;
 
     static unique_ptr<BasePredictor> load_(istream& is, int version);
@@ -101,7 +101,7 @@ private:
     virtual double predictOne_(CRefXf inData) const;
     virtual size_t variableCount_() const;
     virtual void variableWeights_(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables_(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<BasePredictor> reindexVariables_(CRefXs newIndices) const;
     virtual void save_(ostream& os) const;
 
     static unique_ptr<BasePredictor> load_(istream& is, int version);
@@ -134,7 +134,7 @@ private:
     virtual double predictOne_(CRefXf inData) const;
     virtual size_t variableCount_() const;
     virtual void variableWeights_(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables_(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<BasePredictor> reindexVariables_(CRefXs newIndices) const;
     virtual void save_(ostream& os) const;
 
     static unique_ptr<BasePredictor> load_(istream& is, int version);
@@ -161,7 +161,7 @@ private:
     virtual double predictOne_(CRefXf inData) const;
     virtual size_t variableCount_() const;
     virtual void variableWeights_(double c, RefXd weights) const;
-    virtual unique_ptr<BasePredictor> reindexVariables_(const vector<size_t>& newIndices) const;
+    virtual unique_ptr<BasePredictor> reindexVariables_(CRefXs newIndices) const;
     virtual void save_(ostream& os) const;
 
     static unique_ptr<BasePredictor> load_(istream& is, int version);

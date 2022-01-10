@@ -43,7 +43,10 @@ def stratifiedRandomFolds(strata, foldCount, samples = None):
         for foldIndex in range(foldCount):
             folds[foldIndex][foldIndex == (j % foldCount)].append(i)
 
-    folds = [(sorted(trainSamples), sorted(testSamples)) for trainSamples, testSamples in folds]
+    folds = [(
+            np.array(sorted(trainSamples), dtype = np.uint64),
+            np.array(sorted(testSamples), dtype = np.uint64)
+        ) for trainSamples, testSamples in folds]
     
     return folds
 
@@ -70,8 +73,8 @@ def stratifiedRandomSplit(strata, ratio, samples = None):
         else:
             testSamples.append(i)
 
-    trainSamples = sorted(trainSamples)
-    testSamples = sorted(testSamples)
+    trainSamples = np.array(sorted(trainSamples), dtype = np.uint64)
+    testSamples = np.array(sorted(testSamples), dtype = np.uint64)
 
     return trainSamples, testSamples
 

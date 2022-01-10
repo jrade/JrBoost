@@ -63,18 +63,18 @@ vector<TreeNode> cloneTree(const TreeNode* sourceRoot)
 }
 
 
-TreeNode* reindexTreeImpl_(const TreeNode* sourceNode, TreeNode* targetNode, const vector<size_t>& newIndices)
+TreeNode* reindexTreeImpl_(const TreeNode* sourceNode, TreeNode* targetNode, CRefXs newIndices)
 {
     *targetNode = *sourceNode;
     if (targetNode->isLeaf)
         return targetNode + 1;
-    targetNode->j = newIndices[targetNode->j];
+    targetNode->j = newIndices(targetNode->j);
     targetNode->leftChild = targetNode + 1;
     targetNode->rightChild = reindexTreeImpl_(sourceNode->leftChild, targetNode->leftChild, newIndices);
     return reindexTreeImpl_(sourceNode->rightChild, targetNode->rightChild, newIndices);
 }
 
-vector<TreeNode> reindexTree(const TreeNode* sourceRoot, const vector<size_t>& newIndices)
+vector<TreeNode> reindexTree(const TreeNode* sourceRoot, CRefXs newIndices)
 {
     const size_t n = nodeCount(sourceRoot);
     vector<TreeNode> targetNodes(n);

@@ -48,9 +48,9 @@ double Predictor::predictOne(CRefXf inData) const
 
 ArrayXf Predictor::variableWeights() const { return variableWeightsImpl_(); }
 
-shared_ptr<Predictor> Predictor::reindexVariables(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> Predictor::reindexVariables(CRefXs newIndices) const
 {
-    if (size(newIndices) < variableCount())
+    if (static_cast<size_t>(newIndices.rows()) < variableCount())
         throw std::runtime_error("The size of the new indices array"
                                  " must be greater than or equal to the variable count.");
     return reindexVariablesImpl_(newIndices);
@@ -221,7 +221,7 @@ ArrayXf BoostPredictor::variableWeightsImpl_() const
     return weights.cast<float>();
 }
 
-shared_ptr<Predictor> BoostPredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> BoostPredictor::reindexVariablesImpl_(CRefXs newIndices) const
 {
     vector<unique_ptr<BasePredictor>> basePredictors;
     basePredictors.reserve(size(basePredictors_));
@@ -355,7 +355,7 @@ ArrayXf EnsemblePredictor::variableWeightsImpl_() const
     return weights;
 }
 
-shared_ptr<Predictor> EnsemblePredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> EnsemblePredictor::reindexVariablesImpl_(CRefXs newIndices) const
 {
     vector<shared_ptr<Predictor>> predictors;
     predictors.reserve(size(predictors_));
@@ -474,7 +474,7 @@ ArrayXf UnionPredictor::variableWeightsImpl_() const
     return weights;
 }
 
-shared_ptr<Predictor> UnionPredictor::reindexVariablesImpl_(const vector<size_t>& newIndices) const
+shared_ptr<Predictor> UnionPredictor::reindexVariablesImpl_(CRefXs newIndices) const
 {
     vector<shared_ptr<Predictor>> predictors;
     predictors.reserve(size(predictors_));

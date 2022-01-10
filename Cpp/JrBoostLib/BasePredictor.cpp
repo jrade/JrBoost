@@ -67,10 +67,7 @@ size_t ZeroPredictor::variableCount_() const { return 0; }
 
 void ZeroPredictor::variableWeights_(double /*c*/, RefXd /*weights*/) const {}
 
-unique_ptr<BasePredictor> ZeroPredictor::reindexVariables_(const vector<size_t>& /*newIndices*/) const
-{
-    return createInstance();
-}
+unique_ptr<BasePredictor> ZeroPredictor::reindexVariables_(CRefXs /*newIndices*/) const { return createInstance(); }
 
 void ZeroPredictor::save_(ostream& os) const { os.put('Z'); }
 
@@ -95,7 +92,7 @@ size_t ConstantPredictor::variableCount_() const { return 0; }
 
 void ConstantPredictor::variableWeights_(double /*c*/, RefXd /*weights*/) const {}
 
-unique_ptr<BasePredictor> ConstantPredictor::reindexVariables_(const vector<size_t>& /*newIndices*/) const
+unique_ptr<BasePredictor> ConstantPredictor::reindexVariables_(CRefXs /*newIndices*/) const
 {
     return createInstance(y_);
 }
@@ -143,9 +140,9 @@ size_t StumpPredictor::variableCount_() const { return j_ + 1; }
 
 void StumpPredictor::variableWeights_(double c, RefXd weights) const { weights(j_) += c * gain_; }
 
-unique_ptr<BasePredictor> StumpPredictor::reindexVariables_(const vector<size_t>& newIndices) const
+unique_ptr<BasePredictor> StumpPredictor::reindexVariables_(CRefXs newIndices) const
 {
-    return createInstance(newIndices[j_], x_, leftY_, rightY_, gain_);
+    return createInstance(newIndices(j_), x_, leftY_, rightY_, gain_);
 }
 
 void StumpPredictor::save_(ostream& os) const
@@ -239,7 +236,7 @@ void TreePredictor::variableWeights_(double c, RefXd weights) const
     TreeTools::variableWeights(root, c, weights);
 }
 
-unique_ptr<BasePredictor> TreePredictor::reindexVariables_(const vector<size_t>& newIndices) const
+unique_ptr<BasePredictor> TreePredictor::reindexVariables_(CRefXs newIndices) const
 {
     const TreeNode* root = data(nodes_);
     vector<TreeNode> nodes = TreeTools::reindexTree(root, newIndices);
@@ -302,7 +299,7 @@ void ForestPredictor::variableWeights_(double c, RefXd weights) const
         basePredictor->variableWeights_(c, weights);
 }
 
-unique_ptr<BasePredictor> ForestPredictor::reindexVariables_(const vector<size_t>& newIndices) const
+unique_ptr<BasePredictor> ForestPredictor::reindexVariables_(CRefXs newIndices) const
 {
     vector<unique_ptr<BasePredictor>> basePredictors;
     basePredictors.reserve(size(basePredictors_));

@@ -24,7 +24,7 @@ public:
     ArrayXd predict(CRefXXfc inData, size_t threadCount = 0) const;
     double predictOne(CRefXf inData) const;
     ArrayXf variableWeights() const;
-    shared_ptr<Predictor> reindexVariables(const vector<size_t>& newIndices) const;
+    shared_ptr<Predictor> reindexVariables(CRefXs newIndices) const;
 
     void save(const string& filePath) const;
     void save(ostream& os) const;
@@ -40,7 +40,7 @@ private:
     virtual ArrayXd predictImpl_(CRefXXfc inData, size_t threadCount) const = 0;
     virtual double predictOneImpl_(CRefXf inData) const = 0;
     virtual ArrayXf variableWeightsImpl_() const = 0;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const = 0;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const = 0;
     virtual void saveImpl_(ostream& os) const = 0;
     static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
@@ -68,7 +68,7 @@ private:
     ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
     virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const;
     virtual void saveImpl_(ostream& os) const;
     static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
@@ -95,7 +95,7 @@ private:
     ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
     virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const;
     virtual void saveImpl_(ostream& os) const;
     static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 
@@ -120,7 +120,7 @@ private:
     ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
     virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
-    virtual shared_ptr<Predictor> reindexVariablesImpl_(const vector<size_t>& newIndices) const;
+    virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const;
     virtual void saveImpl_(ostream& os) const;
     static shared_ptr<Predictor> loadImpl_(istream& is, int version);
 

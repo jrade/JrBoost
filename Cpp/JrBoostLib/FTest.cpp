@@ -7,7 +7,7 @@
 #include "FTest.h"
 
 
-ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples)
+ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
     PROFILE::PUSH(PROFILE::F_RANK);
 
@@ -15,23 +15,21 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
 
-    vector<size_t> samples;
-    size_t sampleCount;
-    if (optSamples) {
-        samples = std::move(*optSamples);
-        sampleCount = size(samples);
-    }
-    else {
-        sampleCount = inData.rows();
-        samples.resize(sampleCount);
-        for (size_t i = 0; i != sampleCount; ++i)
-            samples[i] = i;
-    }
+    const size_t sampleCount = samples ? samples->rows() : inData.rows();
 
     size_t groupCount = 0;
-    for (size_t i : samples)
-        groupCount = std::max<size_t>(groupCount, outData(i));
-    groupCount += 1;
+    if (samples) {
+        for (size_t i : *samples) {
+            uint8_t k = outData(i);
+            groupCount = std::max(groupCount, static_cast<size_t>(k) + 1);
+        }
+    }
+    else {
+        for (size_t i = 0; i != sampleCount; ++i) {
+            uint8_t k = outData(i);
+            groupCount = std::max(groupCount, static_cast<size_t>(k) + 1);
+        }
+    }
 
     if (groupCount < 2) {
         PROFILE::POP();
@@ -42,18 +40,25 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
         throw std::invalid_argument("Unable to do F-test: There must be more samples than groups.");
     }
 
-    ArrayXs n = ArrayXs::Zero(groupCount);
-    for (size_t i : samples) {
-        size_t s = outData(i);
-        ++n(s);
+    ArrayXs n = ArrayXs::Zero(groupCount);   // sample count by group
+    if (samples) {
+        for (size_t i : *samples) {
+            uint8_t k = outData(i);
+            ++n(k);
+        }
     }
-    // n.sum() == sampleCount
+    else {
+        for (size_t i = 0; i != sampleCount; ++i) {
+            uint8_t k = outData(i);
+            ++n(k);
+        }
+    }
 
-    if (n.minCoeff() == 0)
-        for (size_t i = 0; i != groupCount; ++i)
-            if (n(i) == 0)
-                throw std::invalid_argument(
-                    "Unable to do F-test: The group with index " + std::to_string(i) + " is empty.");
+    for (size_t k = 0; k != groupCount; ++k) {
+        if (n(k) == 0)
+            throw std::invalid_argument(
+                "Unable to do F-test: The group with index " + std::to_string(k) + " is empty.");
+    }
 
 
     ArrayXf f(variableCount);
@@ -75,9 +80,9 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
         ArrayXXdr totalMean(1, blockWidth);
         ArrayXXdr ss(groupCount, blockWidth);
 
-        const size_t k = omp_get_thread_num();   // block index
-        const size_t j0 = k * blockWidth;
-        const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
+        const size_t blockIndex = omp_get_thread_num();   // block index
+        const size_t j0 = blockIndex * blockWidth;
+        const size_t j1 = std::min((blockIndex + 1) * blockWidth, variableCount);
 
         CRefXXfr inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
         RefXXdr meanBlock(mean.block(0, 0, groupCount, j1 - j0));
@@ -86,19 +91,34 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
         RefXf fBlock(f.segment(j0, j1 - j0));
 
         meanBlock = 0.0;
-        for (size_t i : samples) {
-            size_t s = outData(i);
-            meanBlock.row(s) += inDataBlock.row(i).cast<double>();
+        if (samples) {
+            for (size_t i : *samples) {
+                uint8_t k = outData(i);
+                meanBlock.row(k) += inDataBlock.row(i).cast<double>();
+            }
         }
+        else {
+            for (size_t i = 0; i != sampleCount; ++i) {
+                uint8_t k = outData(i);
+                meanBlock.row(k) += inDataBlock.row(i).cast<double>();
+            }
+        }
+        totalMeanBlock = meanBlock.colwise().sum() / sampleCount;
         meanBlock.colwise() /= n.cast<double>();
 
         ssBlock = 0.0;
-        for (size_t i : samples) {
-            size_t s = outData(i);
-            ssBlock.row(s) += (inDataBlock.row(i).cast<double>() - meanBlock.row(s)).square();
+        if (samples) {
+            for (size_t i : *samples) {
+                uint8_t k = outData(i);
+                ssBlock.row(k) += (inDataBlock.row(i).cast<double>() - meanBlock.row(k)).square();
+            }
         }
-
-        totalMeanBlock = (meanBlock.colwise() * n.cast<double>()).colwise().sum() / sampleCount;
+        else {
+            for (size_t i = 0; i != sampleCount; ++i) {
+                uint8_t k = outData(i);
+                ssBlock.row(k) += (inDataBlock.row(i).cast<double>() - meanBlock.row(k)).square();
+            }
+        }
 
         fBlock
             = (a * ((meanBlock.rowwise() - totalMeanBlock.row(0)).square().colwise() * n.cast<double>()).colwise().sum()
@@ -119,10 +139,10 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs fTestRank(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples)
+ArrayXs fTestRank(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
     const size_t variableCount = inData.cols();
-    const ArrayXf f = fStatistic(inData, outData, std::move(optSamples));
+    const ArrayXf f = fStatistic(inData, outData, samples);
     ArrayXs ind(variableCount);
 
     sortedIndices(std::data(f), std::data(f) + variableCount, std::data(ind), [](auto x) { return -x; });

@@ -7,7 +7,7 @@
 #include "TTest.h"
 
 
-ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples)
+ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
     PROFILE::PUSH(PROFILE::T_RANK);
 
@@ -17,18 +17,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
     if ((outData > 1).any())
         throw std::invalid_argument("Outdata has values that are not 0 or 1.");
 
-    vector<size_t> samples;
-    size_t sampleCount;
-    if (optSamples) {
-        samples = std::move(*optSamples);
-        sampleCount = size(samples);
-    }
-    else {
-        sampleCount = inData.rows();
-        samples.resize(sampleCount);
-        for (size_t i = 0; i != sampleCount; ++i)
-            samples[i] = i;
-    }
+    const size_t sampleCount = samples ? samples->rows() : inData.rows();
 
     if (sampleCount < 3) {
         PROFILE::POP();
@@ -36,10 +25,19 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
     }
 
     ArrayXs n = {{0, 0}};
-    for (size_t i : samples) {
-        size_t s = outData(i);
-        ++n(s);
+    if (samples) {
+        for (size_t i : *samples) {
+            uint8_t k = outData(i);
+            ++n(k);
+        }
     }
+    else {
+        for (size_t i = 0; i != sampleCount; ++i) {
+            uint8_t k = outData(i);
+            ++n(k);
+        }
+    }
+
     // n(0) + n(1) = sampleCount
 
     if (n(0) == 0) {
@@ -70,9 +68,9 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
         Array2Xdr mean(2, blockWidth);
         Array2Xdr ss(2, blockWidth);
 
-        const size_t k = omp_get_thread_num();   // block index
-        const size_t j0 = k * blockWidth;
-        const size_t j1 = std::min((k + 1) * blockWidth, variableCount);
+        const size_t blockIndex = omp_get_thread_num();
+        const size_t j0 = blockIndex * blockWidth;
+        const size_t j1 = std::min((blockIndex + 1) * blockWidth, variableCount);
 
         CRefXXfr inDataBlock(inData.block(0, j0, sampleCount, j1 - j0));
         Ref2Xdr meanBlock(mean.block(0, 0, 2, j1 - j0));
@@ -80,16 +78,32 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
         RefXf tBlock(t.segment(j0, j1 - j0));
 
         meanBlock = 0.0;
-        for (size_t i : samples) {
-            size_t s = outData(i);
-            meanBlock.row(s) += inDataBlock.row(i).cast<double>();
+        if (samples) {
+            for (size_t i : *samples) {
+                uint8_t k = outData(i);
+                meanBlock.row(k) += inDataBlock.row(i).cast<double>();
+            }
+        }
+        else {
+            for (size_t i = 0; i != sampleCount; ++i) {
+                uint8_t k = outData(i);
+                meanBlock.row(k) += inDataBlock.row(i).cast<double>();
+            }
         }
         meanBlock.colwise() /= n.cast<double>();
 
         ssBlock = 0.0;
-        for (size_t i : samples) {
-            size_t s = outData(i);
-            ssBlock.row(s) += (inDataBlock.row(i).cast<double>() - meanBlock.row(s)).square();
+        if (samples) {
+            for (size_t i : *samples) {
+                uint8_t k = outData(i);
+                ssBlock.row(k) += (inDataBlock.row(i).cast<double>() - meanBlock.row(k)).square();
+            }
+        }
+        else {
+            for (size_t i = 0; i != sampleCount; ++i) {
+                uint8_t k = outData(i);
+                ssBlock.row(k) += (inDataBlock.row(i).cast<double>() - meanBlock.row(k)).square();
+            }
         }
 
         tBlock = (a * (meanBlock.row(1) - meanBlock.row(0))
@@ -110,11 +124,11 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> op
 
 //----------------------------------------------------------------------------------------------------------------------
 
-ArrayXs tTestRank(CRefXXfr inData, CRefXu8 outData, optional<vector<size_t>> optSamples, TestDirection testDirection)
+ArrayXs tTestRank(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples, TestDirection testDirection)
 {
     const size_t variableCount = inData.cols();
 
-    ArrayXf t = tStatistic(inData, outData, std::move(optSamples));
+    ArrayXf t = tStatistic(inData, outData, samples);
 
     switch (testDirection) {
     case TestDirection::Up:
