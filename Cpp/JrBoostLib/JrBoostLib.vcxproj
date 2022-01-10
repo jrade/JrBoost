@@ -84,8 +84,7 @@
     <ClInclude Include="BoostOptions.h" />
     <ClInclude Include="FastExp.h" />
     <ClInclude Include="FTest.h" />
-    <ClInclude Include="ExceptionSafeOmp.h" />
-    <ClInclude Include="Globals.h" />
+    <ClInclude Include="OmpParallel.h" />
     <ClInclude Include="Tools.h" />
     <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />

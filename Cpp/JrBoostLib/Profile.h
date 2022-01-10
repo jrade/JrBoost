@@ -45,6 +45,8 @@ public:
     static void SWITCH(CLOCK_ID id, size_t itemCount = 0);
     static void UPDATE_BRANCH_STATISTICS(size_t iterationCount, size_t slowBranchCount);
 
+    inline static std::atomic<std::thread::id> CUR_THREAD_ID = std::this_thread::get_id();
+
 private:
     static string result_();
     static string formatByteCount_(size_t n);

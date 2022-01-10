@@ -129,7 +129,6 @@ inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJO
 
 // Miscellaneous
 
-#include "JrBoostLib/Globals.h"
 #include "JrBoostLib/Profile.h"
 #include "JrBoostLib/Tools.h"
 

@@ -6,6 +6,8 @@
 
 #include "TTest.h"
 
+#include "OmpParallel.h"
+
 
 ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
@@ -61,10 +63,8 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
     blockWidth = minBlockWidth * divideRoundUp(blockWidth, minBlockWidth);
     blockCount = divideRoundUp(variableCount, blockWidth);
 
-#pragma omp parallel num_threads(static_cast <int>(blockCount))
+    BEGIN_OMP_PARALLEL(blockCount)
     {
-        ASSERT(static_cast<size_t>(omp_get_num_threads()) == blockCount);
-
         Array2Xdr mean(2, blockWidth);
         Array2Xdr ss(2, blockWidth);
 
@@ -110,6 +110,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
                   / (ssBlock.row(0) + ssBlock.row(1) + numeric_limits<double>::min()).sqrt())
                      .cast<float>();
     }
+    END_OMP_PARALLEL
 
     if (t.isNaN().any()) {
         ASSERT(!inData.isFinite().all());

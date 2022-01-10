@@ -11,7 +11,6 @@ import jrboost
 
 validationParam = {
     'threadCount': os.cpu_count() // 2,
-    'parallelTree': False,
     'foldCount': 10,
 }
 

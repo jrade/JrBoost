@@ -8,6 +8,7 @@
 
 #include "BaseOptions.h"
 #include "BasePredictor.h"
+#include "OmpParallel.h"
 
 /*
 Overview:
@@ -88,10 +89,8 @@ vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::initSortedSamples_() c
 
     const size_t threadCount = std::min<size_t>(omp_get_max_threads(), variableCount_);
 
-#pragma omp parallel num_threads(static_cast <int>(threadCount))
+    BEGIN_OMP_PARALLEL(threadCount)
     {
-        ASSERT(static_cast<size_t>(omp_get_num_threads()) == threadCount);
-
         size_t sampleCount = sampleCount_;
         vector<pair<float, SampleIndex>> tmp(sampleCount);
 
@@ -112,6 +111,7 @@ vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::initSortedSamples_() c
                 pSortedSamplesJ[i] = tmp[i].second;
         }
     }
+    END_OMP_PARALLEL
 
     return sortedSamples;
 }
@@ -192,13 +192,9 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
         return;
     }
 
-    if (!::globParallelTree)
-        threadCount = 1;
-    if (threadCount == 0)
+    if (threadCount == 0 || threadCount > omp_get_max_threads())
         threadCount = omp_get_max_threads();
-    threadCount = std::min<size_t>(threadCount, omp_get_max_threads());
-    threadCount = std::min<size_t>(threadCount, usedVariableCount);
-    const size_t threadShift = std::uniform_int_distribution<size_t>(0, threadCount - 1)(::theRne);
+    threadCount = std::min(threadCount, usedVariableCount);
 
     for (size_t d = 0; d != options.maxTreeDepth(); ++d) {
 
@@ -215,71 +211,55 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
         PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
         ITEM_COUNT = 0;
 
-        std::atomic<size_t> nextUsedVariableIndex = 0;
+        ThreadLocalData0_& outerT0 = threadLocalData0_;
+        ThreadLocalData1_<SampleIndex>& outerT1 = threadLocalData1_<SampleIndex>;
+        ThreadLocalData2_<SampleStatus>& outerT2 = threadLocalData2_<SampleStatus>;
 
-        ThreadLocalData0_& t0 = threadLocalData0_;
-        ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
-        ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
+        if (threadCount == 1) {
 
-#pragma omp parallel num_threads(static_cast <int>(threadCount)) private(ITEM_COUNT)
-        {
-            ITEM_COUNT = 0;
+            outerT0.parent = &outerT0;
+            outerT1.parent = &outerT1;
+            outerT2.parent = &outerT2;
 
-            ASSERT(static_cast<size_t>(omp_get_num_threads()) == threadCount);
+            for (size_t usedVariableIndex = 0; usedVariableIndex != usedVariableCount; ++usedVariableIndex)
+                trainImpl2_<SampleIndex>(outData, weights, options, usedSampleCount, d, usedVariableIndex, 0);
 
-            // give the inner threads access to the thread local data of the outer thread
-            threadLocalData0_.parent = &t0;
-            threadLocalData1_<SampleIndex>.parent = &t1;
-            threadLocalData2_<SampleStatus>.parent = &t2;
+            outerT0.parent = nullptr;
+            outerT1.parent = nullptr;
+            outerT2.parent = nullptr;
+        }
 
-            while (true) {
+        else {
 
-                size_t usedVariableIndex = nextUsedVariableIndex++;
-                // do a random shuffle of the work items
-                // since we only profile the main thread, this gives more stable profiling numbers
-                usedVariableIndex
-                    = (usedVariableIndex / threadCount) * threadCount + (usedVariableIndex + threadShift) % threadCount;
-                if (usedVariableIndex >= usedVariableCount)
-                    break;
+            std::atomic<size_t> nextUsedVariableIndex = 0;
+            BEGIN_OMP_PARALLEL(threadCount)
+            {
+                const size_t threadIndex = omp_get_thread_num();
 
-                const SampleIndex* pOrderedSamples;
+                ThreadLocalData0_& innerT0 = threadLocalData0_;
+                ThreadLocalData1_<SampleIndex>& innerT1 = threadLocalData1_<SampleIndex>;
+                ThreadLocalData2_<SampleStatus>& innerT2 = threadLocalData2_<SampleStatus>;
 
-                if (d == 0) {
-                    PROFILE::SWITCH(PROFILE::INIT_ORDERED_SAMPLES, ITEM_COUNT);
-                    ITEM_COUNT = sampleCount_;
-                    pOrderedSamples = initOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
-                }
-                else if (options.saveMemory() || options.selectVariablesByLevel()) {
-                    PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
-                    ITEM_COUNT = sampleCount_;
-                    pOrderedSamples
-                        = updateOrderedSampleSaveMemory_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
-                }
-                else {
-                    PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
-                    ITEM_COUNT = usedSampleCount;
-                    pOrderedSamples
-                        = updateOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+                // give the inner threads access to the thread local data of the outer thread
+                innerT0.parent = &outerT0;
+                innerT1.parent = &outerT1;
+                innerT2.parent = &outerT2;
+
+                while (true) {
+                    const size_t usedVariableIndex = nextUsedVariableIndex++;
+                    if (usedVariableIndex >= usedVariableCount)
+                        break;
+
+                    trainImpl2_<SampleIndex>(
+                        outData, weights, options, usedSampleCount, d, usedVariableIndex, threadIndex);
                 }
 
-                PROFILE::SWITCH(PROFILE::FIND_BEST_SPLITS, ITEM_COUNT);
-                ITEM_COUNT = usedSampleCount;
-#if PACKED_DATA
-                updateNodeTrainers_(pOrderedSamples, usedVariableIndex, d);
-#else
-                updateNodeTrainers_(outData, weights, pOrderedSamples, usedVariableIndex, d);
-#endif
-                PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
-                ITEM_COUNT = 0;
-
-            }   // end variable index loop
-
-            threadLocalData0_.parent = nullptr;
-            threadLocalData1_<SampleIndex>.parent = nullptr;
-            threadLocalData2_<SampleStatus>.parent = nullptr;
-
-        }   // end omp parallel
-        ITEM_COUNT = 0;
+                innerT0.parent = nullptr;
+                innerT1.parent = nullptr;
+                innerT2.parent = nullptr;
+            }
+            END_OMP_PARALLEL
+        }
 
         usedSampleCount = finalizeNodeTrainers_(d, threadCount);   // very fast, no need to profile
 
@@ -298,6 +278,42 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
 
     // TO DO: PRUNE TREE
 };
+
+template<typename SampleIndex>
+template<typename SampleStatus>
+void TreeTrainerImpl<SampleIndex>::trainImpl2_(
+    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t usedSampleCount, size_t d,
+    size_t usedVariableIndex, size_t threadIndex) const
+{
+    const SampleIndex* pOrderedSamples;
+
+    size_t ITEM_COUNT;
+
+    if (d == 0) {
+        PROFILE::PUSH(PROFILE::INIT_ORDERED_SAMPLES);
+        ITEM_COUNT = sampleCount_;
+        pOrderedSamples = initOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+    }
+    else if (options.saveMemory() || options.selectVariablesByLevel()) {
+        PROFILE::PUSH(PROFILE::UPDATE_ORDERED_SAMPLES);
+        ITEM_COUNT = sampleCount_;
+        pOrderedSamples = updateOrderedSampleSaveMemory_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+    }
+    else {
+        PROFILE::PUSH(PROFILE::UPDATE_ORDERED_SAMPLES);
+        ITEM_COUNT = usedSampleCount;
+        pOrderedSamples = updateOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+    }
+
+    PROFILE::SWITCH(PROFILE::FIND_BEST_SPLITS, ITEM_COUNT);
+    ITEM_COUNT = usedSampleCount;
+#if PACKED_DATA
+    updateNodeTrainers_(pOrderedSamples, usedVariableIndex, d);
+#else
+    updateNodeTrainers_(outData, weights, pOrderedSamples, usedVariableIndex, d, threadIndex);
+#endif
+    PROFILE::POP(ITEM_COUNT);
+}
 
 //......................................................................................................................
 
@@ -859,7 +875,7 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
 #if !PACKED_DATA
     CRefXd outData, CRefXd weights,
 #endif
-    const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const
+    const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d, size_t threadIndex) const
 {
     // called from inner threads; be careful to distinguish between t0 and t0.parent etc.
 
@@ -869,7 +885,6 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
     const vector<TreeNodeExt>& parentNodes = t0.parent->tree[d];
     const size_t parentNodeCount = size(parentNodes);
 
-    const size_t threadIndex = omp_get_thread_num();
     const size_t k0 = threadIndex * parentNodeCount;
     const SampleIndex* p0 = orderedSamples;
     size_t j = t0.parent->usedVariables[usedVariableIndex];

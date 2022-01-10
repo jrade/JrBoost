@@ -30,7 +30,7 @@ void PROFILE::PUSH(CLOCK_ID id)
 {
     if (!enabled_)
         return;
-    if (std::this_thread::get_id() != ::theMainThreadId)
+    if (std::this_thread::get_id() != CUR_THREAD_ID)
         return;
 
     uint64_t t = clockCycleCount();
@@ -48,7 +48,7 @@ void PROFILE::POP(size_t itemCount)
 {
     if (!enabled_)
         return;
-    if (std::this_thread::get_id() != ::theMainThreadId)
+    if (std::this_thread::get_id() != CUR_THREAD_ID)
         return;
 
     uint64_t t = clockCycleCount();
@@ -68,7 +68,7 @@ void PROFILE::SWITCH(CLOCK_ID id, size_t itemCount)
 {
     if (!enabled_)
         return;
-    if (std::this_thread::get_id() != ::theMainThreadId)
+    if (std::this_thread::get_id() != CUR_THREAD_ID)
         return;
 
     uint64_t t = clockCycleCount();
@@ -85,7 +85,7 @@ void PROFILE::UPDATE_BRANCH_STATISTICS(size_t iterationCount, size_t slowBranchC
 {
     if (!enabled_)
         return;
-    if (std::this_thread::get_id() != ::theMainThreadId)
+    if (std::this_thread::get_id() != CUR_THREAD_ID)
         return;
 
     splitIterationCount_ += iterationCount;
@@ -106,7 +106,6 @@ string PROFILE::result_()
     }
     double totalAdjustment = adjustment * totalCallCount;
     double totalAdjustedClockCycleCount = totalClockCycleCount - totalAdjustment;
-
 
     stringstream ss;
     ss << std::fixed;

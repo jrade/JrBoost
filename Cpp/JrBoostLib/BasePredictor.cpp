@@ -7,7 +7,7 @@
 #include "BasePredictor.h"
 
 #include "Base128Encoding.h"
-#include "ExceptionSafeOmp.h"
+#include "OmpParallel.h"
 #include "Tree.h"
 
 

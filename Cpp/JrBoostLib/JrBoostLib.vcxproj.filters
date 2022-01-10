@@ -32,7 +32,7 @@
     <ClInclude Include="Tree.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
-    <ClInclude Include="ExceptionSafeOmp.h">
+    <ClInclude Include="OmpParallel.h">
       <Filter>Tools</Filter>
     </ClInclude>
     <ClInclude Include="FastExp.h">
@@ -59,7 +59,6 @@
     <ClInclude Include="ParallelTrain.h">
       <Filter>Predictor</Filter>
     </ClInclude>
-    <ClInclude Include="Globals.h" />
     <ClInclude Include="BaseOptions.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>

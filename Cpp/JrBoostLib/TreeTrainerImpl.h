@@ -25,6 +25,11 @@ private:
     template<typename SampleStatus>
     void trainImpl1_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
+    template<typename SampleStatus>
+    void trainImpl2_(
+        CRefXd outData, CRefXd weights, const BaseOptions& options, size_t usedSampleCount, size_t d,
+        size_t usedVariableIndex, size_t threadIndex) const;
+
     void validateData_(CRefXd outData, CRefXd weights) const;
 #if PACKED_DATA
     void initWyPacks(CRefXd outData, CRefXd weights) const;
@@ -53,7 +58,7 @@ private:
 #if !PACKED_DATA
         CRefXd outData, CRefXd weights,
 #endif
-        const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d) const;
+        const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d, size_t threadIndex) const;
     size_t finalizeNodeTrainers_(size_t d, size_t threadCount) const;
 
 private:

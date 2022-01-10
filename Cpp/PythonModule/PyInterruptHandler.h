@@ -9,7 +9,7 @@ class PyInterruptHandler : public InterruptHandler {
 public:
     virtual void check()
     {
-        if (std::this_thread::get_id() != ::theMainThreadId)
+        if (std::this_thread::get_id() != theMainThreadId_)
             return;
 
         uint64_t ccc = __rdtsc();
@@ -26,6 +26,8 @@ public:
 
 private:
     uint64_t lastCcc_ = 0;
+
+    inline static const std::thread::id theMainThreadId_ = std::this_thread::get_id();
 };
 
 inline PyInterruptHandler thePyInterruptHandler;

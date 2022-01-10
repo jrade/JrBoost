@@ -19,6 +19,8 @@ PYBIND11_MODULE(_jrboost, mod)
 {
     namespace py = pybind11;
 
+    omp_set_nested(true);
+
     ::currentInterruptHandler = &thePyInterruptHandler;
 
     py::register_exception_translator([](std::exception_ptr p) {
@@ -116,12 +118,6 @@ PYBIND11_MODULE(_jrboost, mod)
 
     mod.def("getThreadCount", &omp_get_max_threads);
     mod.def("setThreadCount", &omp_set_num_threads);
-
-    mod.def("getParallelTree", []() { return ::globParallelTree; });
-    mod.def("setParallelTree", [](bool b) { ::globParallelTree = b; });
-
-    mod.def("getOuterThreadCount", []() { return ::globOuterThreadCount; });
-    mod.def("setOuterThreadCount", [](size_t n) { ::globOuterThreadCount = n; });
 
     mod.def("bufferSize", &TreeTrainerBuffers::bufferSize);
     mod.def("clearBuffers", &TreeTrainerBuffers::freeBuffers);

@@ -8,7 +8,7 @@
 
 #include "Base128Encoding.h"
 #include "BasePredictor.h"
-#include "ExceptionSafeOmp.h"
+#include "OmpParallel.h"
 
 
 Predictor::Predictor(size_t variableCount) : variableCount_(variableCount) {}
@@ -28,11 +28,13 @@ ArrayXd Predictor::predict(CRefXXfc inData, size_t threadCount) const
     if (!inData.isFinite().all())
         throw std::invalid_argument("Test indata has values that are infinity or NaN.");
 
+    if (threadCount == 0 || threadCount > omp_get_max_threads())
+        threadCount = omp_get_max_threads();
+
     ArrayXd pred = predictImpl_(inData, threadCount);
 
     PROFILE::SWITCH(PROFILE::ZERO);   // calibrate the profiling
     PROFILE::POP();
-
     return pred;
 }
 
@@ -163,23 +165,21 @@ BoostPredictor::~BoostPredictor() = default;
 
 ArrayXd BoostPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
 {
-    if (threadCount == 0)
-        threadCount = omp_get_max_threads();
     if (threadCount == 1)
         return predictImplNoThreads_(inData);
 
     const size_t sampleCount = static_cast<size_t>(inData.rows());
     const size_t basePredictorCount = size(basePredictors_);
-    const size_t outerThreadCount = std::min(threadCount, basePredictorCount);
+    threadCount = std::min(threadCount, basePredictorCount);
     const size_t padding = std::hardware_destructive_interference_size / sizeof(double);
 
     static thread_local vector<double> buf;
-    buf.assign((sampleCount + padding) * outerThreadCount, 0.0);
-    Eigen::Map<ArrayXXdc> paddedPredByThread(data(buf), sampleCount + padding, outerThreadCount);
+    buf.assign((sampleCount + padding) * threadCount, 0.0);
+    Eigen::Map<ArrayXXdc> paddedPredByThread(data(buf), sampleCount + padding, threadCount);
     RefXXdc predByThread(paddedPredByThread(Eigen::seqN(0, sampleCount), Eigen::all));
     std::atomic<size_t> nextK = 0;
 
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
+    BEGIN_OMP_PARALLEL(threadCount)
     {
         const size_t id = omp_get_thread_num();
         while (true) {
@@ -189,7 +189,7 @@ ArrayXd BoostPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
             basePredictors_[k]->predict_(inData, static_cast<double>(c1_), predByThread.col(id));
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL
+    END_OMP_PARALLEL
 
     ArrayXd pred = static_cast<double>(c0_) + predByThread.rowwise().sum();
     return (1.0 + (-pred).exp()).inverse();
@@ -296,8 +296,6 @@ size_t EnsemblePredictor::initVariableCount_(const vector<shared_ptr<Predictor>>
 
 ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
 {
-    if (threadCount == 0)
-        threadCount = omp_get_max_threads();
     if (threadCount == 1)
         return predictImplNoThreads_(inData);
 
@@ -310,7 +308,7 @@ ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData, size_t threadCount) con
     RefXXdc predByThread(paddedPredByThread(Eigen::seqN(0, sampleCount), Eigen::all));
     std::atomic<size_t> nextK = 0;
 
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
+    BEGIN_OMP_PARALLEL(outerThreadCount)
     {
         const size_t id = omp_get_thread_num();
         const size_t innerThreadCount
@@ -322,7 +320,7 @@ ArrayXd EnsemblePredictor::predictImpl_(CRefXXfc inData, size_t threadCount) con
             predByThread.col(id) += predictors_[k]->predictImpl_(inData, innerThreadCount);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL
+    END_OMP_PARALLEL
 
     return predByThread.rowwise().sum() / static_cast<double>(predictorCount);
 }
@@ -332,7 +330,7 @@ ArrayXd EnsemblePredictor::predictImplNoThreads_(CRefXXfc inData) const
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
     for (const auto& predictor : predictors_)
-        pred += predictor->predictImpl_(inData, 1);
+        pred += predictor->predictImplNoThreads_(inData);
     pred /= static_cast<double>(size(predictors_));
     return pred;
 }
@@ -418,8 +416,6 @@ size_t UnionPredictor::initVariableCount_(const vector<shared_ptr<Predictor>>& p
 
 ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
 {
-    if (threadCount == 0)
-        threadCount = omp_get_max_threads();
     if (threadCount == 1)
         return predictImplNoThreads_(inData);
 
@@ -432,7 +428,7 @@ ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
     RefXXdc predByThread(paddedPredByThread(Eigen::seqN(0, sampleCount), Eigen::all));
     std::atomic<size_t> nextK = 0;
 
-    BEGIN_EXCEPTION_SAFE_OMP_PARALLEL(static_cast<int>(outerThreadCount))
+    BEGIN_OMP_PARALLEL(outerThreadCount)
     {
         const size_t id = omp_get_thread_num();
         const size_t innerThreadCount
@@ -444,7 +440,7 @@ ArrayXd UnionPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
             predByThread.col(id) *= 1.0 - predictors_[k]->predictImpl_(inData, innerThreadCount);
         }
     }
-    END_EXCEPTION_SAFE_OMP_PARALLEL
+    END_OMP_PARALLEL
 
     return 1.0 - predByThread.rowwise().prod();
 }
@@ -454,7 +450,7 @@ ArrayXd UnionPredictor::predictImplNoThreads_(CRefXXfc inData) const
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Ones(sampleCount);
     for (const auto& predictor : predictors_)
-        pred *= 1.0 - predictor->predictImpl_(inData, 1);
+        pred *= 1.0 - predictor->predictImplNoThreads_(inData);
     return 1.0 - pred;
 }
 

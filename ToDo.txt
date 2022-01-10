@@ -1,19 +1,7 @@
 
-assert correct thread counts in every omp parallel block
-continue review of ParallelTRain.cpp
-	thread shift?
+review all multi-threading one more time
 
-review profiling in TreeTrainerImpl::trainImpl1_
-
-review the non-nested parallelism
-	TreeTrainerImpl::initSortedSamples_
-	TreeTrainerImpl::trainImpl1_
-	TTest
-	FTest
-
-..................................................................................
-
-improved Higgs example
+......................................................................................................
 
 test and evaluate cycle option
 	run Leukemia 20x10x5 with and w/o cycling
@@ -39,6 +27,8 @@ report:
 			float* pOutDataRowI = &outData(outI, 0);
 
 ............................................................................
+
+improved Higgs example
 
 BART
 
@@ -101,4 +91,3 @@ keep or ditch?
 	saveMemory option
 	stratifiedSamples option
 	support for loading old file format versions
-	cycle options

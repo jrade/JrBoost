@@ -38,6 +38,7 @@ protected:
 
 private:
     virtual ArrayXd predictImpl_(CRefXXfc inData, size_t threadCount) const = 0;
+    virtual ArrayXd predictImplNoThreads_(CRefXXfc inData) const = 0;
     virtual double predictOneImpl_(CRefXf inData) const = 0;
     virtual ArrayXf variableWeightsImpl_() const = 0;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const = 0;
@@ -65,7 +66,7 @@ private:
 
     virtual ~BoostPredictor();
     virtual ArrayXd predictImpl_(CRefXXfc inData, size_t threadCount) const;
-    ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
+    virtual ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
     virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const;
@@ -92,7 +93,7 @@ private:
 
     virtual ~EnsemblePredictor() = default;
     virtual ArrayXd predictImpl_(CRefXXfc inData, size_t threadCount) const;
-    ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
+    virtual ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
     virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const;
@@ -117,7 +118,7 @@ private:
 
     virtual ~UnionPredictor() = default;
     virtual ArrayXd predictImpl_(CRefXXfc inData, size_t threadCount) const;
-    ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
+    virtual ArrayXd predictImplNoThreads_(CRefXXfc inData) const;
     virtual double predictOneImpl_(CRefXf inData) const;
     virtual ArrayXf variableWeightsImpl_() const;
     virtual shared_ptr<Predictor> reindexVariablesImpl_(CRefXs newIndices) const;

@@ -167,3 +167,27 @@ inline void sortedIndices(T p0, T p1, U q0, F f)
     while (r != r1)
         *(q++) = (r++)->first;
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+using RandomNumberEngine = splitmix;
+
+class InitializedRandomNumberEngine : public RandomNumberEngine {
+public:
+    InitializedRandomNumberEngine()
+    {
+        std::random_device rd;
+        seed(rd);
+    }
+};
+
+inline thread_local InitializedRandomNumberEngine theRne;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+class InterruptHandler {
+public:
+    virtual void check() = 0;
+};
+
+inline InterruptHandler* currentInterruptHandler = nullptr;
