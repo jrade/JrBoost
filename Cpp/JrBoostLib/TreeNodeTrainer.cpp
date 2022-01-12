@@ -5,8 +5,9 @@
 #include "pch.h"
 
 #include "TreeNodeTrainer.h"
+#include "TreeTrainerBuffers.h"
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
 #include "TreeTrainer.h"
 #endif
 
@@ -54,7 +55,7 @@ void TreeNodeTrainer<SampleIndex>::fork(TreeNodeTrainer* other) const
 template<typename SampleIndex>
 void TreeNodeTrainer<SampleIndex>::update(
     CRefXXfc inData,
-#if PACKED_DATA
+#if USE_PACKED_DATA
     const WyPack* pWyPacks,
 #else
     CRefXd outData,
@@ -73,7 +74,7 @@ void TreeNodeTrainer<SampleIndex>::update(
 
     const float* pInDataColJ = std::data(inData.col(j));
 
-#if !PACKED_DATA
+#if !USE_PACKED_DATA
     const double* pOutData = std::data(outData);
     const double* pWeights = std::data(weights);
 #endif
@@ -89,7 +90,7 @@ void TreeNodeTrainer<SampleIndex>::update(
         const size_t i = nextI;
         nextI = *++p;
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
         const double w = pWyPacks[i].w;
         const double wy = pWyPacks[i].wy;
         leftSumW += w;

@@ -28,7 +28,7 @@ public:
     void fork(TreeNodeTrainer* other) const;
     void update(
         CRefXXfc inData,
-#if PACKED_DATA
+#if USE_PACKED_DATA
         const WyPack* pWyPacks,
 #else
         CRefXd outData, CRefXd weights,

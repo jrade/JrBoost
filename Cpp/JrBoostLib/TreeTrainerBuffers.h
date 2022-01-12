@@ -7,7 +7,7 @@
 #include "TreeNodeTrainer.h"
 
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
 struct alignas(2 * sizeof(double)) WyPack {
     double w;
     double wy;
@@ -23,7 +23,7 @@ public:
 protected:
     struct ThreadLocalData0_ {
         ThreadLocalData0_* parent = nullptr;   // thread local data of parent thread
-#if PACKED_DATA
+#if USE_PACKED_DATA
         vector<WyPack> wyPacks;
 #endif
         vector<size_t> usedVariables;

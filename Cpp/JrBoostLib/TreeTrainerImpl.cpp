@@ -136,7 +136,9 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     unique_ptr<BasePredictor> pred;
     GUARDED_PROFILE_PUSH(PROFILE::TREE_TRAIN);
 
-    // validateData_(outData, weights);
+    initTree_();
+
+    TmpData_ tmpData{outData, weights, options, threadCount, 0, 0};
 
     // how many different status values are there?
     // not more than the number of samples
@@ -152,16 +154,14 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     }
     size_t maxStatusCount = std::min(sampleCount_, maxNodeCount + 1);
 
-    initTree_();
-
     if (maxStatusCount <= (1 << 8))
-        ITEM_COUNT = trainImpl1_<uint8_t>(outData, weights, options, threadCount, ITEM_COUNT);
+        ITEM_COUNT = trainImpl1_<uint8_t>(&tmpData, ITEM_COUNT);
     else if (maxStatusCount <= (1 << 16))
-        ITEM_COUNT = trainImpl1_<uint16_t>(outData, weights, options, threadCount, ITEM_COUNT);
+        ITEM_COUNT = trainImpl1_<uint16_t>(&tmpData, ITEM_COUNT);
     else if (maxStatusCount <= (1LL << 32))
-        ITEM_COUNT = trainImpl1_<uint32_t>(outData, weights, options, threadCount, ITEM_COUNT);
+        ITEM_COUNT = trainImpl1_<uint32_t>(&tmpData, ITEM_COUNT);
     else
-        ITEM_COUNT = trainImpl1_<uint64_t>(outData, weights, options, threadCount, ITEM_COUNT);
+        ITEM_COUNT = trainImpl1_<uint64_t>(&tmpData, ITEM_COUNT);
 
     ThreadLocalData0_& t0 = threadLocalData0_;
     const TreeNodeExt* root = data(t0.tree.front());
@@ -174,35 +174,38 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(
-    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount, size_t ITEM_COUNT) const
+size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(TmpData_* tmpData, size_t ITEM_COUNT) const
 {
-#if PACKED_DATA
+    PROFILE::SWITCH(PROFILE::VALIDATE_DATA, ITEM_COUNT);
+    validateData_(tmpData);
+    ITEM_COUNT = sampleCount_;
+
+#if USE_PACKED_DATA
     PROFILE::SWITCH(PROFILE::PACK_DATA, ITEM_COUNT);
     ITEM_COUNT = sampleCount_;
-    initWyPacks(outData, weights);
+    initWyPacks_(tmpData);
 #endif
 
     PROFILE::SWITCH(PROFILE::INIT_SAMPLE_STATUS, ITEM_COUNT);
     ITEM_COUNT = sampleCount_;
-    size_t usedSampleCount = initSampleStatus_<SampleStatus>(outData, weights, options);
+    initSampleStatus_<SampleStatus>(tmpData);
 
-    size_t usedVariableCount = usedVariableCount_(options);
+    size_t usedVariableCount = usedVariableCount_(tmpData);
     if (usedVariableCount == 0)
         return ITEM_COUNT;
 
-    if (threadCount == 0 || threadCount > omp_get_max_threads())
-        threadCount = omp_get_max_threads();
-    threadCount = std::min(threadCount, usedVariableCount);
+    if (tmpData->threadCount == 0 || tmpData->threadCount > omp_get_max_threads())
+        tmpData->threadCount = omp_get_max_threads();
+    tmpData->threadCount = std::min(tmpData->threadCount, usedVariableCount);
 
-    for (size_t d = 0; d != options.maxTreeDepth(); ++d) {
+    for (tmpData->d = 0; tmpData->d != tmpData->options.maxTreeDepth(); ++tmpData->d) {
 
-        if (d == 0 || options.selectVariablesByLevel()) {
+        if (tmpData->d == 0 || tmpData->options.selectVariablesByLevel()) {
             PROFILE::SWITCH(PROFILE::USED_VARIABLES, ITEM_COUNT);
-            ITEM_COUNT = initUsedVariables_(options);
+            ITEM_COUNT = initUsedVariables_(tmpData);   // FIX THIS!!!!!!!!!!!!!!!!!!!!!!!
         }
 
-        initNodeTrainers_(options, d, threadCount);   // very fast, no need to profile
+        initNodeTrainers_(tmpData);   // very fast, no need to profile
 
         PROFILE::SWITCH(PROFILE::ZERO, ITEM_COUNT);   // calibrate the profiling
         ITEM_COUNT = 0;
@@ -214,15 +217,16 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(
         ThreadLocalData1_<SampleIndex>& outerT1 = threadLocalData1_<SampleIndex>;
         ThreadLocalData2_<SampleStatus>& outerT2 = threadLocalData2_<SampleStatus>;
 
-        if (threadCount == 1) {
+        if (tmpData->threadCount == 1) {
 
             outerT0.parent = &outerT0;
             outerT1.parent = &outerT1;
             outerT2.parent = &outerT2;
 
+            size_t threadIndex = 0;
+
             for (size_t usedVariableIndex = 0; usedVariableIndex != usedVariableCount; ++usedVariableIndex)
-                ITEM_COUNT = trainImpl2_<SampleIndex>(
-                    outData, weights, options, usedSampleCount, d, usedVariableIndex, 0, ITEM_COUNT);
+                ITEM_COUNT = trainImpl2_<SampleIndex>(tmpData, usedVariableIndex, threadIndex, ITEM_COUNT);
 
             PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
             ITEM_COUNT = 0;
@@ -235,10 +239,10 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(
         else {
 
             std::atomic<size_t> nextUsedVariableIndex = 0;
-            BEGIN_OMP_PARALLEL(threadCount)
+            BEGIN_OMP_PARALLEL(tmpData->threadCount)
             {
                 const size_t threadIndex = omp_get_thread_num();
-
+                size_t INNER_ITEM_COUNT = ITEM_COUNT;
                 ThreadLocalData0_& innerT0 = threadLocalData0_;
                 ThreadLocalData1_<SampleIndex>& innerT1 = threadLocalData1_<SampleIndex>;
                 ThreadLocalData2_<SampleStatus>& innerT2 = threadLocalData2_<SampleStatus>;
@@ -253,30 +257,30 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(
                     if (usedVariableIndex >= usedVariableCount)
                         break;
 
-                    ITEM_COUNT = trainImpl2_<SampleIndex>(
-                        outData, weights, options, usedSampleCount, d, usedVariableIndex, threadIndex, ITEM_COUNT);
+                    INNER_ITEM_COUNT
+                        = trainImpl2_<SampleIndex>(tmpData, usedVariableIndex, threadIndex, INNER_ITEM_COUNT);
                 }
 
-                PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
-                ITEM_COUNT = 0;
+                PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, INNER_ITEM_COUNT);
 
                 innerT0.parent = nullptr;
                 innerT1.parent = nullptr;
                 innerT2.parent = nullptr;
             }
             END_OMP_PARALLEL
+            ITEM_COUNT = 0;
         }
 
-        usedSampleCount = finalizeNodeTrainers_(d, threadCount);   // very fast, no need to profile
+        finalizeNodeTrainers_(tmpData);   // very fast, no need to profile
 
-        if (usedSampleCount == 0)
+        if (tmpData->usedSampleCount == 0)
             break;
-        if (d + 1 == options.maxTreeDepth())
+        if (tmpData->d + 1 == tmpData->options.maxTreeDepth())
             break;
 
         PROFILE::SWITCH(PROFILE::UPDATE_SAMPLE_STATUS, ITEM_COUNT);
         ITEM_COUNT = sampleCount_;
-        updateSampleStatus_<SampleStatus>(outData, weights, d);
+        updateSampleStatus_<SampleStatus>(tmpData);
 
     }   // end d loop
 
@@ -288,34 +292,29 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(
 template<typename SampleIndex>
 template<typename SampleStatus>
 size_t TreeTrainerImpl<SampleIndex>::trainImpl2_(
-    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t usedSampleCount, size_t d,
-    size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const
+    TmpData_* tmpData, size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const
 {
     const SampleIndex* pOrderedSamples;
 
-    if (d == 0) {
+    if (tmpData->d == 0) {
         PROFILE::SWITCH(PROFILE::INIT_ORDERED_SAMPLES, ITEM_COUNT);
         ITEM_COUNT = sampleCount_;
-        pOrderedSamples = initOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+        pOrderedSamples = initOrderedSamples_<SampleStatus>(tmpData, usedVariableIndex);
     }
-    else if (options.saveMemory() || options.selectVariablesByLevel()) {
+    else if (tmpData->options.saveMemory() || tmpData->options.selectVariablesByLevel()) {
         PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
         ITEM_COUNT = sampleCount_;
-        pOrderedSamples = updateOrderedSampleSaveMemory_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+        pOrderedSamples = updateOrderedSampleSaveMemory_<SampleStatus>(tmpData, usedVariableIndex);
     }
     else {
         PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
-        ITEM_COUNT = usedSampleCount;
-        pOrderedSamples = updateOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
+        ITEM_COUNT = tmpData->usedSampleCount;
+        pOrderedSamples = updateOrderedSamples_<SampleStatus>(tmpData, usedVariableIndex);
     }
 
     PROFILE::SWITCH(PROFILE::FIND_BEST_SPLITS, ITEM_COUNT);
-    ITEM_COUNT = usedSampleCount;
-#if PACKED_DATA
-    updateNodeTrainers_(pOrderedSamples, usedVariableIndex, d);
-#else
-    updateNodeTrainers_(outData, weights, pOrderedSamples, usedVariableIndex, d, threadIndex);
-#endif
+    ITEM_COUNT = tmpData->usedSampleCount;
+    updateNodeTrainers_(tmpData, pOrderedSamples, usedVariableIndex, threadIndex);
 
     return ITEM_COUNT;
 }
@@ -323,31 +322,31 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl2_(
 //......................................................................................................................
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::validateData_(CRefXd outData, CRefXd weights) const
+void TreeTrainerImpl<SampleIndex>::validateData_(TmpData_* tmpData) const
 {
-    if (static_cast<size_t>(outData.rows()) != sampleCount_)
+    if (static_cast<size_t>(tmpData->outData.rows()) != sampleCount_)
         throw std::invalid_argument("Train indata and outdata have different numbers of samples.");
-    if (!outData.isFinite().all())
+    if (!tmpData->outData.isFinite().all())
         throw std::invalid_argument("Train outdata has values that are infinity or NaN.");
 
-    if (static_cast<size_t>(weights.rows()) != sampleCount_)
+    if (static_cast<size_t>(tmpData->weights.rows()) != sampleCount_)
         throw std::invalid_argument("Train indata and weights have different numbers of samples.");
-    if (!weights.isFinite().all())
+    if (!tmpData->weights.isFinite().all())
         throw std::invalid_argument("Train weights have values that are infinity or NaN.");
-    if (!(weights >= 0.0).all())
+    if (!(tmpData->weights >= 0.0).all())
         throw std::invalid_argument("Train weights have non-negative values.");
 }
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initWyPacks(CRefXd outData, CRefXd weights) const
+void TreeTrainerImpl<SampleIndex>::initWyPacks_(TmpData_* tmpData) const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     t0.wyPacks.resize(sampleCount_);
 
-    const double* pOutData = std::data(outData);
-    const double* pWeights = std::data(weights);
+    const double* pOutData = std::data(tmpData->outData);
+    const double* pWeights = std::data(tmpData->weights);
     WyPack* pWyPacks = data(t0.wyPacks);
 
     for (size_t i = 0; i != sampleCount_; ++i) {   // do max weight in loop?
@@ -361,10 +360,11 @@ void TreeTrainerImpl<SampleIndex>::initWyPacks(CRefXd outData, CRefXd weights) c
 
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::usedVariableCount_(const BaseOptions& options) const
+size_t TreeTrainerImpl<SampleIndex>::usedVariableCount_(TmpData_* tmpData) const
 {
-    size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
-    size_t usedVariableCount = static_cast<size_t>(std::round(options.usedVariableRatio() * candidateVariableCount));
+    size_t candidateVariableCount = std::min(variableCount_, tmpData->options.topVariableCount());
+    size_t usedVariableCount
+        = static_cast<size_t>(std::round(tmpData->options.usedVariableRatio() * candidateVariableCount));
     // usedVariableCount = std::max<size_t>(usedVariableCount, 1);
 
     // ASSERT(0 < usedVariableCount);
@@ -376,14 +376,14 @@ size_t TreeTrainerImpl<SampleIndex>::usedVariableCount_(const BaseOptions& optio
 
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(const BaseOptions& options) const
+size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(TmpData_* tmpData) const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
     RandomNumberEngine& rne = ::theRne;
 
-    size_t candidateVariableCount = std::min(variableCount_, options.topVariableCount());
-    size_t usedVariableCount = usedVariableCount_(options);
+    size_t candidateVariableCount = std::min(variableCount_, tmpData->options.topVariableCount());
+    size_t usedVariableCount = usedVariableCount_(tmpData);
 
     t0.usedVariables.resize(usedVariableCount);
     size_t* pUsedVariables = data(t0.usedVariables);
@@ -400,7 +400,8 @@ size_t TreeTrainerImpl<SampleIndex>::initUsedVariables_(const BaseOptions& optio
         ++j;
     }
 
-    if (!options.saveMemory() && !options.selectVariablesByLevel() && options.maxTreeDepth() != 1)
+    if (!tmpData->options.saveMemory() && !tmpData->options.selectVariablesByLevel()
+        && tmpData->options.maxTreeDepth() != 1)
         t1.orderedSamplesByVariable.resize(std::max(usedVariableCount, size(t1.orderedSamplesByVariable)));
 
     return j;   // number of iterations of the loop
@@ -430,7 +431,7 @@ void TreeTrainerImpl<SampleIndex>::initTree_() const
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd weights, const BaseOptions& options) const
+void TreeTrainerImpl<SampleIndex>::initSampleStatus_(TmpData_* tmpData) const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
@@ -441,24 +442,25 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
     t2.sampleStatus.resize(sampleCount);
     SampleStatus* pSampleStatus = data(t2.sampleStatus);
 
-    const double minSampleWeight
-        = (options.minRelSampleWeight() == 0)
-              ? options.minAbsSampleWeight()
-              : std::max(options.minAbsSampleWeight(), options.minRelSampleWeight() * weights.maxCoeff());
+    const double minSampleWeight = (tmpData->options.minRelSampleWeight() == 0)
+                                       ? tmpData->options.minAbsSampleWeight()
+                                       : std::max(
+                                           tmpData->options.minAbsSampleWeight(),
+                                           tmpData->options.minRelSampleWeight() * tmpData->weights.maxCoeff());
 
     if (minSampleWeight == 0.0) {
 
-        if (options.usedSampleRatio() == 1.0) {
+        if (tmpData->options.usedSampleRatio() == 1.0) {
             // select all samples
             std::fill(pSampleStatus, pSampleStatus + sampleCount, static_cast<SampleStatus>(1));
         }
 
-        else if (!options.stratifiedSamples()) {
+        else if (!tmpData->options.stratifiedSamples()) {
 
             size_t n = sampleCount;
 
             // m = number of used samples
-            size_t m = static_cast<size_t>(std::round(options.usedSampleRatio() * sampleCount));
+            size_t m = static_cast<size_t>(std::round(tmpData->options.usedSampleRatio() * sampleCount));
 
             // randomly select m of n samples
             for (size_t i = 0; i != sampleCount; ++i) {
@@ -482,7 +484,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
             array<size_t, 256> m;
             for (size_t z = 0; z != stratumCount_; ++z) {
                 n[z] = sampleCountByStratum_[z];
-                m[z] = static_cast<size_t>(std::round(options.usedSampleRatio() * n[z]));
+                m[z] = static_cast<size_t>(std::round(tmpData->options.usedSampleRatio() * n[z]));
             }
 
             // for each z, randomly select m[z] of n[z] samples in stratum z
@@ -499,9 +501,9 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
 
     else {   // minSampleWeight > 0.0
 
-        const double* pWeights = std::data(weights);
+        const double* pWeights = std::data(tmpData->weights);
 
-        if (options.usedSampleRatio() == 1.0) {
+        if (tmpData->options.usedSampleRatio() == 1.0) {
             // select all samples with weight >= min sample weight
             for (size_t i = 0; i != sampleCount; ++i) {
                 bool s = pWeights[i] >= minSampleWeight;
@@ -509,7 +511,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
             }
         }
 
-        else if (!options.stratifiedSamples()) {
+        else if (!tmpData->options.stratifiedSamples()) {
 
             // store all samples with weight >= min sample weight in sample buffer
             t1.sampleBuffer.resize(sampleCount);
@@ -525,7 +527,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
             size_t n = size(t1.sampleBuffer);
 
             // m = number of used samples
-            size_t m = static_cast<size_t>(std::round(options.usedSampleRatio() * n));
+            size_t m = static_cast<size_t>(std::round(tmpData->options.usedSampleRatio() * n));
 
             // randomly select m of n samples with weight >= min sample weight
             std::fill(pSampleStatus, pSampleStatus + sampleCount, static_cast<SampleStatus>(0));
@@ -560,7 +562,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
             // m[z] = number of used samples in stratum z
             array<size_t, 256> m;
             for (size_t z = 0; z != stratumCount_; ++z)
-                m[z] = static_cast<size_t>(std::round(options.usedSampleRatio() * n[z]));
+                m[z] = static_cast<size_t>(std::round(tmpData->options.usedSampleRatio() * n[z]));
 
             // for each z, randomly select m[z] of n[z] samples with weight >= min sample weight in stratum z
             std::fill(pSampleStatus, pSampleStatus + sampleCount, static_cast<SampleStatus>(0));
@@ -579,11 +581,11 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
 
     // init sums
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
     const WyPack* pWyPacks = data(t0.wyPacks);
 #else
-    const double* pOutData = std::data(outData);
-    const double* pWeights = std::data(weights);
+    const double* pOutData = std::data(tmpData->outData);
+    const double* pWeights = std::data(tmpData->weights);
 #endif
 
     size_t usedSampleCount = 0;
@@ -591,7 +593,7 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
     double sumWY = 0.0;
     for (size_t i = 0; i != sampleCount; ++i) {
         SampleStatus s = pSampleStatus[i];   // 0 or 1
-#if PACKED_DATA
+#if USE_PACKED_DATA
         const double w = pWyPacks[i].w;
         const double wy = pWyPacks[i].wy;
         usedSampleCount += s;
@@ -605,14 +607,13 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
         sumWY += s * w * y;
 #endif
     }
+    tmpData->usedSampleCount = usedSampleCount;
 
     TreeNodeExt* root = data(t0.tree.front());
     root->sampleCount = usedSampleCount;
     root->sumW = sumW;
     root->sumWY = sumWY;
     root->y = (sumW == 0.0) ? 0.0f : static_cast<float>(sumWY / sumW);
-
-    return usedSampleCount;
 }
 
 // The next function updates the status of each sample based on layer d to the status based on layer d + 1.
@@ -620,15 +621,15 @@ size_t TreeTrainerImpl<SampleIndex>::initSampleStatus_(CRefXd outData, CRefXd we
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const
+void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(TmpData_* tmpData) const
 {
 #define PRECISE_SUMS 1
 
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
 
-    const vector<TreeNodeExt>& parentNodes = t0.tree[d];
-    vector<TreeNodeExt>& childNodes = t0.tree[d + 1];
+    const vector<TreeNodeExt>& parentNodes = t0.tree[tmpData->d];
+    vector<TreeNodeExt>& childNodes = t0.tree[tmpData->d + 1];
 
     const TreeNodeExt* pParentNodes = data(parentNodes);
     TreeNodeExt* pChildNodes = data(childNodes);
@@ -641,11 +642,11 @@ void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd we
         childNode.sumWY = 0.0;
     }
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
     const WyPack* pWyPacks = data(t0.wyPacks);
 #else
-    const double* pOutData = std::data(outData);
-    const double* pWeights = std::data(weights);
+    const double* pOutData = std::data(tmpData->outData);
+    const double* pWeights = std::data(tmpData->weights);
 #endif
 #endif
 
@@ -670,7 +671,7 @@ void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd we
 
 #if PRECISE_SUMS
         ++pChildNode->sampleCount;
-#if PACKED_DATA
+#if USE_PACKED_DATA
         const double w = pWyPacks[i].w;
         const double wy = pWyPacks[i].wy;
         pChildNode->sumW += w;
@@ -713,23 +714,22 @@ void TreeTrainerImpl<SampleIndex>::updateSampleStatus_(CRefXd outData, CRefXd we
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
-    size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const
+const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(TmpData_* tmpData, size_t usedVariableIndex) const
 {
     // called from the inner threads so be careful to distinguish between t0 and t0.parent etc.
 
-    ASSERT(d == 0);
+    ASSERT(tmpData->d == 0);
 
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
 
     size_t j = t0.parent->usedVariables[usedVariableIndex];
-    t1.sampleBuffer.resize(usedSampleCount);
+    t1.sampleBuffer.resize(tmpData->usedSampleCount);
 
     const SampleIndex* pSortedSamples = data(sortedSamples_[j]);
     SampleIndex* pOrderedSamples = data(t1.sampleBuffer);
-    SampleIndex* pOrderedSamplesEnd = data(t1.sampleBuffer) + usedSampleCount;
+    SampleIndex* pOrderedSamplesEnd = data(t1.sampleBuffer) + tmpData->usedSampleCount;
     const SampleStatus* pSampleStatus = data(t2.parent->sampleStatus);
 
     while (pOrderedSamples != pOrderedSamplesEnd) {
@@ -741,7 +741,8 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
     }
 
     pOrderedSamples = data(t1.sampleBuffer);
-    if (d + 1 != options.maxTreeDepth() && !options.saveMemory() && !options.selectVariablesByLevel())
+    if (tmpData->d + 1 != tmpData->options.maxTreeDepth() && !tmpData->options.saveMemory()
+        && !tmpData->options.selectVariablesByLevel())
         // save the ordered samples to be used as input when ordering samples for the next layer
         swap(t1.sampleBuffer, t1.parent->orderedSamplesByVariable[usedVariableIndex]);
     return pOrderedSamples;
@@ -750,8 +751,8 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(
-    size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& /*options*/, size_t d) const
+const SampleIndex*
+TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(TmpData_* tmpData, size_t usedVariableIndex) const
 {
     // called from the inner threads so be careful to distinguish between t0 and t0.parent etc.
 
@@ -759,9 +760,9 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
 
-    const vector<TreeNodeExt>& nodes = t0.parent->tree[d];
+    const vector<TreeNodeExt>& nodes = t0.parent->tree[tmpData->d];
     const size_t nodeCount = size(nodes);
-    const size_t unusedSampleCount = sampleCount_ - usedSampleCount;
+    const size_t unusedSampleCount = sampleCount_ - tmpData->usedSampleCount;
 
     t1.sampleBuffer.resize(sampleCount_);
     t1.samplePointerBuffer.resize(nodeCount + 1);
@@ -796,8 +797,8 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
-    size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const
+const SampleIndex*
+TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(TmpData_* tmpData, size_t usedVariableIndex) const
 {
     // called from inner threads; be careful to distinguish between t0 and t0.parent etc.
 
@@ -805,11 +806,11 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
 
-    const vector<TreeNodeExt>& prevNodes = t0.parent->tree[d - 1];
-    const vector<TreeNodeExt>& nodes = t0.parent->tree[d];
+    const vector<TreeNodeExt>& prevNodes = t0.parent->tree[tmpData->d - 1];
+    const vector<TreeNodeExt>& nodes = t0.parent->tree[tmpData->d];
     const size_t nodeCount = size(nodes);
 
-    t1.sampleBuffer.resize(usedSampleCount);
+    t1.sampleBuffer.resize(tmpData->usedSampleCount);
     t1.samplePointerBuffer.resize(nodeCount);
 
     const SampleStatus* pSampleStatus = data(t2.parent->sampleStatus);
@@ -843,7 +844,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
 
     pOrderedSamples = data(t1.sampleBuffer);
 
-    if (d + 1 != options.maxTreeDepth())
+    if (tmpData->d + 1 != tmpData->options.maxTreeDepth())
         // save the ordered samples to be used as input when ordering samples for the next layer
         swap(t1.parent->orderedSamplesByVariable[usedVariableIndex], t1.sampleBuffer);
 
@@ -853,18 +854,18 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
 //......................................................................................................................
 
 template<typename SampleIndex>
-void TreeTrainerImpl<SampleIndex>::initNodeTrainers_(const BaseOptions& options, size_t d, size_t threadCount) const
+void TreeTrainerImpl<SampleIndex>::initNodeTrainers_(TmpData_* tmpData) const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
 
-    const vector<TreeNodeExt>& parentNodes = t0.tree[d];
+    const vector<TreeNodeExt>& parentNodes = t0.tree[tmpData->d];
     const size_t parentNodeCount = size(parentNodes);
-    t1.treeNodeTrainers.resize(threadCount * parentNodeCount);
+    t1.treeNodeTrainers.resize(tmpData->threadCount * parentNodeCount);
 
     for (size_t k = 0; k != parentNodeCount; ++k)
-        t1.treeNodeTrainers[k].init(parentNodes[k], options);
-    for (size_t threadIndex = 1; threadIndex != threadCount; ++threadIndex) {
+        t1.treeNodeTrainers[k].init(parentNodes[k], tmpData->options);
+    for (size_t threadIndex = 1; threadIndex != tmpData->threadCount; ++threadIndex) {
         const size_t k0 = threadIndex * parentNodeCount;
         for (size_t k = 0; k != parentNodeCount; ++k)
             t1.treeNodeTrainers[k].fork(&t1.treeNodeTrainers[k0 + k]);
@@ -877,24 +878,21 @@ void TreeTrainerImpl<SampleIndex>::initNodeTrainers_(const BaseOptions& options,
 
 template<typename SampleIndex>
 void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
-#if !PACKED_DATA
-    CRefXd outData, CRefXd weights,
-#endif
-    const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d, size_t threadIndex) const
+    TmpData_* tmpData, const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t threadIndex) const
 {
     // called from inner threads; be careful to distinguish between t0 and t0.parent etc.
 
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
 
-    const vector<TreeNodeExt>& parentNodes = t0.parent->tree[d];
+    const vector<TreeNodeExt>& parentNodes = t0.parent->tree[tmpData->d];
     const size_t parentNodeCount = size(parentNodes);
 
     const size_t k0 = threadIndex * parentNodeCount;
     const SampleIndex* p0 = orderedSamples;
     size_t j = t0.parent->usedVariables[usedVariableIndex];
 
-#if PACKED_DATA
+#if USE_PACKED_DATA
     const WyPack* pWyPacks = data(t0.parent->wyPacks);
 #endif
 
@@ -902,10 +900,10 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
         const SampleIndex* p1 = p0 + parentNodes[k].sampleCount;
         t1.parent->treeNodeTrainers[k0 + k].update(
             inData_,
-#if PACKED_DATA
+#if USE_PACKED_DATA
             pWyPacks,
 #else
-            outData, weights,
+            tmpData->outData, tmpData->weights,
 #endif
             p0, p1, j);
         p0 = p1;
@@ -918,22 +916,22 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
 // It returns the number of samples used by the nodes in the new layer.
 
 template<typename SampleIndex>
-size_t TreeTrainerImpl<SampleIndex>::finalizeNodeTrainers_(size_t d, size_t threadCount) const
+void TreeTrainerImpl<SampleIndex>::finalizeNodeTrainers_(TmpData_* tmpData) const
 {
     ThreadLocalData0_& t0 = threadLocalData0_;
     ThreadLocalData1_<SampleIndex>& t1 = threadLocalData1_<SampleIndex>;
 
-    t0.tree.resize(std::max(d + 2, size(t0.tree)));
-    vector<TreeNodeExt>& parentNodes = t0.tree[d];
+    t0.tree.resize(std::max(tmpData->d + 2, size(t0.tree)));
+    vector<TreeNodeExt>& parentNodes = t0.tree[tmpData->d];
     const size_t parentNodeCount = size(parentNodes);
 
-    for (size_t threadIndex = 1; threadIndex != threadCount; ++threadIndex) {
+    for (size_t threadIndex = 1; threadIndex != tmpData->threadCount; ++threadIndex) {
         const size_t k0 = threadIndex * parentNodeCount;
         for (size_t k = 0; k != parentNodeCount; ++k)
             t1.treeNodeTrainers[k].join(t1.treeNodeTrainers[k0 + k]);
     }
 
-    vector<TreeNodeExt>& childNodes = t0.tree[d + 1];
+    vector<TreeNodeExt>& childNodes = t0.tree[tmpData->d + 1];
     const size_t maxChildNodeCount = 2 * parentNodeCount;
     childNodes.resize(maxChildNodeCount);
 
@@ -942,11 +940,10 @@ size_t TreeTrainerImpl<SampleIndex>::finalizeNodeTrainers_(size_t d, size_t thre
     TreeNodeExt* pChildNode = data(childNodes);
     for (size_t k = 0; k != parentNodeCount; ++k)
         usedSampleCount += t1.treeNodeTrainers[k].finalize(&pParentNode, &pChildNode);
+    tmpData->usedSampleCount = usedSampleCount;
 
     const size_t childNodeCount = pChildNode - data(childNodes);
     childNodes.resize(childNodeCount);
-
-    return usedSampleCount;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

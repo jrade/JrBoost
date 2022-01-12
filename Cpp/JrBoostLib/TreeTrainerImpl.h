@@ -16,6 +16,8 @@ public:
     virtual ~TreeTrainerImpl() = default;
 
 private:
+    struct TmpData_;
+
     vector<size_t> initSampleCountByStratum_() const;
     vector<vector<SampleIndex>> initSortedSamples_() const;
 
@@ -23,44 +25,45 @@ private:
     trainImpl0_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
     template<typename SampleStatus>
-    size_t trainImpl1_(
-        CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount, size_t ITEM_COUNT) const;
+    size_t trainImpl1_(TmpData_* tmpData, size_t ITEM_COUNT) const;
 
     template<typename SampleStatus>
-    size_t trainImpl2_(
-        CRefXd outData, CRefXd weights, const BaseOptions& options, size_t usedSampleCount, size_t d,
-        size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const;
+    size_t trainImpl2_(TmpData_* tmpData, size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const;
 
-    void validateData_(CRefXd outData, CRefXd weights) const;
-#if PACKED_DATA
-    void initWyPacks(CRefXd outData, CRefXd weights) const;
+    void validateData_(TmpData_* tmpData) const;
+#if USE_PACKED_DATA
+    void initWyPacks_(TmpData_* tmpData) const;
 #endif
-    size_t usedVariableCount_(const BaseOptions& options) const;
-    size_t initUsedVariables_(const BaseOptions& options) const;
+    size_t usedVariableCount_(TmpData_* tmpData) const;
+    size_t initUsedVariables_(TmpData_* tmpData) const;
     void initTree_() const;
 
     template<typename SampleStatus>
-    size_t initSampleStatus_(CRefXd outData, CRefXd weights, const BaseOptions& options) const;
+    void initSampleStatus_(TmpData_* tmpData) const;
     template<typename SampleStatus>
-    void updateSampleStatus_(CRefXd outData, CRefXd weights, size_t d) const;
+    void updateSampleStatus_(TmpData_* tmpData) const;
 
     template<typename SampleStatus>
-    const SampleIndex*
-    initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const;
+    const SampleIndex* initOrderedSamples_(TmpData_* tmpData, size_t usedVariableIndex) const;
     template<typename SampleStatus>
-    const SampleIndex* updateOrderedSampleSaveMemory_(
-        size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const;
+    const SampleIndex* updateOrderedSampleSaveMemory_(TmpData_* tmpData, size_t usedVariableIndex) const;
     template<typename SampleStatus>
-    const SampleIndex*
-    updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const;
+    const SampleIndex* updateOrderedSamples_(TmpData_* tmpData, size_t usedVariableIndex) const;
 
-    void initNodeTrainers_(const BaseOptions& options, size_t d, size_t threadCount) const;
+    void initNodeTrainers_(TmpData_* tmpData) const;
     void updateNodeTrainers_(
-#if !PACKED_DATA
-        CRefXd outData, CRefXd weights,
-#endif
-        const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t d, size_t threadIndex) const;
-    size_t finalizeNodeTrainers_(size_t d, size_t threadCount) const;
+        TmpData_* tmpData, const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t threadIndex) const;
+    void finalizeNodeTrainers_(TmpData_* tmpData) const;
+
+private:
+    struct TmpData_ {
+        CRefXd outData;
+        CRefXd weights;
+        BaseOptions options;
+        size_t threadCount;
+        size_t d;
+        size_t usedSampleCount;
+    };
 
 private:
     const CRefXXfc inData_;

@@ -1,21 +1,6 @@
 answer Fredrik's question about making derived classes friends of the base class
-
-simplify tree train functions by passing around a single tmp data struct instead of lots separate parameters
-	have the struct contain outerT0, ..., innerT2 so we do not need the parent field
-		outData
-		weights
-		options
-		usedSampleCount
-		threadCount
-		threadIndex
-		ITEM_COUNT
-	pass as individual parameters:
-		d
-		usedVariableIndex
-
 review all multi-threading code one more time
-
-reviw all profiling code one more time
+review all profiling code one more time
 
 ......................................................................................................
 

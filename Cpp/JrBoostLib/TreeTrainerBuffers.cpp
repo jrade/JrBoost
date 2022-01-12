@@ -12,8 +12,8 @@ size_t TreeTrainerBuffers::bufferSize()
     size_t n = 0;
 #pragma omp parallel reduction(+ : n)
     {
-#if PACKED_DATA
-        n += bufferSize0_(threadLocalData0_.wyPacks);
+#if USE_PACKED_DATA
+        n += bufferSizeImpl_(threadLocalData0_.wyPacks);
 #endif
         n += bufferSizeImpl_(threadLocalData0_.usedVariables);
         n += bufferSizeImpl_(threadLocalData0_.tree);
@@ -62,8 +62,8 @@ void TreeTrainerBuffers::freeBuffers()
 {
 #pragma omp parallel
     {
-#if PACKED_DATA
-        deleteBuffer0_(&threadLocalData0_.wyPacks);
+#if USE_PACKED_DATA
+        freeBufferImpl_(&threadLocalData0_.wyPacks);
 #endif
         freeBufferImpl_(&threadLocalData0_.usedVariables);
         freeBufferImpl_(&threadLocalData0_.tree);
