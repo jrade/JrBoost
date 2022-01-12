@@ -11,9 +11,11 @@
 
 ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
-    PROFILE::PUSH(PROFILE::F_RANK);
-
     const size_t variableCount = inData.cols();
+    ArrayXf f(variableCount);
+
+    GUARDED_PROFILE_PUSH(PROFILE::F_RANK);
+
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
 
@@ -33,14 +35,10 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
         }
     }
 
-    if (groupCount < 2) {
-        PROFILE::POP();
+    if (groupCount < 2)
         throw std::invalid_argument("Unable to do F-test: There must be at least two groups.");
-    }
-    if (sampleCount <= groupCount) {
-        PROFILE::POP();
+    if (sampleCount <= groupCount)
         throw std::invalid_argument("Unable to do F-test: There must be more samples than groups.");
-    }
 
     ArrayXs n = ArrayXs::Zero(groupCount);   // sample count by group
     if (samples) {
@@ -62,8 +60,6 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
                 "Unable to do F-test: The group with index " + std::to_string(k) + " is empty.");
     }
 
-
-    ArrayXf f(variableCount);
     const double a = (sampleCount - groupCount) / (groupCount - 1.0);
 
     // one block per thread...
@@ -132,9 +128,8 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
         throw std::invalid_argument("Indata has values that are infinity or NaN.");
     }
 
-    const size_t ITEM_COUNT = sampleCount * blockWidth;
-    PROFILE::POP(ITEM_COUNT);
-
+    ITEM_COUNT = sampleCount * blockWidth;
+    GUARDED_PROFILE_POP;
     return f;
 }
 

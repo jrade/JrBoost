@@ -23,12 +23,13 @@ private:
     trainImpl0_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
     template<typename SampleStatus>
-    void trainImpl1_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
+    size_t trainImpl1_(
+        CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount, size_t ITEM_COUNT) const;
 
     template<typename SampleStatus>
-    void trainImpl2_(
+    size_t trainImpl2_(
         CRefXd outData, CRefXd weights, const BaseOptions& options, size_t usedSampleCount, size_t d,
-        size_t usedVariableIndex, size_t threadIndex) const;
+        size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const;
 
     void validateData_(CRefXd outData, CRefXd weights) const;
 #if PACKED_DATA
@@ -45,13 +46,13 @@ private:
 
     template<typename SampleStatus>
     const SampleIndex*
-    initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& opions, size_t d) const;
+    initOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const;
     template<typename SampleStatus>
     const SampleIndex* updateOrderedSampleSaveMemory_(
-        size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& opions, size_t d) const;
+        size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const;
     template<typename SampleStatus>
     const SampleIndex*
-    updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& opions, size_t d) const;
+    updateOrderedSamples_(size_t usedVariableIndex, size_t usedSampleCount, const BaseOptions& options, size_t d) const;
 
     void initNodeTrainers_(const BaseOptions& options, size_t d, size_t threadCount) const;
     void updateNodeTrainers_(

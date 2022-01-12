@@ -64,7 +64,7 @@ void PROFILE::POP(size_t itemCount)
     }
 }
 
-void PROFILE::SWITCH(CLOCK_ID id, size_t itemCount)
+void PROFILE::SWITCH(CLOCK_ID id, size_t ITEM_COUNT)
 {
     if (!enabled_)
         return;
@@ -75,7 +75,7 @@ void PROFILE::SWITCH(CLOCK_ID id, size_t itemCount)
 
     ASSERT(!clockIndexStack_.empty());
     CLOCK_ID prevId = clockIndexStack_.top();
-    clocks_[prevId].stop(t, itemCount);
+    clocks_[prevId].stop(t, ITEM_COUNT);
 
     clockIndexStack_.top() = id;
     clocks_[id].start(t);

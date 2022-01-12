@@ -42,7 +42,7 @@ public:
     static string STOP();
     static void PUSH(CLOCK_ID id);
     static void POP(size_t itemCount = 0);
-    static void SWITCH(CLOCK_ID id, size_t itemCount = 0);
+    static void SWITCH(CLOCK_ID id, size_t ITEM_COUNT);
     static void UPDATE_BRANCH_STATISTICS(size_t iterationCount, size_t slowBranchCount);
 
     inline static std::atomic<std::thread::id> CUR_THREAD_ID = std::this_thread::get_id();
@@ -85,3 +85,18 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
        "test-4",
        "test-5",
        "zero"};
+
+
+#define GUARDED_PROFILE_PUSH(A)                                                                                        \
+    size_t ITEM_COUNT = 0;                                                                                             \
+    PROFILE::PUSH(A);                                                                                                  \
+    try {
+
+#define GUARDED_PROFILE_POP                                                                                            \
+    }                                                                                                                  \
+    catch (const std::exception&)                                                                                      \
+    {                                                                                                                  \
+        PROFILE::POP(0);                                                                                               \
+        throw;                                                                                                         \
+    }                                                                                                                  \
+    PROFILE::POP(ITEM_COUNT);

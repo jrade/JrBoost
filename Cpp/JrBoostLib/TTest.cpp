@@ -11,9 +11,11 @@
 
 ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
-    PROFILE::PUSH(PROFILE::T_RANK);
-
     const size_t variableCount = inData.cols();
+    ArrayXf t(variableCount);
+
+    GUARDED_PROFILE_PUSH(PROFILE::T_RANK);
+
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
     if ((outData > 1).any())
@@ -21,10 +23,8 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 
     const size_t sampleCount = samples ? samples->rows() : inData.rows();
 
-    if (sampleCount < 3) {
-        PROFILE::POP();
+    if (sampleCount < 3)
         throw std::invalid_argument("Unable to do t-test: There must be at least three samples.");
-    }
 
     ArrayXs n = {{0, 0}};
     if (samples) {
@@ -42,16 +42,10 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 
     // n(0) + n(1) = sampleCount
 
-    if (n(0) == 0) {
-        PROFILE::POP();
+    if (n(0) == 0)
         throw std::invalid_argument("Unable to do t-test: First group is empty.");
-    }
-    if (n(1) == 0) {
-        PROFILE::POP();
+    if (n(1) == 0)
         throw std::invalid_argument("Unable to do t-test: Second group is empty.");
-    }
-
-    ArrayXf t(variableCount);
 
     const double a = std::sqrt((sampleCount - 2.0) / (1.0 / n(0) + 1.0 / n(1)));
 
@@ -117,9 +111,8 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
         throw std::invalid_argument("Indata has values that are infinity or NaN.");
     }
 
-    const size_t ITEM_COUNT = sampleCount * blockWidth;
-    PROFILE::POP(ITEM_COUNT);
-
+    ITEM_COUNT = sampleCount * blockWidth;
+    GUARDED_PROFILE_POP;
     return t;
 }
 

@@ -133,7 +133,8 @@ template<typename SampleIndex>
 unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
 {
-    PROFILE::PUSH(PROFILE::TREE_TRAIN);
+    unique_ptr<BasePredictor> pred;
+    GUARDED_PROFILE_PUSH(PROFILE::TREE_TRAIN);
 
     // validateData_(outData, weights);
 
@@ -154,43 +155,41 @@ unique_ptr<BasePredictor> TreeTrainerImpl<SampleIndex>::trainImpl0_(
     initTree_();
 
     if (maxStatusCount <= (1 << 8))
-        trainImpl1_<uint8_t>(outData, weights, options, threadCount);
+        ITEM_COUNT = trainImpl1_<uint8_t>(outData, weights, options, threadCount, ITEM_COUNT);
     else if (maxStatusCount <= (1 << 16))
-        trainImpl1_<uint16_t>(outData, weights, options, threadCount);
+        ITEM_COUNT = trainImpl1_<uint16_t>(outData, weights, options, threadCount, ITEM_COUNT);
     else if (maxStatusCount <= (1LL << 32))
-        trainImpl1_<uint32_t>(outData, weights, options, threadCount);
+        ITEM_COUNT = trainImpl1_<uint32_t>(outData, weights, options, threadCount, ITEM_COUNT);
     else
-        trainImpl1_<uint64_t>(outData, weights, options, threadCount);
+        ITEM_COUNT = trainImpl1_<uint64_t>(outData, weights, options, threadCount, ITEM_COUNT);
 
     ThreadLocalData0_& t0 = threadLocalData0_;
     const TreeNodeExt* root = data(t0.tree.front());
-    unique_ptr<BasePredictor> pred = TreePredictor::createInstance(root);
+    pred = TreePredictor::createInstance(root);
 
-    PROFILE::POP();
+    GUARDED_PROFILE_POP;
     return pred;
 }
 
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-void TreeTrainerImpl<SampleIndex>::trainImpl1_(
-    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const
+size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(
+    CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount, size_t ITEM_COUNT) const
 {
 #if PACKED_DATA
-    PROFILE::PUSH(PROFILE::PACK_DATA);
+    PROFILE::SWITCH(PROFILE::PACK_DATA, ITEM_COUNT);
+    ITEM_COUNT = sampleCount_;
     initWyPacks(outData, weights);
-    PROFILE::POP(sampleCount_);
 #endif
 
-    PROFILE::PUSH(PROFILE::INIT_SAMPLE_STATUS);
-    size_t ITEM_COUNT = sampleCount_;
+    PROFILE::SWITCH(PROFILE::INIT_SAMPLE_STATUS, ITEM_COUNT);
+    ITEM_COUNT = sampleCount_;
     size_t usedSampleCount = initSampleStatus_<SampleStatus>(outData, weights, options);
 
     size_t usedVariableCount = usedVariableCount_(options);
-    if (usedVariableCount == 0) {
-        PROFILE::POP(ITEM_COUNT);
-        return;
-    }
+    if (usedVariableCount == 0)
+        return ITEM_COUNT;
 
     if (threadCount == 0 || threadCount > omp_get_max_threads())
         threadCount = omp_get_max_threads();
@@ -222,7 +221,11 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
             outerT2.parent = &outerT2;
 
             for (size_t usedVariableIndex = 0; usedVariableIndex != usedVariableCount; ++usedVariableIndex)
-                trainImpl2_<SampleIndex>(outData, weights, options, usedSampleCount, d, usedVariableIndex, 0);
+                ITEM_COUNT = trainImpl2_<SampleIndex>(
+                    outData, weights, options, usedSampleCount, d, usedVariableIndex, 0, ITEM_COUNT);
+
+            PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
+            ITEM_COUNT = 0;
 
             outerT0.parent = nullptr;
             outerT1.parent = nullptr;
@@ -250,9 +253,12 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
                     if (usedVariableIndex >= usedVariableCount)
                         break;
 
-                    trainImpl2_<SampleIndex>(
-                        outData, weights, options, usedSampleCount, d, usedVariableIndex, threadIndex);
+                    ITEM_COUNT = trainImpl2_<SampleIndex>(
+                        outData, weights, options, usedSampleCount, d, usedVariableIndex, threadIndex, ITEM_COUNT);
                 }
+
+                PROFILE::SWITCH(PROFILE::INNER_THREAD_SYNCH, ITEM_COUNT);
+                ITEM_COUNT = 0;
 
                 innerT0.parent = nullptr;
                 innerT1.parent = nullptr;
@@ -274,33 +280,31 @@ void TreeTrainerImpl<SampleIndex>::trainImpl1_(
 
     }   // end d loop
 
-    PROFILE::POP(ITEM_COUNT);
-
     // TO DO: PRUNE TREE
+
+    return ITEM_COUNT;
 };
 
 template<typename SampleIndex>
 template<typename SampleStatus>
-void TreeTrainerImpl<SampleIndex>::trainImpl2_(
+size_t TreeTrainerImpl<SampleIndex>::trainImpl2_(
     CRefXd outData, CRefXd weights, const BaseOptions& options, size_t usedSampleCount, size_t d,
-    size_t usedVariableIndex, size_t threadIndex) const
+    size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const
 {
     const SampleIndex* pOrderedSamples;
 
-    size_t ITEM_COUNT;
-
     if (d == 0) {
-        PROFILE::PUSH(PROFILE::INIT_ORDERED_SAMPLES);
+        PROFILE::SWITCH(PROFILE::INIT_ORDERED_SAMPLES, ITEM_COUNT);
         ITEM_COUNT = sampleCount_;
         pOrderedSamples = initOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
     }
     else if (options.saveMemory() || options.selectVariablesByLevel()) {
-        PROFILE::PUSH(PROFILE::UPDATE_ORDERED_SAMPLES);
+        PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
         ITEM_COUNT = sampleCount_;
         pOrderedSamples = updateOrderedSampleSaveMemory_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
     }
     else {
-        PROFILE::PUSH(PROFILE::UPDATE_ORDERED_SAMPLES);
+        PROFILE::SWITCH(PROFILE::UPDATE_ORDERED_SAMPLES, ITEM_COUNT);
         ITEM_COUNT = usedSampleCount;
         pOrderedSamples = updateOrderedSamples_<SampleStatus>(usedVariableIndex, usedSampleCount, options, d);
     }
@@ -312,7 +316,8 @@ void TreeTrainerImpl<SampleIndex>::trainImpl2_(
 #else
     updateNodeTrainers_(outData, weights, pOrderedSamples, usedVariableIndex, d, threadIndex);
 #endif
-    PROFILE::POP(ITEM_COUNT);
+
+    return ITEM_COUNT;
 }
 
 //......................................................................................................................

@@ -13,8 +13,7 @@
 
 void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
 {
-    PROFILE::PUSH(PROFILE::ZERO);   // calibrate the profiling
-    PROFILE::SWITCH(PROFILE::PREDICT);
+    GUARDED_PROFILE_PUSH(PROFILE::PREDICT);
 
     if (::currentInterruptHandler != nullptr)
         ::currentInterruptHandler->check();
@@ -23,7 +22,7 @@ void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
 
     predict_(inData, c, outData);
 
-    PROFILE::POP();
+    GUARDED_PROFILE_POP;
 }
 
 

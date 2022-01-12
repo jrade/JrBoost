@@ -16,7 +16,9 @@ Predictor::Predictor(size_t variableCount) : variableCount_(variableCount) {}
 
 ArrayXd Predictor::predict(CRefXXfc inData, size_t threadCount) const
 {
-    PROFILE::PUSH(PROFILE::PREDICT);
+    ArrayXd pred;
+    GUARDED_PROFILE_PUSH(PROFILE::PREDICT);
+    ITEM_COUNT = 0;
 
     if (::currentInterruptHandler != nullptr)
         ::currentInterruptHandler->check();
@@ -31,10 +33,12 @@ ArrayXd Predictor::predict(CRefXXfc inData, size_t threadCount) const
     if (threadCount == 0 || threadCount > omp_get_max_threads())
         threadCount = omp_get_max_threads();
 
-    ArrayXd pred = predictImpl_(inData, threadCount);
+    pred = predictImpl_(inData, threadCount);
 
-    PROFILE::SWITCH(PROFILE::ZERO);   // calibrate the profiling
-    PROFILE::POP();
+    PROFILE::SWITCH(PROFILE::ZERO, ITEM_COUNT);   // calibrate the profiling
+    ITEM_COUNT = 0;
+
+    GUARDED_PROFILE_POP;
     return pred;
 }
 

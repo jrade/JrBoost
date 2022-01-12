@@ -1,5 +1,21 @@
+answer Fredrik's question about making derived classes friends of the base class
 
-review all multi-threading one more time
+simplify tree train functions by passing around a single tmp data struct instead of lots separate parameters
+	have the struct contain outerT0, ..., innerT2 so we do not need the parent field
+		outData
+		weights
+		options
+		usedSampleCount
+		threadCount
+		threadIndex
+		ITEM_COUNT
+	pass as individual parameters:
+		d
+		usedVariableIndex
+
+review all multi-threading code one more time
+
+reviw all profiling code one more time
 
 ......................................................................................................
 
@@ -22,22 +38,17 @@ report:
 			insert py::kw_only() in LogLoss::operator() and run Iris.py
 	Eigen:
 		why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
+			using isFinite is very slow (considering we only need to inspect a few bits)
 		why does std::data() not work here? (see Select.cpp)
 			const float* pInDataRowI = std::data(inData.row(inI));
 			float* pOutDataRowI = &outData(outI, 0);
-
-............................................................................
-
-improved Higgs example
-
-BART
-
-other ways of regularizing logit boost
 
 .............................................................................
 		
 major tasks:
 	release 0.1
+	improved Higgs example
+	BART
 	documentation of the different boost methods, incuding regularized logit boost
 	improved Higgs example (see "Higgs Notes.txt")
 	improved Otto example (see "Otto Notes.txt")
@@ -58,7 +69,6 @@ features to add:
 	multiple indata and multiple variable counts (to handle feature engineering)
 		applications: PCA, separate counts for up- and down-regulated variables, chromosomes, NCC
 	new way of calculating variable importance weights: when predicting (instead of when training)
-	exception safe profiling
 	have train, predict and loss functions take samples argument?
 
 optimizations (accuracy):
