@@ -88,20 +88,19 @@ double BoostTrainer::getGlobalLogOddsRatio_() const
 
 shared_ptr<Predictor> BoostTrainer::train(const BoostOptions& opt, size_t threadCount) const
 {
-    shared_ptr<Predictor> pred;
-    GUARDED_PROFILE_PUSH(PROFILE::BOOST_TRAIN);
-    ITEM_COUNT = sampleCount_ * opt.iterationCount();
+    size_t ITEM_COUNT = sampleCount_ * opt.iterationCount();
+    ScopedProfiler sp(PROFILE::BOOST_TRAIN, &ITEM_COUNT);
+
+    if (threadCount == 0 || threadCount > omp_get_max_threads())
+        threadCount = omp_get_max_threads();
 
     double gamma = opt.gamma();
     if (gamma == 1.0)
-        pred = trainAda_(opt, threadCount);
+        return trainAda_(opt, threadCount);
     else if (gamma == 0.0)
-        pred = trainLogit_(opt, threadCount);
+        return trainLogit_(opt, threadCount);
     else
-        pred = trainRegularizedLogit_(opt, threadCount);
-
-    GUARDED_PROFILE_POP;
-    return pred;
+        return trainRegularizedLogit_(opt, threadCount);
 }
 
 //......................................................................................................................

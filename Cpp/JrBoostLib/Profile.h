@@ -19,13 +19,12 @@ public:
         VALIDATE_DATA,
         PACK_DATA,
         USED_VARIABLES,
-        INIT_TREE,
-        UPDATE_TREE,
         INIT_SAMPLE_STATUS,
         UPDATE_SAMPLE_STATUS,
         INIT_ORDERED_SAMPLES,
         UPDATE_ORDERED_SAMPLES,
         FIND_BEST_SPLITS,
+        FINALIZE_TREE,
         PREDICT,
         LOSS,
         INNER_THREAD_SYNCH,
@@ -70,13 +69,12 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
        "  validate data",
        "  pack data",
        "  used variables",
-       "  init tree",
-       "  update tree",
        "  init sample status",
        "  update sample status",
        "    init ord. samples",
        "    update ord. samples",
        "    find best splits",
+       "  finalize tree",
        "  predict",
        "  loss",
        "inner thread synch",
@@ -89,16 +87,14 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
        "zero"};
 
 
-#define GUARDED_PROFILE_PUSH(A)                                                                                        \
-    size_t ITEM_COUNT = 0;                                                                                             \
-    PROFILE::PUSH(A);                                                                                                  \
-    try {
+class ScopedProfiler {
+public:
+    ScopedProfiler(PROFILE::CLOCK_ID id, size_t* ITEM_COUNT) : ITEM_COUNT_(ITEM_COUNT) { PROFILE::PUSH(id); }
+    ~ScopedProfiler() { PROFILE::POP(*ITEM_COUNT_); }
 
-#define GUARDED_PROFILE_POP                                                                                            \
-    }                                                                                                                  \
-    catch (const std::exception&)                                                                                      \
-    {                                                                                                                  \
-        PROFILE::POP(0);                                                                                               \
-        throw;                                                                                                         \
-    }                                                                                                                  \
-    PROFILE::POP(ITEM_COUNT);
+    ScopedProfiler(const ScopedProfiler&) = delete;
+    ScopedProfiler& operator=(const ScopedProfiler&) = delete;
+
+private:
+    size_t* ITEM_COUNT_;
+};

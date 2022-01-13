@@ -25,7 +25,6 @@ public:
     ~TreeNodeTrainer() = default;
 
     void init(const TreeNodeExt& node, const BaseOptions& options);
-    void fork(TreeNodeTrainer* other) const;
     void update(
         CRefXXfc inData,
 #if USE_PACKED_DATA
@@ -34,8 +33,10 @@ public:
         CRefXd outData, CRefXd weights,
 #endif
         const SampleIndex* pSortedSamplesBegin, const SampleIndex* pSortedSamplesEnd, size_t j);
-    void join(const TreeNodeTrainer& other);
     size_t finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;
+
+    void fork(TreeNodeTrainer* other) const;
+    void join(const TreeNodeTrainer& other);
 
     // not really used, but required by vector<TreeNodeTrainer>
     TreeNodeTrainer(const TreeNodeTrainer&){};

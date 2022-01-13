@@ -13,7 +13,8 @@
 
 void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
 {
-    GUARDED_PROFILE_PUSH(PROFILE::PREDICT);
+    size_t ITEM_COUNT = 0;
+    ScopedProfiler sp(PROFILE::PREDICT, &ITEM_COUNT);
 
     if (::currentInterruptHandler != nullptr)
         ::currentInterruptHandler->check();
@@ -21,8 +22,6 @@ void BasePredictor::predict(CRefXXfc inData, double c, RefXd outData) const
         throw ThreadAborted();
 
     predict_(inData, c, outData);
-
-    GUARDED_PROFILE_POP;
 }
 
 

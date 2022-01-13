@@ -1,6 +1,28 @@
-answer Fredrik's question about making derived classes friends of the base class
-review all multi-threading code one more time
-review all profiling code one more time
+improved source tree
+	JrBoost/
+		Source/           <------------  new
+			JrBoost.sln
+			Cpp/
+				3rdParty/
+				Core/
+				PythonModule/
+			Python/    <------ new
+				Package/
+				Example/
+					Iris/
+					Higgs/
+		    UML/
+		Data/
+		Dist/    <------------- new
+		Doc/   <------ new
+
+replace the current postbuild event
+
+look into profiling again
+	too much stuff in TREE_TRAIN?
+		test with Leukemia build.py
+
+run with 128 threads again
 
 ......................................................................................................
 
@@ -9,10 +31,6 @@ test and evaluate cycle option
 
 test and evaluate minNodeWeight again
 	minÁbsNodeWeight and minRelNodeWeight???
-
-test compiling with Clang for Visual Studio
-	devblogs.microsoft.com/cppblog/clang-llvm-support-in-visual-studio/
-	do we need the Intel Intrinsics to parallellize fastExp()?  Probably not
 
 report:
 	MSVS autovectorizer:
@@ -36,16 +54,14 @@ major tasks:
 	BART
 	documentation of the different boost methods, incuding regularized logit boost
 	improved Higgs example (see "Higgs Notes.txt")
-	improved Otto example (see "Otto Notes.txt")
 	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
 	compare performance (speed and accuracy) with xgboost
 		construct Python classes with same interface as jrboost python classes
-	histogram-based tree builder (would speed up Otto a lot, maybe Higgs too)
+	histogram-based tree builder (use Otto as test case)
 	multinomial predictors
-	Clang + CMake for Visual Studio
-		what is the standard code organization for a Python extension module?
+	what is the standard code organization for a Python extension module?
 
 features to add:
 	log parameter optimization process
@@ -64,7 +80,8 @@ optimizations (accuracy):
 	other ways of regularizing logit boost (should be scale invariant)
 	
 optimizations (speed):
-	test compiling with LLVM for Visual Studio
+	Clang + LLVM + CMake for Visual Studio
+		maybe no need fo IntelIntrinsics
 	parallelize:
 		ForestTrainer::train
 		TreeTrainer::updateSampleStatus_
@@ -86,3 +103,4 @@ keep or ditch?
 	saveMemory option
 	stratifiedSamples option
 	support for loading old file format versions
+	SampleStatus type def (replace by SampleIndex?)

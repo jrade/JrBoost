@@ -14,14 +14,22 @@
 unique_ptr<TreeTrainer> TreeTrainer::createInstance(CRefXXfc inData, CRefXu8 strata)
 {
     const size_t sampleCount = static_cast<size_t>(inData.rows());
-    if (sampleCount <= 1 << 8)
-        return std::make_unique<TreeTrainerImpl<uint8_t>>(inData, strata);
-    else if (sampleCount <= 1 << 16)
-        return std::make_unique<TreeTrainerImpl<uint16_t>>(inData, strata);
-    else if (sampleCount <= 1LL << 32)
-        return std::make_unique<TreeTrainerImpl<uint32_t>>(inData, strata);
-    else
-        return std::make_unique<TreeTrainerImpl<uint64_t>>(inData, strata);
+    if (sampleCount <= 0x100) {
+        using SampleIndex = uint8_t;
+        return std::make_unique<TreeTrainerImpl<SampleIndex>>(inData, strata);
+    }
+    else if (sampleCount <= 0x10000) {
+        using SampleIndex = uint16_t;
+        return std::make_unique<TreeTrainerImpl<SampleIndex>>(inData, strata);
+    }
+    else if (sampleCount <= 0x100000000) {
+        using SampleIndex = uint32_t;
+        return std::make_unique<TreeTrainerImpl<SampleIndex>>(inData, strata);
+    }
+    else {
+        using SampleIndex = uint64_t;
+        return std::make_unique<TreeTrainerImpl<SampleIndex>>(inData, strata);
+    }
 }
 
 

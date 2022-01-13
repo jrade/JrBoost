@@ -11,10 +11,8 @@
 
 ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
-    const size_t variableCount = inData.cols();
-    ArrayXf f(variableCount);
-
-    GUARDED_PROFILE_PUSH(PROFILE::F_RANK);
+    size_t ITEM_COUNT = 0;
+    ScopedProfiler sp(PROFILE::F_RANK, &ITEM_COUNT);
 
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
@@ -60,6 +58,8 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
                 "Unable to do F-test: The group with index " + std::to_string(k) + " is empty.");
     }
 
+    const size_t variableCount = inData.cols();
+    ArrayXf f(variableCount);
     const double a = (sampleCount - groupCount) / (groupCount - 1.0);
 
     // one block per thread...
@@ -128,8 +128,7 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
         throw std::invalid_argument("Indata has values that are infinity or NaN.");
     }
 
-    ITEM_COUNT = sampleCount * blockWidth;
-    GUARDED_PROFILE_POP;
+    ITEM_COUNT = sampleCount * blockWidth;   // used by ScopedProfiler destructor
     return f;
 }
 

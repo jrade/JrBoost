@@ -29,11 +29,11 @@ static size_t outerThreadCount_(size_t threadCount)
 
 vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const vector<BoostOptions>& opt)
 {
-    vector<shared_ptr<Predictor>> pred;
-    GUARDED_PROFILE_PUSH(PROFILE::OUTER_THREAD_SYNCH);
+    size_t ITEM_COUNT = 0;
+    ScopedProfiler sp(PROFILE::OUTER_THREAD_SYNCH, &ITEM_COUNT);
 
     const size_t optCount = size(opt);
-    pred.resize(optCount);
+    vector<shared_ptr<Predictor>> pred(optCount);
 
     // In order to keep the threads balanced we will process the options one-by-one in order
     // from the most computaionally expensive to the least computationally expensive
@@ -61,7 +61,6 @@ vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const v
     }
     END_OMP_PARALLEL
 
-    GUARDED_PROFILE_POP;
     return pred;
 }
 
@@ -69,15 +68,15 @@ vector<shared_ptr<Predictor>> parallelTrain(const BoostTrainer& trainer, const v
 
 ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<BoostOptions>& opt, CRefXXfc testInData)
 {
-    ArrayXXdc predData;
-    GUARDED_PROFILE_PUSH(PROFILE::OUTER_THREAD_SYNCH);
+    size_t ITEM_COUNT = 0;
+    ScopedProfiler sp(PROFILE::OUTER_THREAD_SYNCH, &ITEM_COUNT);
 
     if (testInData.rows() == 0)
         throw std::invalid_argument("Test indata has 0 samples.");
 
     const size_t sampleCount = testInData.rows();
     const size_t optCount = size(opt);
-    predData = ArrayXXdc(sampleCount, optCount);
+    ArrayXXdc predData(sampleCount, optCount);
 
     // In order to keep the threads balanced we will process the options one-by-one in order
     // from the most computaionally expensive to the least computationally expensive
@@ -106,7 +105,6 @@ ArrayXXdc parallelTrainAndPredict(const BoostTrainer& trainer, const vector<Boos
     }
     END_OMP_PARALLEL
 
-    GUARDED_PROFILE_POP;
     return predData;
 }
 
@@ -117,11 +115,11 @@ ArrayXd parallelTrainAndEval(
     function<double(CRefXu8, CRefXd, optional<CRefXd>)> lossFun, CRefXXfc testInData, CRefXu8 testOutData,
     optional<CRefXd> testWeights)
 {
-    ArrayXd scores;
-    GUARDED_PROFILE_PUSH(PROFILE::OUTER_THREAD_SYNCH);
+    size_t ITEM_COUNT = 0;
+    ScopedProfiler sp(PROFILE::OUTER_THREAD_SYNCH, &ITEM_COUNT);
 
     const size_t optCount = size(opt);
-    scores = ArrayXd(optCount);
+    ArrayXd scores(optCount);
 
     // In order to keep the threads balanced we will process the options one-by-one in order
     // from the most computaionally expensive to the least computationally expensive
@@ -151,6 +149,5 @@ ArrayXd parallelTrainAndEval(
     }
     END_OMP_PARALLEL
 
-    GUARDED_PROFILE_POP;
     return scores;
 }

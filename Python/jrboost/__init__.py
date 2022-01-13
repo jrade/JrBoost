@@ -2,5 +2,9 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-from ._jrboost import *
+try:
+    from ._jrboost import *
+except:
+    from _jrboost import * 
+
 from ._util import *

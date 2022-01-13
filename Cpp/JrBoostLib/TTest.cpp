@@ -11,10 +11,8 @@
 
 ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 {
-    const size_t variableCount = inData.cols();
-    ArrayXf t(variableCount);
-
-    GUARDED_PROFILE_PUSH(PROFILE::T_RANK);
+    size_t ITEM_COUNT = 0;
+    ScopedProfiler sp(PROFILE::T_RANK, &ITEM_COUNT);
 
     if (outData.rows() != inData.rows())
         throw std::invalid_argument("Indata and outdata have different numbers of samples.");
@@ -47,6 +45,8 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
     if (n(1) == 0)
         throw std::invalid_argument("Unable to do t-test: Second group is empty.");
 
+    const size_t variableCount = inData.cols();
+    ArrayXf t(variableCount);
     const double a = std::sqrt((sampleCount - 2.0) / (1.0 / n(0) + 1.0 / n(1)));
 
     // one block per thread...
@@ -111,8 +111,7 @@ ArrayXf tStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
         throw std::invalid_argument("Indata has values that are infinity or NaN.");
     }
 
-    ITEM_COUNT = sampleCount * blockWidth;
-    GUARDED_PROFILE_POP;
+    ITEM_COUNT = sampleCount * blockWidth;   // used by ScopedProfiier destructor
     return t;
 }
 

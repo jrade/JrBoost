@@ -37,5 +37,7 @@ BoostPredictor *-- "many" BasePredictor
 
 TreePredictor *-- "many" TreeNode
 
+TreeNode --> "0 or 2" TreeNode
+
 
 @enduml

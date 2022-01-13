@@ -16,54 +16,73 @@ public:
     virtual ~TreeTrainerImpl() = default;
 
 private:
-    struct TmpData_;
+    struct TrainData_ {
+        CRefXd outData;
+        CRefXd weights;
+        BaseOptions options;
+        size_t usedVariableCount;
+        size_t threadCount;
+    };
 
-    vector<size_t> initSampleCountByStratum_() const;
+private:
+    vector<size_t> initSampleCountsByStratum() const;
+
     vector<vector<SampleIndex>> initSortedSamples_() const;
+
+    //
 
     unique_ptr<BasePredictor>
     trainImpl0_(CRefXd outData, CRefXd weights, const BaseOptions& options, size_t threadCount) const;
 
-    template<typename SampleStatus>
-    size_t trainImpl1_(TmpData_* tmpData, size_t ITEM_COUNT) const;
+    void validateData_(CRefXd outData, CRefXd weights) const;
 
-    template<typename SampleStatus>
-    size_t trainImpl2_(TmpData_* tmpData, size_t usedVariableIndex, size_t threadIndex, size_t ITEM_COUNT) const;
-
-    void validateData_(TmpData_* tmpData) const;
 #if USE_PACKED_DATA
-    void initWyPacks_(TmpData_* tmpData) const;
+    void initWyPacks_(CRefXd outData, CRefXd weights) const;
 #endif
-    size_t usedVariableCount_(TmpData_* tmpData) const;
-    size_t initUsedVariables_(TmpData_* tmpData) const;
+
     void initTree_() const;
 
-    template<typename SampleStatus>
-    void initSampleStatus_(TmpData_* tmpData) const;
-    template<typename SampleStatus>
-    void updateSampleStatus_(TmpData_* tmpData) const;
+    size_t usedVariableCount_(const BaseOptions& options) const;
+
+    //
 
     template<typename SampleStatus>
-    const SampleIndex* initOrderedSamples_(TmpData_* tmpData, size_t usedVariableIndex) const;
-    template<typename SampleStatus>
-    const SampleIndex* updateOrderedSampleSaveMemory_(TmpData_* tmpData, size_t usedVariableIndex) const;
-    template<typename SampleStatus>
-    const SampleIndex* updateOrderedSamples_(TmpData_* tmpData, size_t usedVariableIndex) const;
+    size_t trainImpl1_(const TrainData_* trainData, size_t ITEM_COUNT) const;
 
-    void initNodeTrainers_(TmpData_* tmpData) const;
+    template<typename SampleStatus>
+    size_t initSampleStatus_(const TrainData_* trainData) const;
+
+    template<typename SampleStatus>
+    void updateSampleStatus_(const TrainData_* trainData, size_t d) const;
+
+    size_t initUsedVariables_(const TrainData_* trainData) const;
+
+    void initNodeTrainers_(const TrainData_* trainData, size_t d) const;
+
+    size_t finalizeNodeTrainers_(const TrainData_* trainData, size_t d) const;
+
+    //
+
+    template<typename SampleStatus>
+    size_t trainImpl2_(
+        const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex, size_t threadIndex,
+        size_t ITEM_COUNT) const;
+
+    template<typename SampleStatus>
+    const SampleIndex*
+    initOrderedSamples_(const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex) const;
+
+    template<typename SampleStatus>
+    const SampleIndex* updateOrderedSampleSaveMemory_(
+        const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex) const;
+
+    template<typename SampleStatus>
+    const SampleIndex* updateOrderedSamples_(
+        const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex) const;
+
     void updateNodeTrainers_(
-        TmpData_* tmpData, const SampleIndex* orderedSamples, size_t usedVariableIndex, size_t threadIndex) const;
-    void finalizeNodeTrainers_(TmpData_* tmpData) const;
-
-private:
-    struct TmpData_ {
-        CRefXd outData;
-        CRefXd weights;
-        BaseOptions options;
-        size_t threadCount;
-        size_t d;
-        size_t usedSampleCount;
-    };
+        const TrainData_* trainData, size_t d, const SampleIndex* orderedSamples, size_t usedVariableIndex,
+        size_t threadIndex) const;
 
 private:
     const CRefXXfc inData_;
@@ -73,11 +92,9 @@ private:
 
     const CRefXu8 strata_;
     const size_t stratumCount_;
-    const vector<size_t> sampleCountByStratum_;
+    const vector<size_t> sampleCountsByStratum_;
 
 private:
     using BernoulliDistribution_ = typename std::conditional_t<   // much faster than std::bernoulli_distribution
         sizeof(SampleIndex) == 8, FastBernoulliDistribution, VeryFastBernoulliDistribution>;
-
-    using Buffers = TreeTrainerBuffers;
 };

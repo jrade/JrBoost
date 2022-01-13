@@ -31,25 +31,6 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const BaseOptio
 }
 
 
-template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::fork(TreeNodeTrainer* other) const
-{
-    ASSERT(!splitFound_);
-
-    other->sampleCount_ = sampleCount_;
-    other->sumW_ = sumW_;
-    other->sumWY_ = sumWY_;
-    other->minNodeWeight_ = minNodeWeight_;
-    other->minNodeSize_ = minNodeSize_;
-
-    other->splitFound_ = false;
-    other->score_ = score_;
-
-    other->iterationCount_ = 0;
-    other->slowBranchCount_ = 0;
-}
-
-
 // finds the best split of a node for variable j
 
 template<typename SampleIndex>
@@ -135,29 +116,6 @@ void TreeNodeTrainer<SampleIndex>::update(
 }
 
 
-template<typename SampleIndex>
-void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
-{
-    iterationCount_ += other.iterationCount_;
-    slowBranchCount_ += other.slowBranchCount_;
-
-    if (!other.splitFound_)
-        return;
-    if (splitFound_ && other.score_ < score_)
-        return;
-    if (splitFound_ && other.score_ == score_ && j_ < other.j_)
-        return;   // makes joining deterministic
-
-    splitFound_ = true;
-    score_ = other.score_;
-    j_ = other.j_;
-    x_ = other.x_;
-    leftSampleCount_ = other.leftSampleCount_;
-    leftSumW_ = other.leftSumW_;
-    leftSumWY_ = other.leftSumWY_;
-}
-
-
 // updates one node based on the best split found
 // returns the number of used samples in the child nodes if any, otherwise 0
 
@@ -202,6 +160,49 @@ size_t TreeNodeTrainer<SampleIndex>::finalize(TreeNodeExt** ppParentNode, TreeNo
     rightChildNode->sumWY = rightSumWY;
 
     return sampleCount_;
+}
+
+//......................................................................................................................
+
+template<typename SampleIndex>
+void TreeNodeTrainer<SampleIndex>::fork(TreeNodeTrainer* other) const
+{
+    ASSERT(!splitFound_);
+
+    other->sampleCount_ = sampleCount_;
+    other->sumW_ = sumW_;
+    other->sumWY_ = sumWY_;
+    other->minNodeWeight_ = minNodeWeight_;
+    other->minNodeSize_ = minNodeSize_;
+
+    other->splitFound_ = false;
+    other->score_ = score_;
+
+    other->iterationCount_ = 0;
+    other->slowBranchCount_ = 0;
+}
+
+
+template<typename SampleIndex>
+void TreeNodeTrainer<SampleIndex>::join(const TreeNodeTrainer& other)
+{
+    iterationCount_ += other.iterationCount_;
+    slowBranchCount_ += other.slowBranchCount_;
+
+    if (!other.splitFound_)
+        return;
+    if (splitFound_ && other.score_ < score_)
+        return;
+    if (splitFound_ && other.score_ == score_ && j_ < other.j_)
+        return;   // makes joining deterministic
+
+    splitFound_ = true;
+    score_ = other.score_;
+    j_ = other.j_;
+    x_ = other.x_;
+    leftSampleCount_ = other.leftSampleCount_;
+    leftSumW_ = other.leftSumW_;
+    leftSumWY_ = other.leftSumWY_;
 }
 
 //......................................................................................................................

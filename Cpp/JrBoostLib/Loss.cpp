@@ -9,9 +9,8 @@
 
 double linLoss(CRefXu8 outData, CRefXd predData, optional<CRefXd> optWeights)
 {
-    double loss;
-    GUARDED_PROFILE_PUSH(PROFILE::LOSS);
-    ITEM_COUNT = outData.rows();
+    size_t ITEM_COUNT = outData.rows();
+    ScopedProfiler sp(PROFILE::LOSS, &ITEM_COUNT);
 
     if (outData.rows() != predData.rows())
         throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
@@ -31,25 +30,21 @@ double linLoss(CRefXu8 outData, CRefXd predData, optional<CRefXd> optWeights)
 
         const double falsePos = (weights * (1.0 - outData.cast<double>()) * predData).sum();
         const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData)).sum();
-        loss = falsePos + falseNeg;
+        return falsePos + falseNeg;
     }
     else {
         const double falsePos = ((1.0 - outData.cast<double>()) * predData).sum();
         const double falseNeg = (outData.cast<double>() * (1.0 - predData)).sum();
-        loss = falsePos + falseNeg;
+        return falsePos + falseNeg;
     }
-
-    GUARDED_PROFILE_POP;
-    return loss;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 double logLoss_(CRefXu8 outData, CRefXd predData, optional<CRefXd> optWeights, double gamma)
 {
-    double loss;
-    GUARDED_PROFILE_PUSH(PROFILE::LOSS);
-    ITEM_COUNT = outData.rows();
+    size_t ITEM_COUNT = outData.rows();
+    ScopedProfiler sp(PROFILE::LOSS, &ITEM_COUNT);
 
     if (outData.rows() != predData.rows())
         throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
@@ -72,16 +67,13 @@ double logLoss_(CRefXu8 outData, CRefXd predData, optional<CRefXd> optWeights, d
         const double falsePos
             = (weights * (1.0 - outData.cast<double>()) * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
         const double falseNeg = (weights * outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
-        loss = falsePos + falseNeg;
+        return falsePos + falseNeg;
     }
     else {
         const double falsePos = ((1.0 - outData.cast<double>()) * (1.0 - (1.0 - predData).pow(gamma))).sum() / gamma;
         const double falseNeg = (outData.cast<double>() * (1.0 - predData.pow(gamma))).sum() / gamma;
-        loss = falsePos + falseNeg;
+        return falsePos + falseNeg;
     }
-
-    GUARDED_PROFILE_POP;
-    return loss;
 }
 
 //......................................................................................................................
@@ -111,9 +103,8 @@ double aucWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights);
 
 double auc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights)
 {
-    double gain;
-    GUARDED_PROFILE_PUSH(PROFILE::LOSS);
-    ITEM_COUNT = outData.rows();
+    size_t ITEM_COUNT = outData.rows();
+    ScopedProfiler sp(PROFILE::LOSS, &ITEM_COUNT);
 
     if (outData.rows() != predData.rows())
         throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
@@ -123,12 +114,9 @@ double auc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights)
         throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
 
     if (weights)
-        gain = aucWeights_(outData, predData, *weights);
+        return aucWeights_(outData, predData, *weights);
     else
-        gain = aucNoWeights_(outData, predData);
-
-    GUARDED_PROFILE_POP;
-    return gain;
+        return aucNoWeights_(outData, predData);
 }
 
 double aucNoWeights_(CRefXu8 outData, CRefXd predData)
@@ -191,8 +179,8 @@ double aocWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights);
 
 double aoc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights)
 {
-    double loss;
-    GUARDED_PROFILE_PUSH(PROFILE::LOSS);
+    size_t ITEM_COUNT = outData.rows();
+    ScopedProfiler sp(PROFILE::LOSS, &ITEM_COUNT);
 
     if (outData.rows() != predData.rows())
         throw std::invalid_argument("True outdata and predicted outdata have different numbers of samples.");
@@ -202,12 +190,9 @@ double aoc(CRefXu8 outData, CRefXd predData, optional<CRefXd> weights)
         throw std::invalid_argument("Predicted outdata has values that are infinity or NaN.");
 
     if (weights)
-        loss = aocWeights_(outData, predData, *weights);
+        return aocWeights_(outData, predData, *weights);
     else
-        loss = aocNoWeights_(outData, predData);
-
-    GUARDED_PROFILE_POP;
-    return loss;
+        return aocNoWeights_(outData, predData);
 }
 
 double aocNoWeights_(CRefXu8 outData, CRefXd predData)
