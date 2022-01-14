@@ -1,33 +1,41 @@
-improved source tree
-	JrBoost/
-		Source/           <------------  new
-			JrBoost.sln
-			Cpp/
-				3rdParty/
-				Core/
-				PythonModule/
-			Python/    <------ new
-				Package/
-				Example/
-					Iris/
-					Higgs/
-		    UML/
-		Data/
-		Dist/    <------------- new
-		Doc/   <------ new
-
-replace the current postbuild event
-
 look into profiling again
 	too much stuff in TREE_TRAIN?
 		test with Leukemia build.py
 
 run with 128 threads again
+	test with Leukemia build.py
+
+.............................................................
+
+clean up Higgs:
+	replace higgs_quick-py by a script that trains with training data only
+	other higgs output folders
+
+...............................................................
+
+make branch free:
+
+	update sample status
+		need sorted list of all active samples
+
+	update ordered samples
+
+		while (q != qEnd) {
+			i = *p
+			b = pStatus[i] & 1
+			*q = i
+			*r = i
+			++p;
+			q += b
+			r += 1 - b
+		}
+		while (r != rEnd)
+			*(r++) = *(p++)
+
+	which one to do first
+		do some preliminaru profiling
 
 ......................................................................................................
-
-test and evaluate cycle option
-	run Leukemia 20x10x5 with and w/o cycling
 
 test and evaluate minNodeWeight again
 	minÁbsNodeWeight and minRelNodeWeight???
@@ -104,3 +112,4 @@ keep or ditch?
 	stratifiedSamples option
 	support for loading old file format versions
 	SampleStatus type def (replace by SampleIndex?)
+	cycle option

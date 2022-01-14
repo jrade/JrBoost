@@ -5,12 +5,12 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E7537CA6-817B-42AE-95BE-7345836D8986}"
 	ProjectSection(SolutionItems) = preProject
-		FastExp Notes.txt = FastExp Notes.txt
-		Higgs Notes.txt = Higgs Notes.txt
-		License.txt = License.txt
-		Notes.txt = Notes.txt
-		ReadMe.txt = ReadMe.txt
-		ToDo.txt = ToDo.txt
+		..\FastExp Notes.txt = ..\FastExp Notes.txt
+		..\Higgs Notes.txt = ..\Higgs Notes.txt
+		..\License.txt = ..\License.txt
+		..\Notes.txt = ..\Notes.txt
+		..\ReadMe.txt = ..\ReadMe.txt
+		..\ToDo.txt = ..\ToDo.txt
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}"
@@ -18,10 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{1CD3A8BB-2DC
 		Cpp\.clang-format = Cpp\.clang-format
 		Cpp\Common.h = Cpp\Common.h
 	EndProjectSection
-EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Python", "Python\Python.pyproj", "{95F4AFAB-EBD4-4C56-B9F6-385012FBE83C}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JrBoostLib", "Cpp\JrBoostLib\JrBoostLib.vcxproj", "{5E1798B2-CBDB-45A1-811A-884850C61C3C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PythonModule", "Cpp\PythonModule\PythonModule.vcxproj", "{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}"
 EndProject
@@ -38,6 +34,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UML", "UML", "{5729C5E6-6C2
 		UML\Trainer.plantuml = UML\Trainer.plantuml
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Python", "Python", "{F1DF6C78-DE9A-4012-A970-2170723C1AF0}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Package", "Python\Package\Package.pyproj", "{FB484642-746F-4D7E-B017-1E6B961014CC}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Examples", "Python\Examples\Examples.pyproj", "{E23BE66B-6047-49D6-8130-A687467816C6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JrBoostLib", "Cpp\JrBoostLib\JrBoostLib.vcxproj", "{5E1798B2-CBDB-45A1-811A-884850C61C3C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,18 +50,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{95F4AFAB-EBD4-4C56-B9F6-385012FBE83C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{95F4AFAB-EBD4-4C56-B9F6-385012FBE83C}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{95F4AFAB-EBD4-4C56-B9F6-385012FBE83C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95F4AFAB-EBD4-4C56-B9F6-385012FBE83C}.Release|x64.ActiveCfg = Release|Any CPU
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|Any CPU.Build.0 = Debug|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|x64.ActiveCfg = Debug|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|x64.Build.0 = Debug|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|Any CPU.ActiveCfg = Release|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|Any CPU.Build.0 = Release|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|x64.ActiveCfg = Release|x64
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|x64.Build.0 = Release|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Debug|Any CPU.Build.0 = Debug|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Debug|x64.ActiveCfg = Debug|x64
@@ -66,14 +58,30 @@ Global
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Release|Any CPU.Build.0 = Release|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Release|x64.ActiveCfg = Release|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Release|x64.Build.0 = Release|x64
+		{FB484642-746F-4D7E-B017-1E6B961014CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB484642-746F-4D7E-B017-1E6B961014CC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FB484642-746F-4D7E-B017-1E6B961014CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB484642-746F-4D7E-B017-1E6B961014CC}.Release|x64.ActiveCfg = Release|Any CPU
+		{E23BE66B-6047-49D6-8130-A687467816C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E23BE66B-6047-49D6-8130-A687467816C6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E23BE66B-6047-49D6-8130-A687467816C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E23BE66B-6047-49D6-8130-A687467816C6}.Release|x64.ActiveCfg = Release|Any CPU
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|x64.ActiveCfg = Debug|x64
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|x64.Build.0 = Debug|x64
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|Any CPU.ActiveCfg = Release|x64
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|x64.ActiveCfg = Release|x64
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{5E1798B2-CBDB-45A1-811A-884850C61C3C} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
 		{D566AA2D-51AA-4618-894D-D2234478B6F3} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
+		{FB484642-746F-4D7E-B017-1E6B961014CC} = {F1DF6C78-DE9A-4012-A970-2170723C1AF0}
+		{E23BE66B-6047-49D6-8130-A687467816C6} = {F1DF6C78-DE9A-4012-A970-2170723C1AF0}
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1D96605-E60B-47D3-87A4-5190D6AD3139}

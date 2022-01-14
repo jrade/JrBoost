@@ -114,7 +114,7 @@ def main():
 #-----------------------------------------------------------------------------------------------------------------------
 
 def loadData():
-    dataPath = '../Data/Iris/Iris.csv'
+    dataPath = '../../../Data/Iris/Iris.csv'
     dataFrame = pd.read_csv(dataPath, sep = ',', index_col = 0)
     outDataSeries = dataFrame['Species']
     inDataFrame = dataFrame.drop(['Species'], axis = 1)

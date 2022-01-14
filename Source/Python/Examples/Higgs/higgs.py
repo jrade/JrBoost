@@ -12,7 +12,6 @@ import jrboost
 
 param = {
     'threadCount': os.cpu_count() // 2,
-    'dataDirPath': 'C:/Data/Kaggle/Higgs/',
     'sampleRatio':  0.7,
     'subsample': 0.01,
     'repCount': 10,
@@ -122,7 +121,7 @@ def main():
 
 def loadData():
 
-    dataDirPath = param['dataDirPath']
+    dataDirPath = '../../../Data/Higgs/'
 
     trainDataFilePath = dataDirPath + 'training.csv'
     trainDataFrame = pd.read_csv(trainDataFilePath, sep = ',', index_col = 0)

@@ -68,7 +68,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "$(SolutionDir)Python\jrboost"</Command>
+      <Command>if not exist "$(SolutionDir)..\Target\" mkdir "$(SolutionDir)..\Target\"
+if not exist "$(SolutionDir)..\Target\jrboost\" mkdir "$(SolutionDir)..\Target\jrboost\"
+
+copy /y "$(SolutionDir)Python\Package\jrboost\" "$(SolutionDir)..\Target\jrboost\"
+copy /y "$(TargetPath)" "$(SolutionDir)..\Target\jrboost\"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -83,7 +88,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "$(SolutionDir)Python\jrboost"</Command>
+      <Command>if not exist "$(SolutionDir)..\Target\" mkdir "$(SolutionDir)..\Target\"
+if not exist "$(SolutionDir)..\Target\jrboost\" mkdir "$(SolutionDir)..\Target\jrboost\"
+
+copy /y "$(SolutionDir)Python\Package\jrboost\" "$(SolutionDir)..\Target\jrboost\"
+copy /y "$(TargetPath)" "$(SolutionDir)..\Target\jrboost\"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -295,7 +295,7 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(const TrainData_* trainData, si
             const size_t threadIndex = 0;
 
             for (size_t usedVariableIndex = 0; usedVariableIndex != trainData->usedVariableCount; ++usedVariableIndex)
-                ITEM_COUNT = trainImpl2_<SampleIndex>(
+                ITEM_COUNT = trainImpl2_<SampleStatus>(
                     trainData, d, usedSampleCount, usedVariableIndex, threadIndex, ITEM_COUNT);
 
             outerT0.parent = nullptr;
@@ -331,7 +331,7 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(const TrainData_* trainData, si
                     if (usedVariableIndex >= trainData->usedVariableCount)
                         break;
 
-                    INNER_ITEM_COUNT = trainImpl2_<SampleIndex>(
+                    INNER_ITEM_COUNT = trainImpl2_<SampleStatus>(
                         trainData, d, usedSampleCount, usedVariableIndex, threadIndex, INNER_ITEM_COUNT);
 
                     PROFILE::SWITCH(PROFILE::TREE_TRAIN, INNER_ITEM_COUNT);
