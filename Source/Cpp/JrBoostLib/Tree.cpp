@@ -32,6 +32,7 @@ float maxNodeGain(const TreeNode* node)
     return std::max({node->gain, maxNodeGain(node->leftChild), maxNodeGain(node->rightChild)});
 }
 
+
 void pruneTree(TreeNode* node, float minNodeGain)
 {
     if (node->isLeaf)
@@ -42,26 +43,52 @@ void pruneTree(TreeNode* node, float minNodeGain)
         node->isLeaf = true;
 }
 
-
-TreeNode* cloneTreeImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
+TreeNode* cloneTreeDepthFirstImpl_(const TreeNode* sourceNode, TreeNode* targetNode)
 {
     *targetNode = *sourceNode;
     if (targetNode->isLeaf)
         return targetNode + 1;
     targetNode->leftChild = targetNode + 1;
-    targetNode->rightChild = cloneTreeImpl_(sourceNode->leftChild, targetNode->leftChild);
-    return cloneTreeImpl_(sourceNode->rightChild, targetNode->rightChild);
+    targetNode->rightChild = cloneTreeDepthFirstImpl_(sourceNode->leftChild, targetNode->leftChild);
+    return cloneTreeDepthFirstImpl_(sourceNode->rightChild, targetNode->rightChild);
 }
 
-vector<TreeNode> cloneTree(const TreeNode* sourceRoot)
+vector<TreeNode> cloneTreeDepthFirst(const TreeNode* sourceRoot)
 {
     const size_t n = nodeCount(sourceRoot);
     vector<TreeNode> targetNodes(n);
     TreeNode* targetRoot = data(targetNodes);
-    cloneTreeImpl_(sourceRoot, targetRoot);
+    cloneTreeDepthFirstImpl_(sourceRoot, targetRoot);
     return targetNodes;
 }
 
+vector<TreeNode> cloneTreeBreadthFirst(const TreeNode* sourceNode)
+{
+    size_t n = nodeCount(sourceNode);
+    vector<TreeNode> targetNodes(n);
+
+    TreeNode* targetParentNode = data(targetNodes);
+    TreeNode* targetChildNode = data(targetNodes) + 1;
+    TreeNode* targetNodeEnd = data(targetNodes) + n;
+
+    *targetParentNode = *sourceNode;
+
+    for (; targetParentNode != targetNodeEnd; ++targetParentNode) {
+
+        if (targetParentNode->isLeaf)
+            continue;
+
+        *targetChildNode = *(targetParentNode->leftChild);
+        targetParentNode->leftChild = targetChildNode;
+        ++targetChildNode;
+
+        *targetChildNode = *(targetParentNode->rightChild);
+        targetParentNode->rightChild = targetChildNode;
+        ++targetChildNode;
+    }
+
+    return targetNodes;
+}
 
 TreeNode* reindexTreeImpl_(const TreeNode* sourceNode, TreeNode* targetNode, CRefXs newIndices)
 {
@@ -82,6 +109,7 @@ vector<TreeNode> reindexTree(const TreeNode* sourceRoot, CRefXs newIndices)
     reindexTreeImpl_(sourceRoot, targetRoot, newIndices);
     return targetNodes;
 }
+
 
 void predict(const TreeNode* root, CRefXXfc inData, double c, RefXd outData)
 {

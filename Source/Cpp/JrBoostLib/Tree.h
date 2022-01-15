@@ -29,7 +29,9 @@ size_t treeDepth(const TreeNode* node);
 float maxNodeGain(const TreeNode* node);
 
 void pruneTree(TreeNode* node, float minNodeGain);
-vector<TreeNode> cloneTree(const TreeNode* node);   // first node in the returned vector is the root
+// first node in the returned vectors is the root
+vector<TreeNode> cloneTreeDepthFirst(const TreeNode* node);
+vector<TreeNode> cloneTreeBreadthFirst(const TreeNode* node);
 vector<TreeNode> reindexTree(const TreeNode* node, CRefXs newIndices);
 
 void predict(const TreeNode* node, CRefXXfc inData, double c, RefXd outData);

@@ -759,10 +759,12 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl2_(
 
 // The following three functions all return a pointer to a buffer that contains all samples that are used in layer d
 // of the tree. The buffer is divided into blocks. For each  k = 0, 1, ..., nodeCount-1,
-//  block number k contains the samples that belong to node k in layer d of the tree.
+// block number k contains the samples that belong to node k in layer d of the tree.
 // Each block is then sorted according to variable j.
-//
 // This buffer is then used as input to updateNodeTrainers_().
+//
+// (After each block there is one unused dummy element.
+// The reason for this is that the branchfree copy if like code below may overright the target block by one element.)
 //
 // The function initOrderedSamples_() does this for layer 0 which consists of the root only.
 // The function uses sortedSamples_[j] which contains all samples sorted according to variable j.
@@ -770,10 +772,11 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl2_(
 // The function updateOrderedSampleSaveMemory_() does the same thing for the general case with any number of nodes.
 // It also uses sortedSamples_[j].
 // Note that this function actually creates a buffer where the first block contains the unused samples,
-// but it returns a pointer to the beginning of the next block.
+// but it returns a pointer to the beginning of the second block.
 //
 // The function updateOrderedSamples_() does the same thing but uses the ordered samples for variable j and layer d - 1
 // instead of sortedSamples_[j]. This is often faster but requires more memory.
+// And it does not work if we select different variables for each tree layer.
 
 
 template<typename SampleIndex>
@@ -790,14 +793,14 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::initOrderedSamples_(
     ThreadLocalData2_<SampleStatus>& t2 = threadLocalData2_<SampleStatus>;
 
     const size_t j = t0.parent->usedVariables[usedVariableIndex];
-    t1.sampleBuffer.resize(usedSampleCount);
-
     const SampleIndex* pSortedSamples = data(sortedSamples_[j]);
-    SampleIndex* pOrderedSamples = data(t1.sampleBuffer);
-    SampleIndex* pOrderedSamplesEnd = data(t1.sampleBuffer) + usedSampleCount;
+    const SampleIndex* pSortedSamplesEnd = data(sortedSamples_[j]) + sampleCount_;
     const SampleStatus* pSampleStatus = data(t2.parent->sampleStatus);
 
-    while (pOrderedSamples != pOrderedSamplesEnd) {
+    t1.sampleBuffer.resize(usedSampleCount + 1 /*dummy*/);
+    SampleIndex* pOrderedSamples = data(t1.sampleBuffer);
+
+    while (pSortedSamples != pSortedSamplesEnd) {
         const SampleIndex i = *pSortedSamples;
         ++pSortedSamples;
         *pOrderedSamples = i;
@@ -827,21 +830,23 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(
 
     const vector<TreeNodeExt>& nodes = t0.parent->tree[d];
     const size_t nodeCount = size(nodes);
+    const size_t statusCount = nodeCount + 1;
     const size_t unusedSampleCount = sampleCount_ - usedSampleCount;
 
-    t1.sampleBuffer.resize(sampleCount_);
-    t1.samplePointerBuffer.resize(nodeCount + 1);
+    t1.sampleBuffer.resize(sampleCount_ + statusCount /*dummies*/);
     SampleIndex* pOrderedSamples = data(t1.sampleBuffer);
+
+    t1.samplePointerBuffer.resize(statusCount);
     SampleIndex** ppOrderedSamples = data(t1.samplePointerBuffer);
 
     // for each s = 0, 1, 2, ..., nodeCount, samplePointerBuffer[s] = pointer to the beginning of the block
     // where we will store samples with status = s sorted according to variable j
 
-    for (size_t s = 0; s != nodeCount + 1; ++s) {
+    for (size_t s = 0; s != statusCount; ++s) {
         ppOrderedSamples[s] = pOrderedSamples;
         // n = number of samples with status = s
-        const size_t n = (s == 0) ? unusedSampleCount : nodes[s - 1].sampleCount;
-        pOrderedSamples += n;
+        const size_t blockSize = (s == 0) ? unusedSampleCount : nodes[s - 1].sampleCount;
+        pOrderedSamples += blockSize + 1 /*dummy*/;
     }
 
     // sortedSamples_[j] contains all samples sorted according to variable j
@@ -855,7 +860,7 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSampleSaveMemory_(
     }
 
     // skip block 0 with unused samples (status = 0)
-    pOrderedSamples = data(t1.sampleBuffer) + unusedSampleCount;
+    pOrderedSamples = data(t1.sampleBuffer) + unusedSampleCount + 1 /*dummy*/;
     return pOrderedSamples;
 }
 
@@ -873,40 +878,39 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
 
     const vector<TreeNodeExt>& prevNodes = t0.parent->tree[d - 1];
     const vector<TreeNodeExt>& nodes = t0.parent->tree[d];
-    const size_t nodeCount = size(nodes);
 
-    t1.sampleBuffer.resize(usedSampleCount);
-    t1.samplePointerBuffer.resize(nodeCount);
-
-    const SampleStatus* pSampleStatus = data(t2.parent->sampleStatus);
     const SampleIndex* pPrevOrderedSamples = data(t1.parent->orderedSamplesByVariable[usedVariableIndex]);
-    SampleIndex* pOrderedSamples = data(t1.sampleBuffer);
-    SampleIndex** ppOrderedSamples = data(t1.samplePointerBuffer);
+    const SampleStatus* pSampleStatus = data(t2.parent->sampleStatus);
 
-    for (size_t k = 0; k != nodeCount; ++k) {
-        ppOrderedSamples[k] = pOrderedSamples;
-        pOrderedSamples += nodes[k].sampleCount;
-    }
-
-    // samplePointerBuffer[k] (k = 0, 1, ..., nodeCount - 1) points to the beginning of the block
-    // where we will store samples that belong to node number k sorted according to variable j
+    t1.sampleBuffer.resize(usedSampleCount + size(nodes) /*dummies*/);
+    SampleIndex* pOrderedSamplesLeft = data(t1.sampleBuffer);
 
     for (const TreeNodeExt& prevNode : prevNodes) {
-        const SampleIndex* pBlockEnd = pPrevOrderedSamples + prevNode.sampleCount;
-        if (prevNode.isLeaf)
-            // skip these samples, they are not used in layer d
-            pPrevOrderedSamples = pBlockEnd;
-        else {
-            // process these samples, they are used in layer d
-            for (; pPrevOrderedSamples != pBlockEnd; ++pPrevOrderedSamples) {
-                const SampleIndex i = *pPrevOrderedSamples;
-                const SampleStatus s = pSampleStatus[i];
-                *(ppOrderedSamples[s - 1]++) = i;   // node index = sample status - 1
-            }
+
+        if (prevNode.isLeaf) {
+            pPrevOrderedSamples += prevNode.sampleCount + 1 /*dummy*/;
+            continue;
         }
+
+        const TreeNodeExt* leftChild = static_cast<const TreeNodeExt*>(prevNode.leftChild);
+        SampleIndex* pOrderedSamplesRight = pOrderedSamplesLeft + leftChild->sampleCount + 1 /*dummy*/;
+
+        const SampleIndex* pPrevOrderedSamplesEnd = pPrevOrderedSamples + prevNode.sampleCount;
+        while (pPrevOrderedSamples != pPrevOrderedSamplesEnd) {
+            const SampleIndex i = *pPrevOrderedSamples;
+            ++pPrevOrderedSamples;
+            *pOrderedSamplesLeft = i;
+            *pOrderedSamplesRight = i;
+            const SampleStatus s = pSampleStatus[i];
+            pOrderedSamplesLeft += s & 1;
+            pOrderedSamplesRight += 1 - s & 1;
+        }
+
+        pPrevOrderedSamples += 1 /*dummy*/;
+        pOrderedSamplesLeft = pOrderedSamplesRight + 1 /*dummy*/;
     }
 
-    pOrderedSamples = data(t1.sampleBuffer);
+    const SampleIndex* pOrderedSamples = data(t1.sampleBuffer);
 
     if (d + 1 != trainData->options.maxTreeDepth())
         // save the ordered samples to be used as input when ordering samples for the next layer
@@ -917,12 +921,12 @@ const SampleIndex* TreeTrainerImpl<SampleIndex>::updateOrderedSamples_(
 
 
 // The next function determines the best split of each node in layer d with respect to variable j.
-// The pointer orderedSamples points to a buffer that contains all used samples grouped by node
+// The pointer pOrderedSamples points to a buffer that contains all used samples grouped by node
 // and then sorted by variable j.
 
 template<typename SampleIndex>
 void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
-    const TrainData_* trainData, size_t d, const SampleIndex* orderedSamples, size_t usedVariableIndex,
+    const TrainData_* trainData, size_t d, const SampleIndex* pOrderedSamples, size_t usedVariableIndex,
     size_t threadIndex) const
 {
     // called from inner threads; be careful to distinguish between t0 and t0.parent etc.
@@ -934,7 +938,6 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
     const size_t parentNodeCount = size(parentNodes);
 
     const size_t k0 = threadIndex * parentNodeCount;
-    const SampleIndex* p0 = orderedSamples;
     const size_t j = t0.parent->usedVariables[usedVariableIndex];
 
 #if USE_PACKED_DATA
@@ -942,7 +945,9 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
 #endif
 
     for (size_t k = 0; k != parentNodeCount; ++k) {
-        const SampleIndex* p1 = p0 + parentNodes[k].sampleCount;
+
+        const SampleIndex* pOrderedSamplesEnd = pOrderedSamples + parentNodes[k].sampleCount;
+
         t1.parent->treeNodeTrainers[k0 + k].update(
             inData_,
 #if USE_PACKED_DATA
@@ -950,8 +955,9 @@ void TreeTrainerImpl<SampleIndex>::updateNodeTrainers_(
 #else
             trainData->outData, trainData->weights,
 #endif
-            p0, p1, j);
-        p0 = p1;
+            pOrderedSamples, pOrderedSamplesEnd, j);
+
+        pOrderedSamples = pOrderedSamplesEnd + 1 /*dummy*/;
     }
 }
 

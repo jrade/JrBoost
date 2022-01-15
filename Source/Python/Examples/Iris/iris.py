@@ -16,7 +16,7 @@ validationParam = {
 
 trainParam = {
     'minimizeAlgorithm': jrboost.minimizePopulation,
-    'repetionCount': 1,
+    'repCount': 1,
     'foldCount': 3,
     'targetLossFun': jrboost.LogLoss(0.001),
 
@@ -90,9 +90,6 @@ def main():
                 trainer = jrboost.BoostTrainer(trainInData, trainOutData)
                 predictor = jrboost.Predictor.createEnsemble(jrboost.parallelTrain(trainer, bestBoostParams))
                 print(formatBoostParam(jrboost.medianBoostParam(bestBoostParams)))
-
-                #predictor.save('foo.bin')
-                #predictor = jrboost.Predictor.load('foo.bin')
 
                 testInData = inData[testSamples, :]
                 predOutData[testSamples] = predictor.predict(testInData)

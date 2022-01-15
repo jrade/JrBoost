@@ -188,7 +188,8 @@ unique_ptr<BasePredictor> StumpPredictor::load_(istream& is, int version)
 
 //----------------------------------------------------------------------------------------------------------------------
 
-TreePredictor::TreePredictor(const TreeNode* root) : nodes_(TreeTools::cloneTree(root)) {}
+TreePredictor::TreePredictor(const TreeNode* root) : nodes_(TreeTools::cloneTreeDepthFirst(root)) {}
+// depth first or breadth first does not matter
 
 TreePredictor::TreePredictor(vector<TreeNode>&& nodes) : nodes_(move(nodes)) {}
 

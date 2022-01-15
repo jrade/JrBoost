@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{e23be66b-6047-49d6-8130-a687467816c6}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>Higgs\higgs.py</StartupFile>
+    <StartupFile>Iris\iris.py</StartupFile>
     <SearchPath>..\Package</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -19,8 +19,8 @@
     <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Higgs\higgs.py" />
-    <Compile Include="Higgs\higgs_experimental.py" />
+    <Compile Include="Higgs\higgs_fast.py" />
+    <Compile Include="Higgs\higgs_precise.py" />
     <Compile Include="Iris\iris.py" />
   </ItemGroup>
   <ItemGroup>

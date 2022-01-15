@@ -1,48 +1,23 @@
 
-clean up higgs.py
-	better bost params
+review all the sample buffer code again
+
+finish higgs_fast.py
 	better instructions, maybe in Example/Higgs instead of Data/Higgs
-
-...............................................................
-
-make branch free:
-
-	update sample status
-		need sorted list of all active samples
-
-	update ordered samples
-
-		while (q != qEnd) {
-			i = *p
-			++p;
-			*q = i
-			*r = i
-			b = pStatus[i] & 1
-			q += b
-			r += 1 - b
-		}
-		while (r != rEnd)
-			*(r++) = *(p++)
-
-		profile!
-
-	which one to do first
-		do some preliminaru profiling
-
-......................................................................................................
-
-test and evaluate minNodeWeight again
-	min¡bsNodeWeight and minRelNodeWeight???
+		include download and upload links
+	where tob store submission file?
 
 ......................................................................................................
 
 report:
+
 	MSVS autovectorizer:
 		does not handle reinterpret cast
 		if they fix this, then ditch all the Intel intrinsics code
+
 	pybind11:
 		seem py::kw_only() does not interact well with callbacks
 			insert py::kw_only() in LogLoss::operator() and run Iris.py
+
 	Eigen:
 		why cannot we use (a < inf).all() to detect NaN values in Eigen arrays?
 			using isFinite is very slow (considering we only need to inspect a few bits)
@@ -54,7 +29,8 @@ report:
 		
 major tasks:
 	release 0.1
-	improved Higgs example
+	improved higgs_precise.py
+		use this to improve boost params in higgs_fast.py
 	BART
 	documentation of the different boost methods, incuding regularized logit boost
 	improved Higgs example (see "Higgs Notes.txt")
@@ -82,6 +58,8 @@ optimizations (accuracy):
 	boost stop criteria
 	pruning
 	other ways of regularizing logit boost (should be scale invariant)
+	the current minNodeWeight option is absolute min node weight
+		how about relaative min node weight (relative to sumW)?
 	
 optimizations (speed):
 	Clang + LLVM + CMake for Visual Studio
@@ -92,8 +70,7 @@ optimizations (speed):
 			easier if we do not use exact sums; can we do that?
 	make branch free:
 		TreeTrainer::updateSampleStatus_:
-			introducing dummy nodes that contain the unused samples
-			maybe maintain sorted lists of active samples to speed this up further
+			we would need a sorted list of all active samples
 	t-test and F-test: are they SIMD optimized? do we load each cache line twice for large data sets?
 	look into fast/precise sums; does it make any difference for speed and accuracy?
 	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
