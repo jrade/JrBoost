@@ -1,15 +1,7 @@
-look into profiling again
-	too much stuff in TREE_TRAIN?
-		test with Leukemia build.py
 
-run with 128 threads again
-	test with Leukemia build.py
-
-.............................................................
-
-clean up Higgs:
-	replace higgs_quick-py by a script that trains with training data only
-	other higgs output folders
+clean up higgs.py
+	better bost params
+	better instructions, maybe in Example/Higgs instead of Data/Higgs
 
 ...............................................................
 
@@ -22,15 +14,17 @@ make branch free:
 
 		while (q != qEnd) {
 			i = *p
-			b = pStatus[i] & 1
+			++p;
 			*q = i
 			*r = i
-			++p;
+			b = pStatus[i] & 1
 			q += b
 			r += 1 - b
 		}
 		while (r != rEnd)
 			*(r++) = *(p++)
+
+		profile!
 
 	which one to do first
 		do some preliminaru profiling
@@ -39,6 +33,8 @@ make branch free:
 
 test and evaluate minNodeWeight again
 	min¡bsNodeWeight and minRelNodeWeight???
+
+......................................................................................................
 
 report:
 	MSVS autovectorizer:

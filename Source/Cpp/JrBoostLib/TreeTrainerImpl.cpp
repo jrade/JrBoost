@@ -349,7 +349,7 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl1_(const TrainData_* trainData, si
             ITEM_COUNT = 0;
         }
 
-        PROFILE::SWITCH(PROFILE::TREE_TRAIN, ITEM_COUNT);
+        PROFILE::SWITCH(PROFILE::FINALIZE_SPLITS, ITEM_COUNT);
         ITEM_COUNT = 0;
         usedSampleCount = finalizeNodeTrainers_(trainData, d);   // very fast, no need to profile
 
@@ -749,7 +749,7 @@ size_t TreeTrainerImpl<SampleIndex>::trainImpl2_(
         pOrderedSamples = updateOrderedSamples_<SampleStatus>(trainData, d, usedSampleCount, usedVariableIndex);
     }
 
-    PROFILE::SWITCH(PROFILE::FIND_BEST_SPLITS, ITEM_COUNT);
+    PROFILE::SWITCH(PROFILE::UPDATE_SPLITS, ITEM_COUNT);
     ITEM_COUNT = usedSampleCount;
     updateNodeTrainers_(trainData, d, pOrderedSamples, usedVariableIndex, threadIndex);
 
