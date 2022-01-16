@@ -7,14 +7,6 @@
 #include "TreeNodeTrainer.h"
 
 
-#if USE_PACKED_DATA
-struct alignas(2 * sizeof(double)) WyPack {
-    double w;
-    double wy;
-};
-#endif
-
-
 class TreeTrainerBuffers {
 public:
     static size_t bufferSize();
@@ -23,11 +15,9 @@ public:
 protected:
     struct ThreadLocalData0_ {
         ThreadLocalData0_* parent = nullptr;   // thread local data of parent thread
-#if USE_PACKED_DATA
-        vector<WyPack> wyPacks;
-#endif
         vector<size_t> usedVariables;
         vector<vector<TreeNodeExt>> tree;
+        vector<TreeNodeData> treeData;
     };
 
     template<typename SampleIndex>
@@ -40,9 +30,7 @@ protected:
         // (only used if options.saveMemory() = false)
 
         vector<SampleIndex> sampleBuffer;
-
-        vector<SampleIndex*> samplePointerBuffer;
-
+        vector<SampleIndex*> orderedSampleBlocks;
         vector<CacheLineAligned<TreeNodeTrainer<SampleIndex>>> treeNodeTrainers;
     };
 

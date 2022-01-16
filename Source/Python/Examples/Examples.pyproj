@@ -21,6 +21,9 @@
   <ItemGroup>
     <Compile Include="Higgs\higgs_fast.py" />
     <Compile Include="Higgs\higgs_precise.py" />
+    <Compile Include="Higgs\higgs_util.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Iris\iris.py" />
   </ItemGroup>
   <ItemGroup>
@@ -38,6 +41,10 @@
       <Project>{fb484642-746f-4d7e-b017-1e6b961014cc}</Project>
       <Private>True</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Higgs\ReadMe.txt" />
+    <Content Include="Iris\Iris.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
 </Project>

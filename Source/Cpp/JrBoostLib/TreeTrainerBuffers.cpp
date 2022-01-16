@@ -12,11 +12,9 @@ size_t TreeTrainerBuffers::bufferSize()
     size_t n = 0;
 #pragma omp parallel reduction(+ : n)
     {
-#if USE_PACKED_DATA
-        n += bufferSizeImpl_(threadLocalData0_.wyPacks);
-#endif
         n += bufferSizeImpl_(threadLocalData0_.usedVariables);
         n += bufferSizeImpl_(threadLocalData0_.tree);
+        n += bufferSizeImpl_(threadLocalData0_.treeData);
 
         n += bufferSizeImpl_<uint8_t>();
         n += bufferSizeImpl_<uint16_t>();
@@ -33,7 +31,7 @@ size_t TreeTrainerBuffers::bufferSizeImpl_()
 
     n += bufferSizeImpl_(threadLocalData1_<T>.orderedSamplesByVariable);
     n += bufferSizeImpl_(threadLocalData1_<T>.sampleBuffer);
-    n += bufferSizeImpl_(threadLocalData1_<T>.samplePointerBuffer);
+    n += bufferSizeImpl_(threadLocalData1_<T>.orderedSampleBlocks);
     n += bufferSizeImpl_(threadLocalData1_<T>.treeNodeTrainers);
 
     n += bufferSizeImpl_(threadLocalData2_<T>.sampleStatus);
@@ -62,11 +60,9 @@ void TreeTrainerBuffers::freeBuffers()
 {
 #pragma omp parallel
     {
-#if USE_PACKED_DATA
-        freeBufferImpl_(&threadLocalData0_.wyPacks);
-#endif
         freeBufferImpl_(&threadLocalData0_.usedVariables);
         freeBufferImpl_(&threadLocalData0_.tree);
+        freeBufferImpl_(&threadLocalData0_.treeData);
 
         freeBuffersImpl_<uint8_t>();
         freeBuffersImpl_<uint16_t>();
@@ -80,7 +76,7 @@ void TreeTrainerBuffers::freeBuffersImpl_()
 {
     freeBufferImpl_(&threadLocalData1_<T>.orderedSamplesByVariable);
     freeBufferImpl_(&threadLocalData1_<T>.sampleBuffer);
-    freeBufferImpl_(&threadLocalData1_<T>.samplePointerBuffer);
+    freeBufferImpl_(&threadLocalData1_<T>.orderedSampleBlocks);
     freeBufferImpl_(&threadLocalData1_<T>.treeNodeTrainers);
 
     freeBufferImpl_(&threadLocalData2_<T>.sampleStatus);

@@ -2,19 +2,12 @@
 #  Distributed under the MIT license.
 #  (See accompanying file License.txt or copy at https://opensource.org/licenses/MIT)
 
-import math, os, time
+import datetime, os
 import numpy as np
-import pandas as pd
 import jrboost
+import higgs_util as util
 
 #-----------------------------------------------------------------------------------------------------------------------
-
-dataDirPath = '../../../Data/Higgs/'
-
-param = {
-    'threadCount': os.cpu_count() // 2,
-    'sampleRatio':  2/3,
-}
 
 boostParam = {
     'iterationCount': 1000,
@@ -25,158 +18,55 @@ boostParam = {
     'minNodeSize': 300,
 }
 
-print(param)
-print()
-
-print(boostParam)
-print()
-
 #-----------------------------------------------------------------------------------------------------------------------
 
 def main():
 
-    threadCount = param['threadCount']
-    trainFraction = param.get('trainFraction', None)
-
+    threadCount = os.cpu_count() // 2
     jrboost.setThreadCount(threadCount)
+    print(f'Thread count = {threadCount}\n')
 
-    trainInDataFrame, trainOutDataSeries, trainWeightSeries = loadTrainData()
+    print(f'Boost parameters = {boostParam}\n')
 
-    trainInData = trainInDataFrame.to_numpy(dtype = np.float32)
-    trainOutData = trainOutDataSeries.to_numpy(dtype = np.uint8)
-    trainWeights = trainWeightSeries.to_numpy(dtype = np.float64)
+    trainInDataFrame, trainOutDataSeries, trainWeightSeries = util.loadTrainData()
 
-    t = -time.time()
-    jrboost.PROFILE.START()
+    predictor, threshold = trainPredictor(trainInDataFrame, trainOutDataSeries, trainWeightSeries)
 
-    predictor, threshold = train(trainInData, trainOutData, trainWeights)
-
-    t += time.time()
-    print(jrboost.PROFILE.STOP())
-    print(formatTime(t) + '\n')
-
-    print(f'threshold = {threshold}')
-
-    saveSubmission(predictor, threshold)
+    fileName = f'Higgs Fast Result {datetime.datetime.now().strftime("%y%m%d-%H%M%S")}.csv'
+    util.saveResult(predictor, threshold, fileName)
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def train(inData, outData, weights):
+def trainPredictor(inDataFrame, outDataSeries, weightSeries):
 
-    sampleRatio = param['sampleRatio']
-    inData1, outData1, weights1, inData2, outData2, weights2 = _splitData(inData, outData, weights, sampleRatio)
+    print('Training predictor')
+
+    # split the data into two parts
+    # the first part contains 2/3 and the second part the remaining 1/3 of the samples
+
+    inData = inDataFrame.to_numpy(dtype = np.float32)
+    outData = outDataSeries.to_numpy(dtype = np.uint8)
+    weights = weightSeries.to_numpy(dtype = np.float64)
+
+    inData1, outData1, weights1, inData2, outData2, weights2 = util.splitData(inData, outData, weights, 2/3)
     weights1 *= weights.sum() / weights1.sum()
     weights2 *= weights.sum() / weights2.sum()
 
+    # use the first part of the data to train the predictor
+
     trainer = jrboost.BoostTrainer(inData1, outData1, weights = weights1)
+    jrboost.PROFILE.START()
     predictor = trainer.train(boostParam)
+    print()
+    print(jrboost.PROFILE.STOP())
+
+    # use the second part of the data to determine the threshold
 
     predOutData2 = predictor.predict(inData2)
-    threshold, _ = optimalTheshold(outData2, predOutData2, weights2)
+    threshold, _ = util.optimalTheshold(outData2, predOutData2, weights2)
 
     return predictor, threshold
-
-#-----------------------------------------------------------------------------------------------
-
-def loadTrainData():
-
-    trainDataFilePath = dataDirPath + 'training.csv'
-    trainDataFrame = pd.read_csv(trainDataFilePath, sep = ',', index_col = 0)
-    trainDataFrame.index.name = 'EventId'
-
-    trainOutDataSeries = trainDataFrame['Label'].map({'b': 0, 's': 1})
-    trainWeightSeries = trainDataFrame['Weight']
-    trainInDataFrame = trainDataFrame.drop(['Label', 'Weight'], axis = 1)
-
-    return trainInDataFrame, trainOutDataSeries, trainWeightSeries
-
-
-def saveSubmission(predictor, threshold):
-
-    testDataFilePath = dataDirPath + 'test.csv'
-    testInDataFrame = pd.read_csv(testDataFilePath, sep = ',', index_col = 0)
-    testInDataFrame.index.name = 'EventId'
-
-    testInData = testInDataFrame.to_numpy(dtype = np.float32)
-
-    testPredData = predictor.predict(testInData)
-
-    testPredDataSeries = pd.Series(
-        index = testInDataFrame.index,
-        data = testPredData
-    )
-
-    submissionDataFrame = pd.DataFrame({
-        'RankOrder': testPredDataSeries.rank(method = 'first', ascending = False).astype(int),
-        'Class': (testPredDataSeries >= threshold).map({False: 'b', True: 's'}) 
-    })
-
-    submissionDataFrame.to_csv(dataDirPath + 'submission.csv', sep = ',')
-
  
-def _splitData(inData, outData,  weights, ratio):
-    samples1, samples2 = jrboost.stratifiedRandomSplit(outData, ratio)
-    return inData[samples1, :], outData[samples1], weights[samples1], inData[samples2, :], outData[samples2], weights[samples2]
-
-
-def formatTime(t):
-    h = int(t / 3600)
-    t -= 3600 * h;
-    m = int(t / 60)
-    t -= 60 * m
-    s = int(t)
-    return f'{h}:{m:02}:{s:02}'
-
 #-----------------------------------------------------------------------------------------------------------------------
-
-def amsScore_(s, b):
-
-    b_r = 10.0
-    return math.sqrt( 2 * (
-		(s + b + b_r) * math.log (1 +  (s / (b + b_r)))
-		-s
-	))
-
-
-def amsScore(outData, predData, weights):
-
-    truePos = np.sum(outData * predData * weights)
-    trueNeg = np.sum((1 - outData) * predData * weights)
-    return amsScore_(truePos, trueNeg)
-
-
-def optimalTheshold(outData, predData, weights):
-
-    a = sorted(list(zip(outData, predData, weights)), key = lambda x: -x[1])
-
-    truePos = 0.0
-    falsePos = 0.0
-
-    bestScore = amsScore_(truePos, falsePos)
-    bestI = -1
-
-    for i, (outValue, _, weight) in enumerate(a):
-
-        if outValue:
-            truePos += weight
-        else:
-            falsePos += weight
-
-        score = amsScore_(truePos, falsePos)
-        if score <= bestScore: continue
-
-        bestScore = score
-        bestI = i
-
-
-    assert bestI != -1
-    assert bestI != len(a) - 1
-    assert a[bestI][1] != a[bestI + 1][1]     # How to handle this?     
-
-    bestTheshold = (a[bestI][1] + a[bestI + 1][1]) / 2.0 
-
-    return bestTheshold, bestScore
-
-#-------------------------------------------
 
 main()

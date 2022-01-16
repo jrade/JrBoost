@@ -5,13 +5,9 @@
 #include "pch.h"
 
 #include "TreeNodeTrainer.h"
-#include "TreeTrainerBuffers.h"
-
-#if USE_PACKED_DATA
-#include "TreeTrainer.h"
-#endif
 
 #include "BaseOptions.h"
+#include "TreeTrainerBuffers.h"
 
 
 template<typename SampleIndex>
@@ -36,12 +32,8 @@ void TreeNodeTrainer<SampleIndex>::init(const TreeNodeExt& node, const BaseOptio
 template<typename SampleIndex>
 void TreeNodeTrainer<SampleIndex>::update(
     CRefXXfc inData,
-#if USE_PACKED_DATA
-    const WyPack* pWyPacks,
-#else
     CRefXd outData,
     CRefXd weights,
-#endif
     const SampleIndex* pSortedSamplesBegin,
     const SampleIndex* pSortedSamplesEnd,
     size_t j)
@@ -55,10 +47,9 @@ void TreeNodeTrainer<SampleIndex>::update(
 
     const float* pInDataColJ = std::data(inData.col(j));
 
-#if !USE_PACKED_DATA
     const double* pOutData = std::data(outData);
     const double* pWeights = std::data(weights);
-#endif
+
     double leftSumW = 0.0;
     double leftSumWY = 0.0;
 
@@ -71,17 +62,10 @@ void TreeNodeTrainer<SampleIndex>::update(
         const size_t i = nextI;
         nextI = *++p;
 
-#if USE_PACKED_DATA
-        const double w = pWyPacks[i].w;
-        const double wy = pWyPacks[i].wy;
-        leftSumW += w;
-        leftSumWY += wy;
-#else
         const double w = pWeights[i];
         const double y = pOutData[i];
         leftSumW += w;
         leftSumWY += w * y;
-#endif
         const double rightSumW = sumW_ - leftSumW;
         const double rightSumWY = sumWY_ - leftSumWY;
 

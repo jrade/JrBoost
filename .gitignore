@@ -6,6 +6,3 @@ Release
 __pycache__
 *.pyd
 Target
-Data/Higgs/training.csv
-Data/Higgs/test.csv
-Data/Higgs/submission.csv

@@ -31,7 +31,7 @@ trainParam = {
 
         #'saveMemory': [True],
         #'stratifiedSamples': [False],
-        'selectVariablesByLevel': [True],
+        #'selectVariablesByLevel': [True],
         #'fastExp': [False],
     },
 
@@ -111,8 +111,8 @@ def main():
 #-----------------------------------------------------------------------------------------------------------------------
 
 def loadData():
-    dataPath = '../../../Data/Iris/Iris.csv'
-    dataFrame = pd.read_csv(dataPath, sep = ',', index_col = 0)
+    dataFilePath = 'Iris/Iris.csv'
+    dataFrame = pd.read_csv(dataFilePath, sep = ',', index_col = 0)
     outDataSeries = dataFrame['Species']
     inDataFrame = dataFrame.drop(['Species'], axis = 1)
     return inDataFrame, outDataSeries
@@ -138,4 +138,3 @@ main()
 #Iris-setosa             50.0             0.00            0.00
 #Iris-versicolor          0.0            46.85            3.15
 #Iris-virginica           0.0             3.22           46.78
-

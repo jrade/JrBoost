@@ -64,11 +64,11 @@ ArrayXf fStatistic(CRefXXfr inData, CRefXu8 outData, optional<CRefXs> samples)
 
     // one block per thread...
     size_t blockCount = omp_get_max_threads();
-    size_t blockWidth = divideRoundUp(variableCount, blockCount);
+    size_t blockWidth = ::divideRoundUp(variableCount, blockCount);
     // ... but avoid too small blocks
     const size_t minBlockWidth = 256;
-    blockWidth = minBlockWidth * divideRoundUp(blockWidth, minBlockWidth);
-    blockCount = divideRoundUp(variableCount, blockWidth);
+    blockWidth = minBlockWidth * ::divideRoundUp(blockWidth, minBlockWidth);
+    blockCount = ::divideRoundUp(variableCount, blockWidth);
 
     BEGIN_OMP_PARALLEL(blockCount)
     {

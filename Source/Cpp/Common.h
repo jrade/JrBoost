@@ -133,8 +133,6 @@ inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJO
 #include "JrBoostLib/Tools.h"
 
 
-#define USE_PACKED_DATA 0
-
 #ifdef _MSC_VER
 #define USE_INTEL_INTRINSICS 1
 #else

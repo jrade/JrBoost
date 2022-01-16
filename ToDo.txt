@@ -1,10 +1,13 @@
 
-review all the sample buffer code again
+make the profiling work properly again
+	then profile with St Jude data on the 128 core PC (50% outer thread synch?)
 
-finish higgs_fast.py
-	better instructions, maybe in Example/Higgs instead of Data/Higgs
-		include download and upload links
-	where tob store submission file?
+better function names
+
+profile threading overhead
+	a bit tricky
+
+review TreeTrainerImpl once more
 
 ......................................................................................................
 
@@ -28,61 +31,53 @@ report:
 .............................................................................
 		
 major tasks:
-	release 0.1
-	improved higgs_precise.py
+	improved higgs_precise.py (see also Higgs Notes.txt)
 		use this to improve boost params in higgs_fast.py
+		fit splines to AMS
+		should use higg_util
+	release 0.1
 	BART
 	documentation of the different boost methods, incuding regularized logit boost
-	improved Higgs example (see "Higgs Notes.txt")
 	tree regularization: L2 penalty (lambda), L1 penalty (alpha)
 	gradient boost (Friedman and xgb papers)
 		first and second order boost with any gamma
 	compare performance (speed and accuracy) with xgboost
 		construct Python classes with same interface as jrboost python classes
-	histogram-based tree builder (use Otto as test case)
+	histogram-based tree builder (use Otto as test case?)
 	multinomial predictors
 	what is the standard code organization for a Python extension module?
 
 features to add:
-	log parameter optimization process
+	log boost parameter optimization process
 		log quartiles of each parameter after each cycle
 	U-test (with correct handling of ties)
-	multiple indata and multiple variable counts (to handle feature engineering)
+	multiple indata and multiple variable counts (to handle advanced feature engineering and selection)
 		applications: PCA, separate counts for up- and down-regulated variables, chromosomes, NCC
 	new way of calculating variable importance weights: when predicting (instead of when training)
 	have train, predict and loss functions take samples argument?
 
 optimizations (accuracy):
+	pruning
 	iterate from both ends and meet in the middle when finding best split
 	better parallelTrainAndEval for non-additive loss function (such as AUC)
 	boost stop criteria
-	pruning
 	other ways of regularizing logit boost (should be scale invariant)
 	the current minNodeWeight option is absolute min node weight
 		how about relaative min node weight (relative to sumW)?
 	
 optimizations (speed):
-	Clang + LLVM + CMake for Visual Studio
-		maybe no need fo IntelIntrinsics
-	parallelize:
-		ForestTrainer::train
-		TreeTrainer::updateSampleStatus_
-			easier if we do not use exact sums; can we do that?
-	make branch free:
-		TreeTrainer::updateSampleStatus_:
-			we would need a sorted list of all active samples
+	parallelize updateSampleStatus (easier with PRECISE_SUMS = 0)
 	t-test and F-test: are they SIMD optimized? do we load each cache line twice for large data sets?
 	look into fast/precise sums; does it make any difference for speed and accuracy?
-	have boost trainer produce packed wy data and feed it to tree trainer (some SIMD swizzle magic needed?)
+	Clang + LLVM + CMake for Visual Studio
+		maybe no need then for IntelIntrinsics implementation of fastExp()
 	PGO
 
 keep or ditch?
 	fine-grained stratification (does it improve accuracy?)
-	packed data (does it improve speed?)
-		if we keep it, don't pass around outData and weights
 	py::arg().noconvert() in t-test and F-test python wrappers
-	saveMemory option
-	stratifiedSamples option
-	support for loading old file format versions
-	SampleStatus type def (replace by SampleIndex?)
-	cycle option
+	are the following options useful?
+		saveMemory,
+		stratifiedSamples
+		cycle
+	support for loading very old file format versions

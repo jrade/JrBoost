@@ -9,13 +9,6 @@
 class BaseOptions;
 struct WyPack;
 
-
-struct TreeNodeExt : public TreeNode {
-    size_t sampleCount;
-    double sumW;
-    double sumWY;
-};
-
 //----------------------------------------------------------------------------------------------------------------------
 
 template<typename SampleIndex>
@@ -26,13 +19,8 @@ public:
 
     void init(const TreeNodeExt& node, const BaseOptions& options);
     void update(
-        CRefXXfc inData,
-#if USE_PACKED_DATA
-        const WyPack* pWyPacks,
-#else
-        CRefXd outData, CRefXd weights,
-#endif
-        const SampleIndex* pSortedSamplesBegin, const SampleIndex* pSortedSamplesEnd, size_t j);
+        CRefXXfc inData, CRefXd outData, CRefXd weights, const SampleIndex* pSortedSamplesBegin,
+        const SampleIndex* pSortedSamplesEnd, size_t j);
     size_t finalize(TreeNodeExt** ppParentNode, TreeNodeExt** ppChildNode) const;
 
     void fork(TreeNodeTrainer* other) const;

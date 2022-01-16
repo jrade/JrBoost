@@ -36,10 +36,6 @@ private:
 
     void validateData_(CRefXd outData, CRefXd weights) const;
 
-#if USE_PACKED_DATA
-    void initWyPacks_(CRefXd outData, CRefXd weights) const;
-#endif
-
     void initTree_() const;
 
     size_t usedVariableCount_(const BaseOptions& options) const;
@@ -55,6 +51,12 @@ private:
     template<typename SampleStatus>
     void updateSampleStatus_(const TrainData_* trainData, size_t d) const;
 
+    template<typename SampleStatus>
+    void updateSampleStatusNoThreads_(const TrainData_* trainData, size_t d) const;
+
+    template<typename SampleStatus>
+    void updateSampleStatusThreaded_(const TrainData_* trainData, size_t d, size_t threadCount) const;
+
     size_t initUsedVariables_(const TrainData_* trainData) const;
 
     void initNodeTrainers_(const TrainData_* trainData, size_t d) const;
@@ -63,26 +65,37 @@ private:
 
     //
 
+
     template<typename SampleStatus>
-    size_t trainImpl2_(
+    size_t updateNodeTrainers1_(const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t ITEM_COUNT) const;
+
+    template<typename SampleStatus>
+    size_t updateNodeTrainers1Nothreads_(
+        const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t ITEM_COUNT) const;
+
+    template<typename SampleStatus>
+    size_t updateNodeTrainers1Threaded_(
+        const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t threadCount, size_t ITEM_COUNT) const;
+
+    template<typename SampleStatus>
+    size_t updateNodeTrainers2_(
         const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex, size_t threadIndex,
         size_t ITEM_COUNT) const;
 
     template<typename SampleStatus>
-    const SampleIndex*
+    void
     initOrderedSamples_(const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex) const;
 
     template<typename SampleStatus>
-    const SampleIndex* updateOrderedSampleSaveMemory_(
+    void updateOrderedSampleSaveMemory_(
         const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex) const;
 
     template<typename SampleStatus>
-    const SampleIndex* updateOrderedSamples_(
+    void updateOrderedSamples_(
         const TrainData_* trainData, size_t d, size_t usedSampleCount, size_t usedVariableIndex) const;
 
-    void updateNodeTrainers_(
-        const TrainData_* trainData, size_t d, const SampleIndex* orderedSamples, size_t usedVariableIndex,
-        size_t threadIndex) const;
+    void
+    updateNodeTrainers3_(const TrainData_* trainData, size_t d, size_t usedVariableIndex, size_t threadIndex) const;
 
 private:
     const CRefXXfc inData_;

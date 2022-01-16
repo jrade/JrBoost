@@ -22,6 +22,17 @@ struct TreeNode {
 };
 
 
+struct TreeNodeData {
+    size_t sampleCount;
+    double sumW;
+    double sumWY;
+};
+
+
+struct TreeNodeExt : public TreeNode, public TreeNodeData {
+};
+
+
 namespace TreeTools {
 
 size_t nodeCount(const TreeNode* node);

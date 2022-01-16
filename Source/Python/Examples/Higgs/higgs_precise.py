@@ -306,10 +306,10 @@ def optimalAmsThreshold(outData, predData, weights, plotIndex = None):
 def _amsScore(s, b):
     b_r = 10.0
     return math.sqrt( 2.0 * (
-		(s + b + b_r) 
+        (s + b + b_r) 
         * math.log (1.0 + s / (b + b_r)) 
         - s
-	))
+    ))
 
 #-----------------------------------------------------------------------------------------------------------------------
 

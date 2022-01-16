@@ -71,7 +71,7 @@ inline const string PROFILE::names_[PROFILE::CLOCK_COUNT]
        "  pack data",
        "  used variables",
        "  init sample status",
-       "  update sample status",
+       "    update sample status",
        "    init ord. samples",
        "    update ord. samples",
        "    update splits",
