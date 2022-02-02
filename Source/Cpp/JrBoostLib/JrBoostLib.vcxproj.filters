@@ -68,6 +68,12 @@
     <ClInclude Include="TreeTrainerBuffers.h">
       <Filter>Base Predictor</Filter>
     </ClInclude>
+    <ClInclude Include="TopScoringPairs.h">
+      <Filter>Extra</Filter>
+    </ClInclude>
+    <ClInclude Include="SIMD.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Profile.cpp">
@@ -114,6 +120,9 @@
       <Filter>Base Predictor</Filter>
     </ClCompile>
     <ClCompile Include="Loss.cpp">
+      <Filter>Extra</Filter>
+    </ClCompile>
+    <ClCompile Include="TopScoringPairs.cpp">
       <Filter>Extra</Filter>
     </ClCompile>
   </ItemGroup>

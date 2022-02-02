@@ -70,7 +70,7 @@ inline double fastExp(double x)
     return x;
 }
 
-inline __m512d fastExp(__m512d x8)   // requires AVX512F + AVX512DQ
+inline __m512d fastExp(__m512d x8)   // requires AVX-512F + AVX-512DQ
 {
     const double a = (1LL << 52) / 0.6931471805599453;
     const double b = (1LL << 52) * (1023 - 0.0436774489036);
@@ -162,7 +162,7 @@ inline float fastExp(float x)
     return x;
 }
 
-inline __m512 fastExp(__m512 x16)   // requires AVX512F + AVX512DQ
+inline __m512 fastExp(__m512 x16)   // requires AVX-512F + AVX-512DQ
 {
     constexpr float a = (1 << 23) / 0.6931472f;
     constexpr float b = (1 << 23) * (127 - 0.04368f) + 0.5f;

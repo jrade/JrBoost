@@ -134,6 +134,8 @@ shared_ptr<Predictor> Predictor::loadImpl_(istream& is, int version)
             return EnsemblePredictor::loadImpl_(is, version);
         if (version >= 7 && type == 'U')
             return UnionPredictor::loadImpl_(is, version);
+        // if (version >= 9 && type == 'H')
+        //    return ShiftPredictor::loadImpl_(is, version);
     }
     parseError(is);
 }
@@ -331,8 +333,9 @@ ArrayXd EnsemblePredictor::predictImplNoThreads_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Zero(sampleCount);
+    const size_t threadCount = 1;
     for (const auto& predictor : predictors_)
-        pred += predictor->predictImplNoThreads_(inData);
+        pred += predictor->predictImpl_(inData, threadCount);
     pred /= static_cast<double>(size(predictors_));
     return pred;
 }
@@ -451,8 +454,9 @@ ArrayXd UnionPredictor::predictImplNoThreads_(CRefXXfc inData) const
 {
     size_t sampleCount = static_cast<size_t>(inData.rows());
     ArrayXd pred = ArrayXd::Ones(sampleCount);
+    const size_t threadCount = 1;
     for (const auto& predictor : predictors_)
-        pred *= 1.0 - predictor->predictImplNoThreads_(inData);
+        pred *= 1.0 - predictor->predictImpl_(inData, threadCount);
     return 1.0 - pred;
 }
 
@@ -499,3 +503,74 @@ shared_ptr<Predictor> UnionPredictor::loadImpl_(istream& is, int version)
         predictors.push_back(Predictor::loadImpl_(is, version));
     return createInstance(predictors);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+
+/*
+shared_ptr<Predictor> ShiftPredictor::createInstance(shared_ptr<Predictor> predictor, double lorShift)
+{
+    return makeShared<ShiftPredictor>(predictor, lorShift);
+}
+
+shared_ptr<Predictor> ShiftPredictor::createInstance(shared_ptr<Predictor> predictor, double oldP, double newP)
+{
+    double oldLor = std::log(oldP) - std::log(1.0 - oldP);
+    double newLor = std::log(newP) - std::log(1.0 - newP);
+    double lorShift = newLor - oldLor;
+    return makeShared<ShiftPredictor>(predictor, lorShift);
+}
+
+ShiftPredictor::ShiftPredictor(shared_ptr<Predictor> predictor, double lorShift) :
+    Predictor(predictor->variableCount()), predictor_(predictor), lorShift_(lorShift)
+{
+}
+
+
+ArrayXd ShiftPredictor::predictImpl_(CRefXXfc inData, size_t threadCount) const
+{
+    if (lorShift_ == 0)
+        return predictor_->predictImpl_(inData, threadCount);
+
+    ArrayXd pred = predictor_->predictImpl_(inData, threadCount);
+    pred = pred.log() - (1.0 - pred).log();
+    pred += lorShift_;
+    pred = (1.0 + (-pred).exp()).inverse();
+    return pred;
+}
+
+
+double ShiftPredictor::predictOneImpl_(CRefXf inData) const
+{
+    if (lorShift_ == 0)
+        return predictor_->predictOneImpl_(inData);
+
+    double pred = predictor_->predictOneImpl_(inData);
+    pred = std::log(pred) - std::log(1.0 - pred);
+    pred += lorShift_;
+    pred = 1.0 / (1.0 + std::exp(-pred));
+    return pred;
+}
+
+ArrayXf ShiftPredictor::variableWeightsImpl_() const { return predictor_->variableWeightsImpl_(); }
+
+shared_ptr<Predictor> ShiftPredictor::reindexVariablesImpl_(CRefXs newIndices) const
+{
+    return createInstance(predictor_->reindexVariablesImpl_(newIndices), lorShift_);
+}
+
+
+void ShiftPredictor::saveImpl_(ostream& os) const
+{
+    os.put('H');
+    os.write(reinterpret_cast<const char*>(&lorShift_), sizeof(lorShift_));
+    predictor_->saveImpl_(os);
+}
+
+shared_ptr<Predictor> ShiftPredictor::loadImpl_(istream& is, int version)
+{
+    double lorShift;
+    is.read(reinterpret_cast<char*>(&lorShift), sizeof(lorShift));
+    shared_ptr<Predictor> predictor = Predictor::loadImpl_(is, version);
+    return createInstance(predictor, lorShift);
+}
+*/

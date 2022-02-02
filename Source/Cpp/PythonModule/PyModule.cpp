@@ -10,6 +10,7 @@
 #include "../JrBoostLib/Paralleltrain.h"
 #include "../JrBoostLib/Predictor.h"
 #include "../JrBoostLib/TTest.h"
+#include "../JrBoostLib/TopScoringPairs.h"
 #include "../JrBoostLib/TreeTrainerBuffers.h"
 #include "PyBoostOptions.h"
 #include "PyInterruptHandler.h"
@@ -46,6 +47,9 @@ PYBIND11_MODULE(_jrboost, mod)
         .def_static("load", py::overload_cast<const string&>(&Predictor::load))
         .def_static("createEnsemble", &EnsemblePredictor::createInstance)
         .def_static("createUnion", &UnionPredictor::createInstance)
+        //.def_static(
+        //    "createShifted", py::overload_cast<shared_ptr<Predictor>, double,
+        //    double>(&ShiftPredictor::createInstance))
         .def("__repr__", [](const Predictor&) { return "<jrboost.Predictor>"; })
         .def(py::pickle(
             [](const Predictor& pred) {
@@ -113,6 +117,12 @@ PYBIND11_MODULE(_jrboost, mod)
 
     mod.def("fTestRank", &fTestRank, py::arg().noconvert(), py::arg(), py::arg("samples") = std::nullopt);
 
+    mod.def(
+        "topScoringPairs", &topScoringPairs, py::arg().noconvert(), py::arg(), py::arg(),
+        py::arg("samples") = std::nullopt);
+
+    mod.def("filterPairs", &filterPairs);
+    
 
     // Other
 

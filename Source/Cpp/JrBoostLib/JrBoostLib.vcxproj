@@ -85,7 +85,9 @@
     <ClInclude Include="FastExp.h" />
     <ClInclude Include="FTest.h" />
     <ClInclude Include="OmpParallel.h" />
+    <ClInclude Include="SIMD.h" />
     <ClInclude Include="Tools.h" />
+    <ClInclude Include="TopScoringPairs.h" />
     <ClInclude Include="TreeNodeTrainer.h" />
     <ClInclude Include="ParallelTrain.h" />
     <ClInclude Include="BasePredictor.h" />
@@ -110,6 +112,7 @@
     <ClCompile Include="BoostTrainer.cpp" />
     <ClCompile Include="FTest.cpp" />
     <ClCompile Include="Loss.cpp" />
+    <ClCompile Include="TopScoringPairs.cpp" />
     <ClCompile Include="TreeNodeTrainer.cpp" />
     <ClCompile Include="ParallelTrain.cpp" />
     <ClCompile Include="pch.cpp">

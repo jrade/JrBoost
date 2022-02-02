@@ -103,7 +103,7 @@ vector<vector<SampleIndex>> TreeTrainerImpl<SampleIndex>::initSortedSamples_() c
             const float* pInDataColJ = std::data(inData_.col(j));
             for (size_t i = 0; i != sampleCount; ++i)
                 tmp[i] = {pInDataColJ[i], static_cast<SampleIndex>(i)};
-            pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.first < y.first; });
+            pdqsort_branchless(begin(tmp), end(tmp), ::firstLess);
 
             sortedSamples[j].resize(sampleCount);
             SampleIndex* pSortedSamplesJ = data(sortedSamples[j]);

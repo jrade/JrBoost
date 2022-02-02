@@ -125,7 +125,7 @@ double aucNoWeights_(CRefXu8 outData, CRefXd predData)
     vector<pair<uint8_t, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i]};
-    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
+    pdqsort_branchless(begin(tmp), end(tmp), ::secondLess);
 
     size_t a = 0;
     size_t b = 0;
@@ -152,8 +152,7 @@ double aucWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights)
     vector<tuple<uint8_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i], weights[i]};
-    pdqsort_branchless(
-        begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+    pdqsort_branchless(begin(tmp), end(tmp), ::secondLess);
 
     double a = 0.0;
     double b = 0.0;
@@ -201,7 +200,7 @@ double aocNoWeights_(CRefXu8 outData, CRefXd predData)
     vector<pair<uint8_t, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i]};
-    pdqsort_branchless(begin(tmp), end(tmp), [](const auto& x, const auto& y) { return x.second < y.second; });
+    pdqsort_branchless(begin(tmp), end(tmp), ::secondLess);
 
     size_t a = 0;
     size_t b = 0;
@@ -228,8 +227,7 @@ double aocWeights_(CRefXu8 outData, CRefXd predData, CRefXd weights)
     vector<tuple<uint8_t, double, double>> tmp(sampleCount);
     for (size_t i = 0; i != sampleCount; ++i)
         tmp[i] = {outData[i], predData[i], weights[i]};
-    pdqsort_branchless(
-        begin(tmp), end(tmp), [](const auto& x, const auto& y) { return std::get<1>(x) < std::get<1>(y); });
+    pdqsort_branchless(begin(tmp), end(tmp), ::secondLess);
 
     double a = 0.0;
     double b = 0.0;

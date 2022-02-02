@@ -1,13 +1,29 @@
 
-make the profiling work properly again
-	then profile with St Jude data on the 128 core PC (50% outer thread synch?)
+TSP:
+	interrupt handling
+		place inside the two outer loops
+		need exception safe omp parallel
+			profile
 
-better function names
+	option to select PDiff or Chi2 mode
 
-profile threading overhead
-	a bit tricky
+better error messages for functions with noconvert arguments
+	overload with a version without noconvert that throws an exception with an informative error message
 
-review TreeTrainerImpl once more
+TreeTrainerImpl:
+	make the profiling work properly again
+		profile threading overhead
+			outer thread synch takes too much time
+				test case: test leukemia with tree depth > 1 on work PC
+	better function names
+	review all code once more
+
+improved Higgs precise
+	based on St Jude codes
+	old notes
+		use this to improve boost params in higgs_fast.py
+		fit splines to AMS
+		should use higg_util
 
 ......................................................................................................
 
@@ -15,7 +31,7 @@ report:
 
 	MSVS autovectorizer:
 		does not handle reinterpret cast
-		if they fix this, then ditch all the Intel intrinsics code
+		does not handle  a + (b < c)  very well with AVX2
 
 	pybind11:
 		seem py::kw_only() does not interact well with callbacks
@@ -31,10 +47,6 @@ report:
 .............................................................................
 		
 major tasks:
-	improved higgs_precise.py (see also Higgs Notes.txt)
-		use this to improve boost params in higgs_fast.py
-		fit splines to AMS
-		should use higg_util
 	release 0.1
 	BART
 	documentation of the different boost methods, incuding regularized logit boost
@@ -43,9 +55,10 @@ major tasks:
 		first and second order boost with any gamma
 	compare performance (speed and accuracy) with xgboost
 		construct Python classes with same interface as jrboost python classes
-	histogram-based tree builder (use Otto as test case?)
 	multinomial predictors
 	what is the standard code organization for a Python extension module?
+	dynamic CPU-specific dispatch
+		stackoverflow.com/questions/6121792/how-to-check-if-a-cpu-supports-the-sse3-instruction-set
 
 features to add:
 	log boost parameter optimization process
@@ -58,6 +71,7 @@ features to add:
 
 optimizations (accuracy):
 	pruning
+	mixed boost: first n ierations of Ada boost, then n iterations of (regularized?) logit boost
 	iterate from both ends and meet in the middle when finding best split
 	better parallelTrainAndEval for non-additive loss function (such as AUC)
 	boost stop criteria
@@ -66,12 +80,17 @@ optimizations (accuracy):
 		how about relaative min node weight (relative to sumW)?
 	
 optimizations (speed):
-	parallelize updateSampleStatus (easier with PRECISE_SUMS = 0)
+	optimize tree builder for binary variables (useful with top scoring pairs)
+		extend this to histogram based tree builder
+	dynamic adjustment of inner and outer thread counts
 	t-test and F-test: are they SIMD optimized? do we load each cache line twice for large data sets?
-	look into fast/precise sums; does it make any difference for speed and accuracy?
 	Clang + LLVM + CMake for Visual Studio
 		maybe no need then for IntelIntrinsics implementation of fastExp()
 	PGO
+
+test AVX-512 code (fastExp() and topScoringPairs())
+	tune topScoringPairs blockSize again
+	do we gain any speed by manual vectorization in topScoringPairs() with AVX-512? probably not
 
 keep or ditch?
 	fine-grained stratification (does it improve accuracy?)

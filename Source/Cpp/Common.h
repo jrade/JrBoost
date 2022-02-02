@@ -5,6 +5,12 @@
 #pragma once
 
 
+// Preprocessor
+
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
+
 // Standard library
 
 #include <algorithm>
@@ -65,7 +71,7 @@ using std::vector;
 #pragma warning(push)
 #pragma warning(disable : 4127)   // conditional expression is constant
 #pragma warning(disable : 4805)   // '|': unsafe mix of type 'const bool' and type 'int' in operation
-#endif                            // disabling 4805 only needed when compiling with AVX512
+#endif                            // disabling 4805 only needed when compiling with AVX-512
 
 #include <Eigen/Dense>
 
@@ -73,15 +79,24 @@ using std::vector;
 #pragma warning(pop)
 #endif
 
-using ArrayXXdc = Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
-using ArrayXXdr = Eigen::Array<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using ArrayXXfc = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
-using ArrayXXfr = Eigen::Array<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+template<typename T>
+using ArrayXXc = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
+
+template<typename T>
+using ArrayXXr = Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+template<typename T>
+using ArrayX = Eigen::ArrayX<T>;
+
+using ArrayXXdc = ArrayXXc<double>;
+using ArrayXXdr = ArrayXXr<double>;
+using ArrayXXfc = ArrayXXc<float>;
+using ArrayXXfr = ArrayXXr<float>;
 using Array2Xdr = Eigen::Array<double, 2, Eigen::Dynamic, Eigen::RowMajor>;
-using ArrayXd = Eigen::ArrayX<double>;
-using ArrayXf = Eigen::ArrayX<float>;
-using ArrayXs = Eigen::ArrayX<size_t>;
-using ArrayXu8 = Eigen::ArrayX<uint8_t>;
+using ArrayXd = ArrayX<double>;
+using ArrayXf = ArrayX<float>;
+using ArrayXs = ArrayX<size_t>;
+using ArrayXu8 = ArrayX<uint8_t>;
 
 using RefXXdc = Eigen::Ref<ArrayXXdc>;
 using RefXXdr = Eigen::Ref<ArrayXXdr>;
@@ -103,8 +118,6 @@ using CRefXf = Eigen::Ref<const ArrayXf>;
 using CRefXs = Eigen::Ref<const ArrayXs>;
 using CRefXu8 = Eigen::Ref<const ArrayXu8>;
 
-#define STR_HELPER(x) #x
-#define STR(x) STR_HELPER(x)
 inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJOR_VERSION) "." STR(EIGEN_MINOR_VERSION);
 
 
@@ -134,6 +147,7 @@ inline const char* theEigenVersion = STR(EIGEN_WORLD_VERSION) "." STR(EIGEN_MAJO
 
 
 #ifdef _MSC_VER
+// MSVS 2019 is not very good at autovectorizing code
 #define USE_INTEL_INTRINSICS 1
 #else
 #define USE_INTEL_INTRINSICS 0

@@ -157,7 +157,7 @@ shared_ptr<Predictor> BoostTrainer::trainAda_(const BoostOptions& opt, size_t th
         else {
 
             // Visual C++ fails to autovectorize the fastExp() function with AVX2
-            // (or the fastExp() function with AVX512F + AVX512DQ). Thus we do manual vectorization.
+            // (or the fastExp() function with AVX-512F + AVX-512DQ). Thus we do manual vectorization.
 
 #if USE_INTEL_INTRINSICS && defined(__AVX512F__) && defined(__AVX512DQ__)
 

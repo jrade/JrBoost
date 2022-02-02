@@ -9,7 +9,7 @@ class FastBernoulliDistribution {
 public:
     FastBernoulliDistribution(uint64_t m, uint64_t n) : m_(static_cast<double>(m)), n_(static_cast<double>(n))
     {
-        assert(0 <= m && m <= n);
+        // ASSERT(0 <= m && m <= n);
     }
 
     template<typename R>
@@ -53,7 +53,10 @@ private:
 
 class VeryFastBernoulliDistribution {
 public:
-    VeryFastBernoulliDistribution(uint64_t m, uint64_t n) : m_(m), n_(n) { assert(0 <= m && m <= n); }
+    VeryFastBernoulliDistribution(uint64_t m, uint64_t n) : m_(m), n_(n)
+    {
+        // ASSERT(0 <= m && m <= n);
+    }
 
     template<typename R>
     bool operator()(R& r)
