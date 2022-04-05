@@ -1,4 +1,8 @@
 
+Go through Foo branch and see if it contains anything useful
+
+-----------------------------------------------
+
 TSP:
 	interrupt handling
 		place inside the two outer loops

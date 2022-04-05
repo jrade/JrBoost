@@ -352,8 +352,10 @@ double EnsemblePredictor::predictOneImpl_(CRefXf inData) const
 ArrayXf EnsemblePredictor::variableWeightsImpl_() const
 {
     ArrayXf weights = ArrayXf::Zero(variableCount());
-    for (const auto& predictor : predictors_)
-        weights += predictor->variableWeightsImpl_();
+    for (const auto& predictor : predictors_) {
+        size_t variableCount = predictor->variableCount();
+        weights(Eigen::seqN(0, variableCount)) += predictor->variableWeightsImpl_();
+    }
     weights /= static_cast<float>(size(predictors_));
     return weights;
 }
@@ -471,8 +473,10 @@ double UnionPredictor::predictOneImpl_(CRefXf inData) const
 ArrayXf UnionPredictor::variableWeightsImpl_() const
 {
     ArrayXf weights = ArrayXf::Zero(variableCount());
-    for (const auto& predictor : predictors_)
-        weights += predictor->variableWeightsImpl_();
+    for (const auto& predictor : predictors_) {
+        size_t variableCount = predictor->variableCount();
+        weights(Eigen::seqN(0, variableCount)) += predictor->variableWeightsImpl_();
+    }
     return weights;
 }
 
