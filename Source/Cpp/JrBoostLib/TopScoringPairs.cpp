@@ -167,7 +167,7 @@ topScoringPairsImpl_(CRefXXfr inData, CRefXu8 outData, size_t pairCount, optiona
                 //   j1 = blockIndex1 * blockSize<Int> + k1
                 //   j2 = blockIndex1 * blockSize<Int> + k2
                 //
-                // n(k1, k2) contains the same but with outData(i) = 1
+                // n1(k1, k2) contains the same but with outData(i) = 1
 
                 for (size_t k1 = 0; k1 != blockSize<Int>; ++k1) {
                     const size_t j1 = blockIndex1 * blockSize<Int> + k1;
@@ -177,14 +177,14 @@ topScoringPairsImpl_(CRefXXfr inData, CRefXu8 outData, size_t pairCount, optiona
 
                         const double prob0 = n0(k1, k2) * (1.0 / zeroSampleCount);
                         // probability that a sample i with outData(i) = 0 has inData(i, j1) > inData(i, j2)
-                        const double prob1 = n(k1, k2) * (1.0 / oneSampleCount);
+                        const double prob1 = n1(k1, k2) * (1.0 / oneSampleCount);
                         // probability that a sample i with outData(i) = 1 has inData(i, j1) > inData(i, j2)
                         const double score = prob1 - prob0;
 
                         // const double a = static_cast<double>(zeroSampleCount - n0(k1, k2));
                         // const double b = static_cast<double>(n0(k1, k2));
-                        // const double c = static_cast<double>(oneSampleCount - n(k1, k2));
-                        // const double d = static_cast<double>(n(k1, k2));
+                        // const double c = static_cast<double>(oneSampleCount - n1(k1, k2));
+                        // const double d = static_cast<double>(n1(k1, k2));
                         // if (a + c < 3.0 || b + d < 3.0)
                         //    continue;
                         // const double score = (a * d - b * c) / std::sqrt((a + b) * (c + d) * (a + c) * (b + d));
@@ -337,7 +337,7 @@ inline void rankifyRow_(const float* inData, Int* rankData, pair<float, size_t>*
 
     ::pdqsort_branchless(tmp, tmp + variableCount, ::firstLess);
 
-    float prevVal = numeric_limits<float>::infinity();  // so that rank is not incremented for j = 0
+    float prevVal = numeric_limits<float>::infinity();   // so that rank is not incremented for j = 0
     Int rank = baseRank;
     for (size_t j = 0; j != variableCount; ++j) {
         const float val = tmp[j].first;
