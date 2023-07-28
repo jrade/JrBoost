@@ -102,5 +102,4 @@ keep or ditch?
 	are the following options useful?
 		saveMemory,
 		stratifiedSamples
-		cycle
 	support for loading very old file format versions

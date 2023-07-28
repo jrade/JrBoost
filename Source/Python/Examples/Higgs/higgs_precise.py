@@ -41,8 +41,6 @@ trainParam = {
         'maxTreeDepth': [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
         'minNodeSize': [100, 150, 200, 300, 500, 700, 1000],
         #'selectVariablesByLevel': [True],
-
-        'cycle': [0.0, 0.1, 0.2],
     },
 }
 
@@ -318,12 +316,11 @@ def formatBoostParams(boostParams):
 
 def formatBoostParam(opt):
     eta = opt['eta']
-    cc = opt['cycle']
     usr = opt['usedSampleRatio']
     uvr = opt['usedVariableRatio']
     mns = opt['minNodeSize']
     md = opt['maxTreeDepth']
-    return f'eta = {eta}  cc = {cc}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}'
+    return f'eta = {eta}  usr = {usr}  uvr = {uvr}  mns = {mns}  md = {md}'
 
 def formatScore(score, precision = 4):
     return '(' + ', '.join((f'{x:.{precision}f}' for x in score)) + ')'

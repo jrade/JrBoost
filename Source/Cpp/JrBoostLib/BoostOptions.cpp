@@ -23,11 +23,4 @@ void BoostOptions::setEta(double eta)
     eta_ = eta;
 }
 
-void BoostOptions::setCycle(double c)
-{
-    if (!(c >= 0.0 && c < 1.0))   // carefully written to trap NaN
-        throw std::invalid_argument("cycle must lie in the interval [0.0, 1.0).");
-    cycle_ = c;
-}
-
 void BoostOptions::setFastExp(bool b) { fastExp_ = b; }
