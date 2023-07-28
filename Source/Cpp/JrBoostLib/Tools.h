@@ -87,7 +87,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 
 // Alternative to std::make_unique that works with classes with protected or private constructors
-// With private constructors, MakeUniqueHelper<T> must be declared a friend´of T
+// With private constructors, MakeUniqueHelper<T> must be declared a friend of T
 
 template<typename T>
 class MakeUniqueHelper : public T {
@@ -107,7 +107,7 @@ unique_ptr<T> makeUnique(Values... values)
 //----------------------------------------------------------------------------------------------------------------------
 
 // Alternative to std::make_shared that works with classes with protected or private constructors
-// With private constructors, MakeSharedHelper<T> must be declared a friend´of T
+// With private constructors, MakeSharedHelper<T> must be declared a friend of T
 
 
 template<typename T>
