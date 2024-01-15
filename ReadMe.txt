@@ -7,7 +7,7 @@ To build JrBoost you need:
 JrBoost has been built on Windows 10 with:
 
   Microsoft Visual Studio 2019
-  Anaconda version 4.9.2 (includes Python version 3.8.5 and NumPy version 1.19.2)
+  Anaconda version 2020.11 (=4.9.2) (includes Python version 3.8.5 and NumPy version 1.19.2)
   Eigen version 3.4.0
   pybind11 version 2.7.1
 

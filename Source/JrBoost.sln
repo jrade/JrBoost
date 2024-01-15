@@ -42,24 +42,40 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Examples", "Python\Examples
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JrBoostLib", "Cpp\JrBoostLib\JrBoostLib.vcxproj", "{5E1798B2-CBDB-45A1-811A-884850C61C3C}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Test", "Python\Test\Test.pyproj", "{DB16E098-582F-4C5D-B5C2-B76B428D7464}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Debug|x64.ActiveCfg = Debug|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Debug|x64.Build.0 = Debug|x64
+		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Release|Any CPU.ActiveCfg = Release|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Release|x64.ActiveCfg = Release|x64
 		{6AFF45F6-CDA5-4746-B867-2618FEAE16B4}.Release|x64.Build.0 = Release|x64
+		{FB484642-746F-4D7E-B017-1E6B961014CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FB484642-746F-4D7E-B017-1E6B961014CC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FB484642-746F-4D7E-B017-1E6B961014CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FB484642-746F-4D7E-B017-1E6B961014CC}.Release|x64.ActiveCfg = Release|Any CPU
+		{E23BE66B-6047-49D6-8130-A687467816C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E23BE66B-6047-49D6-8130-A687467816C6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E23BE66B-6047-49D6-8130-A687467816C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E23BE66B-6047-49D6-8130-A687467816C6}.Release|x64.ActiveCfg = Release|Any CPU
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|x64.ActiveCfg = Debug|x64
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Debug|x64.Build.0 = Debug|x64
+		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|Any CPU.ActiveCfg = Release|x64
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|x64.ActiveCfg = Release|x64
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C}.Release|x64.Build.0 = Release|x64
+		{DB16E098-582F-4C5D-B5C2-B76B428D7464}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB16E098-582F-4C5D-B5C2-B76B428D7464}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DB16E098-582F-4C5D-B5C2-B76B428D7464}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB16E098-582F-4C5D-B5C2-B76B428D7464}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -70,6 +86,7 @@ Global
 		{FB484642-746F-4D7E-B017-1E6B961014CC} = {F1DF6C78-DE9A-4012-A970-2170723C1AF0}
 		{E23BE66B-6047-49D6-8130-A687467816C6} = {F1DF6C78-DE9A-4012-A970-2170723C1AF0}
 		{5E1798B2-CBDB-45A1-811A-884850C61C3C} = {1CD3A8BB-2DCD-4CEC-B250-7D7F8D9B3153}
+		{DB16E098-582F-4C5D-B5C2-B76B428D7464} = {F1DF6C78-DE9A-4012-A970-2170723C1AF0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B1D96605-E60B-47D3-87A4-5190D6AD3139}
